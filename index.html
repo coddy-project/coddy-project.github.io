@@ -6,20 +6,20 @@
   <title>Coddy Agent - coding agent harness in one Go binary</title>
   <meta name="description" content="Coddy Agent is a distroless-friendly coding harness: one Go binary, ACP, embedded UI, rules, skills, scheduler, and on-prem LLM support." />
   <meta name="theme-color" content="#9333ea" />
-  <link rel="canonical" href="https://coddy-project.github.io/" />
+  <link rel="canonical" href="https://coddy.dev/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Coddy Agent" />
   <meta property="og:title" content="Coddy Agent - coding agent harness in one Go binary" />
   <meta property="og:description" content="One static Go binary for software agents: ReAct, ACP, web UI, Cursor-style rules, Docker-ready, your API keys." />
-  <meta property="og:url" content="https://coddy-project.github.io/" />
-  <meta property="og:image" content="https://coddy-project.github.io/assets/og-image.png" />
+  <meta property="og:url" content="https://coddy.dev/" />
+  <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
   <meta property="og:image:width" content="1280" />
   <meta property="og:image:height" content="640" />
   <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Coddy Agent - coding agent harness in one Go binary" />
   <meta name="twitter:description" content="One static Go binary for software agents: ReAct, ACP, web UI, rules, skills, on-prem models." />
-  <meta name="twitter:image" content="https://coddy-project.github.io/assets/og-image.png" />
+  <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
   <link rel="icon" href="assets/coddy-logo-wordmark.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/og-image.png" />
   <link rel="stylesheet" href="styles.css" />
@@ -64,10 +64,10 @@
           <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false">Windows</button>
         </div>
         <div class="code-wrap active" id="panel-unix" role="tabpanel">
-          <pre><code id="cmd-unix">curl -fsSL https://coddy-project.github.io/install.sh | bash</code></pre>
+          <pre><code id="cmd-unix">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
         </div>
         <div class="code-wrap" id="panel-win" role="tabpanel">
-          <pre><code id="cmd-win">irm https://coddy-project.github.io/install.ps1 | iex</code></pre>
+          <pre><code id="cmd-win">irm https://coddy.dev/install.ps1 | iex</code></pre>
         </div>
         <p class="hint">
           Downloads the latest release binary, installs to your PATH, and creates
@@ -161,26 +161,6 @@
           });
         });
       });
-      var host = location.hostname;
-      var origin = location.origin;
-      if (host === "coddy.dev" || host === "www.coddy.dev") {
-        document.getElementById("cmd-unix").textContent =
-          "curl -fsSL https://coddy.dev/install.sh | bash";
-        document.getElementById("cmd-win").textContent =
-          "irm https://coddy.dev/install.ps1 | iex";
-        var canon = document.querySelector('link[rel="canonical"]');
-        if (canon) canon.href = origin + "/";
-        ["og:url", "og:image", "twitter:image"].forEach(function (name) {
-          var el = document.querySelector(
-            name.indexOf("twitter") === 0
-              ? 'meta[name="' + name + '"]'
-              : 'meta[property="' + name + '"]'
-          );
-          if (el && el.content.indexOf("coddy-project.github.io") !== -1) {
-            el.content = el.content.replace("https://coddy-project.github.io", origin);
-          }
-        });
-      }
     })();
   </script>
 </body>

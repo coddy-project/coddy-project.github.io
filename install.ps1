@@ -1,6 +1,6 @@
 # Install Coddy from GitHub Releases (Windows amd64).
 # Usage:
-#   irm https://coddy-project.github.io/install.ps1 | iex
+#   irm https://coddy.dev/install.ps1 | iex
 #   .\install.ps1 [-Version "0.9.5"] [-InstallDir $path] [-Home $path] [-Yes]
 param(
     [string]$Version = $env:CODDY_VERSION,

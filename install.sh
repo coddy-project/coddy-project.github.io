@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Install Coddy from GitHub Releases into ~/.local/bin and bootstrap ~/.coddy.
 # Usage:
-#   curl -fsSL https://coddy-project.github.io/install.sh | bash
+#   curl -fsSL https://coddy.dev/install.sh | bash
 #   ./install.sh [--version X.Y.Z] [--install-dir DIR] [--home DIR] [-y]
 set -euo pipefail
 
 CODDY_REPO="${CODDY_REPO:-coddy-project/coddy-agent}"
 CODDY_API="${CODDY_API:-https://api.github.com}"
-CODDY_INSTALL_SCRIPT_URL="${CODDY_INSTALL_SCRIPT_URL:-https://coddy-project.github.io/install.sh}"
+CODDY_INSTALL_SCRIPT_URL="${CODDY_INSTALL_SCRIPT_URL:-https://coddy.dev/install.sh}"
 CODDY_INSTALL_DIR="${CODDY_INSTALL_DIR:-}"
 CODDY_HOME="${CODDY_HOME:-}"
 CODDY_VERSION="${CODDY_VERSION:-}"
