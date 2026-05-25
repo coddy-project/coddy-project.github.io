@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Coddy Agent - distroless-friendly coding agent harness. One Go binary, ACP, web UI, on-prem models." />
+  <title>Coddy Agent</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="logo" href="/" aria-label="Coddy agent home">
+        <img src="assets/coddy-logo-wordmark.svg" width="188" height="56" alt="Coddy agent" />
+      </a>
+      <nav aria-label="Site">
+        <a href="#install">Install</a>
+        <a href="#features">Features</a>
+        <a href="https://github.com/coddy-project/coddy-agent">GitHub</a>
+        <a href="https://github.com/coddy-project/coddy-agent/releases">Releases</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="pills">
+        <span class="pill">Go binary</span>
+        <span class="pill">ACP harness</span>
+        <span class="pill">Distroless-ready</span>
+        <span class="pill">On-prem LLMs</span>
+      </div>
+      <h1>Run a coding agent from one static binary</h1>
+      <p class="tagline">
+        Coddy is a harness for software work: ReAct loop, filesystem and shell tools, MCP, project rules,
+        skills, optional browser UI, scheduler, and long-term memory. Built for containers, IDE clients, and your own API keys.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#install">Install</a>
+        <a class="btn btn-ghost" href="https://github.com/coddy-project/coddy-agent">Source code</a>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="glass install-block">
+        <h2>Quick install</h2>
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-tab="unix" role="tab" aria-selected="true">Linux / macOS</button>
+          <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false">Windows</button>
+        </div>
+        <div class="code-wrap active" id="panel-unix" role="tabpanel">
+          <pre><code id="cmd-unix">curl -fsSL https://coddy-project.github.io/install.sh | bash</code></pre>
+        </div>
+        <div class="code-wrap" id="panel-win" role="tabpanel">
+          <pre><code id="cmd-win">irm https://coddy-project.github.io/install.ps1 | iex</code></pre>
+        </div>
+        <p class="hint">
+          Downloads the latest release binary, installs to your PATH, and creates
+          <code>~/.coddy/config.yaml</code> from the example when missing. Then set a provider key and run
+          <code>coddy http</code> or <code>coddy acp</code>.
+        </p>
+      </div>
+      <p class="hint" style="text-align: center;">
+        Docker: <code>ghcr.io/coddy-project/coddy-agent</code> -
+        <a href="https://github.com/coddy-project/coddy-agent#docker">compose setup in the repo</a>
+      </p>
+    </section>
+
+    <figure class="preview">
+      <img src="assets/screenshot-fullhd-start.png" width="1920" height="1080" alt="Coddy start screen with composer and agent mode" loading="lazy" />
+    </figure>
+
+    <section id="about">
+      <h2>What is Coddy</h2>
+      <p>
+        Most agent stacks chase a general chat assistant. Coddy targets a <strong>coding agent</strong>:
+        Cursor-style rules and skills on disk, plan and agent modes, tool permissions, streaming UI, and sessions
+        you can resume from an IDE, browser, or automation.
+      </p>
+      <p>
+        Ship it as a single binary in <strong>distroless</strong> or <strong>from-scratch</strong> images, or run a
+        <strong>fleet of containers</strong> with your orchestrator defining CPU, memory, and mounts - one agent per
+        task, full control of each instance.
+      </p>
+    </section>
+
+    <section id="features">
+      <h2>Features</h2>
+      <div class="features">
+        <article class="glass feature">
+          <h3>ACP server</h3>
+          <p><code>coddy acp</code> over stdio for Cursor, Zed, and custom clients. Same sessions as the web UI when <code>CODDY_HOME</code> matches.</p>
+        </article>
+        <article class="glass feature">
+          <h3>HTTP + UI</h3>
+          <p>OpenAI-compatible API, embedded SPA, Swagger at <code>/docs/</code>. Primary surface: <code>POST /v1/responses</code>.</p>
+        </article>
+        <article class="glass feature">
+          <h3>Rules &amp; skills</h3>
+          <p>Auto-load <code>.cursor/rules</code>, <code>.coddy/rules</code>, and skill packs from <code>~/.cursor/skills</code> and project dirs.</p>
+        </article>
+        <article class="glass feature">
+          <h3>Plan mode</h3>
+          <p>Design in <code>plan</code> mode, implement in <code>agent</code> mode with full tools and MCP.</p>
+        </article>
+        <article class="glass feature">
+          <h3>Scheduler</h3>
+          <p>Cron jobs with a UI drawer and agent tools for recurring tasks.</p>
+        </article>
+        <article class="glass feature">
+          <h3>Memory</h3>
+          <p>Optional long-term memory copilot and session memory routes.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="docs">
+      <h2>Documentation</h2>
+      <p>
+        Full docs live in the
+        <a href="https://github.com/coddy-project/coddy-agent">coddy-agent</a> repository:
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/install.md">install</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/editor-integration.md">editor integration</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md">HTTP API</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/DESIGN.md">UI design spec</a>.
+      </p>
+    </section>
+
+    <footer>
+      <p>MIT · <a href="https://github.com/coddy-project/coddy-agent">coddy-project/coddy-agent</a></p>
+      <p>Install scripts: <a href="install.sh">install.sh</a> · <a href="install.ps1">install.ps1</a></p>
+    </footer>
+  </div>
+  <script>
+    (function () {
+      var tabs = document.querySelectorAll(".tab");
+      var panels = { unix: document.getElementById("panel-unix"), win: document.getElementById("panel-win") };
+      tabs.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var id = btn.getAttribute("data-tab");
+          tabs.forEach(function (t) {
+            t.classList.toggle("active", t === btn);
+            t.setAttribute("aria-selected", t === btn ? "true" : "false");
+          });
+          Object.keys(panels).forEach(function (k) {
+            panels[k].classList.toggle("active", k === id);
+          });
+        });
+      });
+      var host = location.hostname;
+      if (host === "coddy.dev" || host === "www.coddy.dev") {
+        document.getElementById("cmd-unix").textContent =
+          "curl -fsSL https://coddy.dev/install.sh | bash";
+        document.getElementById("cmd-win").textContent =
+          "irm https://coddy.dev/install.ps1 | iex";
+      }
+    })();
+  </script>
+</body>
+</html>
