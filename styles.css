@@ -168,6 +168,51 @@ a:hover {
   display: block;
 }
 
+.install-code {
+  position: relative;
+}
+
+.install-copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(20, 20, 22, 0.75);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.install-copy:hover {
+  background: rgba(30, 30, 34, 0.92);
+  border-color: rgba(147, 51, 234, 0.45);
+}
+
+.install-copy:focus-visible {
+  outline: 2px solid rgba(147, 51, 234, 0.55);
+  outline-offset: 2px;
+}
+
+.install-copy--done {
+  border-color: rgba(147, 51, 234, 0.5);
+  color: #f3e8ff;
+}
+
+.install-code pre {
+  margin: 0;
+  padding: 14px 72px 14px 16px;
+  background: #0d0d0f;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 pre {
   margin: 0;
   padding: 14px 16px;

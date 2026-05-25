@@ -64,10 +64,16 @@
           <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false">Windows</button>
         </div>
         <div class="code-wrap active" id="panel-unix" role="tabpanel">
-          <pre><code id="cmd-unix">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
+          <div class="install-code">
+            <button type="button" class="install-copy" data-copy-for="cmd-unix" aria-label="Copy install command">Copy</button>
+            <pre><code id="cmd-unix">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
+          </div>
         </div>
         <div class="code-wrap" id="panel-win" role="tabpanel">
-          <pre><code id="cmd-win">irm https://coddy.dev/install.ps1 | iex</code></pre>
+          <div class="install-code">
+            <button type="button" class="install-copy" data-copy-for="cmd-win" aria-label="Copy install command">Copy</button>
+            <pre><code id="cmd-win">irm https://coddy.dev/install.ps1 | iex</code></pre>
+          </div>
         </div>
         <p class="hint">
           Downloads the latest release binary, installs to your PATH, and creates
@@ -102,21 +108,25 @@
     <section id="features">
       <h2>Features</h2>
       <div class="features">
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/editor-integration.md" target="_blank" rel="noopener noreferrer">
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">
           <h3>ACP server</h3>
-          <p><code>coddy acp</code> over stdio for Cursor, Zed, and custom clients. Same sessions as the web UI when <code>CODDY_HOME</code> matches.</p>
+          <p><code>coddy acp</code> over stdio. JSON-RPC sessions, modes, permissions, and streaming updates for IDE clients and scripts.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">
           <h3>HTTP + UI</h3>
           <p>OpenAI-compatible API, embedded SPA, Swagger at <code>/docs/</code>. Primary surface: <code>POST /v1/responses</code>.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">
-          <h3>Rules &amp; skills</h3>
-          <p>Auto-load <code>.cursor/rules</code>, <code>.coddy/rules</code>, and skill packs from <code>~/.cursor/skills</code> and project dirs.</p>
+          <h3>Rules</h3>
+          <p>Auto-discover <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.claude/rules</code>, and <code>.codex/rules</code> under the project cwd.</p>
         </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/skills.md" target="_blank" rel="noopener noreferrer">
+          <h3>Skills</h3>
+          <p>Slash commands from <code>SKILL.md</code> packs in <code>skills.dirs</code>, including <code>~/.cursor/skills</code> and project <code>.skills</code>.</p>
+        </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/README.md#plan-mode" target="_blank" rel="noopener noreferrer">
           <h3>Plan mode</h3>
-          <p>Design in <code>plan</code> mode, implement in <code>agent</code> mode with full tools and MCP.</p>
+          <p>Design in <code>plan</code> mode with read-oriented tools, then switch to <code>agent</code> to implement with full access and MCP.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/scheduler.md" target="_blank" rel="noopener noreferrer">
           <h3>Scheduler</h3>
@@ -135,7 +145,9 @@
         Full docs live in the
         <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">coddy-agent</a> repository:
         <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/install.md" target="_blank" rel="noopener noreferrer">install</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/editor-integration.md" target="_blank" rel="noopener noreferrer">editor integration</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">ACP protocol</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">rules</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/skills.md" target="_blank" rel="noopener noreferrer">skills</a>,
         <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">HTTP API</a>,
         <a href="https://github.com/coddy-project/coddy-agent/blob/main/DESIGN.md" target="_blank" rel="noopener noreferrer">UI design spec</a>.
       </p>
@@ -159,6 +171,47 @@
           Object.keys(panels).forEach(function (k) {
             panels[k].classList.toggle("active", k === id);
           });
+        });
+      });
+
+      function copyInstallText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text);
+        }
+        return new Promise(function (resolve, reject) {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          try {
+            document.execCommand("copy") ? resolve() : reject();
+          } catch (e) {
+            reject(e);
+          } finally {
+            document.body.removeChild(ta);
+          }
+        });
+      }
+
+      document.querySelectorAll(".install-copy").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var id = btn.getAttribute("data-copy-for");
+          var code = id ? document.getElementById(id) : null;
+          var text = code ? code.textContent.replace(/\s+$/, "") : "";
+          if (!text) return;
+          copyInstallText(text)
+            .then(function () {
+              btn.textContent = "Copied";
+              btn.classList.add("install-copy--done");
+              window.setTimeout(function () {
+                btn.textContent = "Copy";
+                btn.classList.remove("install-copy--done");
+              }, 900);
+            })
+            .catch(function () {});
         });
       });
     })();
