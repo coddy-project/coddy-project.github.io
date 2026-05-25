@@ -3,8 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Coddy Agent - distroless-friendly coding agent harness. One Go binary, ACP, web UI, on-prem models." />
-  <title>Coddy Agent</title>
+  <title>Coddy Agent - coding agent harness in one Go binary</title>
+  <meta name="description" content="Coddy Agent is a distroless-friendly coding harness: one Go binary, ACP, embedded UI, rules, skills, scheduler, and on-prem LLM support." />
+  <meta name="theme-color" content="#9333ea" />
+  <link rel="canonical" href="https://coddy-project.github.io/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Coddy Agent" />
+  <meta property="og:title" content="Coddy Agent - coding agent harness in one Go binary" />
+  <meta property="og:description" content="One static Go binary for software agents: ReAct, ACP, web UI, Cursor-style rules, Docker-ready, your API keys." />
+  <meta property="og:url" content="https://coddy-project.github.io/" />
+  <meta property="og:image" content="https://coddy-project.github.io/assets/og-image.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Coddy Agent - coding agent harness in one Go binary" />
+  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, ACP, web UI, rules, skills, on-prem models." />
+  <meta name="twitter:image" content="https://coddy-project.github.io/assets/og-image.png" />
+  <link rel="icon" href="assets/coddy-logo-wordmark.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/og-image.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -16,8 +33,8 @@
       <nav aria-label="Site">
         <a href="#install">Install</a>
         <a href="#features">Features</a>
-        <a href="https://github.com/coddy-project/coddy-agent">GitHub</a>
-        <a href="https://github.com/coddy-project/coddy-agent/releases">Releases</a>
+        <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Releases</a>
       </nav>
     </header>
 
@@ -35,7 +52,7 @@
       </p>
       <div class="cta-row">
         <a class="btn btn-primary" href="#install">Install</a>
-        <a class="btn btn-ghost" href="https://github.com/coddy-project/coddy-agent">Source code</a>
+        <a class="btn btn-ghost" href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">Source code</a>
       </div>
     </section>
 
@@ -60,7 +77,7 @@
       </div>
       <p class="hint" style="text-align: center;">
         Docker: <code>ghcr.io/coddy-project/coddy-agent</code> -
-        <a href="https://github.com/coddy-project/coddy-agent#docker">compose setup in the repo</a>
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">compose setup</a>
       </p>
     </section>
 
@@ -85,30 +102,30 @@
     <section id="features">
       <h2>Features</h2>
       <div class="features">
-        <article class="glass feature">
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/editor-integration.md" target="_blank" rel="noopener noreferrer">
           <h3>ACP server</h3>
           <p><code>coddy acp</code> over stdio for Cursor, Zed, and custom clients. Same sessions as the web UI when <code>CODDY_HOME</code> matches.</p>
-        </article>
-        <article class="glass feature">
+        </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">
           <h3>HTTP + UI</h3>
           <p>OpenAI-compatible API, embedded SPA, Swagger at <code>/docs/</code>. Primary surface: <code>POST /v1/responses</code>.</p>
-        </article>
-        <article class="glass feature">
+        </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">
           <h3>Rules &amp; skills</h3>
           <p>Auto-load <code>.cursor/rules</code>, <code>.coddy/rules</code>, and skill packs from <code>~/.cursor/skills</code> and project dirs.</p>
-        </article>
-        <article class="glass feature">
+        </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">
           <h3>Plan mode</h3>
           <p>Design in <code>plan</code> mode, implement in <code>agent</code> mode with full tools and MCP.</p>
-        </article>
-        <article class="glass feature">
+        </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/scheduler.md" target="_blank" rel="noopener noreferrer">
           <h3>Scheduler</h3>
           <p>Cron jobs with a UI drawer and agent tools for recurring tasks.</p>
-        </article>
-        <article class="glass feature">
+        </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/external/memory/README.md" target="_blank" rel="noopener noreferrer">
           <h3>Memory</h3>
           <p>Optional long-term memory copilot and session memory routes.</p>
-        </article>
+        </a>
       </div>
     </section>
 
@@ -116,17 +133,16 @@
       <h2>Documentation</h2>
       <p>
         Full docs live in the
-        <a href="https://github.com/coddy-project/coddy-agent">coddy-agent</a> repository:
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/install.md">install</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/editor-integration.md">editor integration</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md">HTTP API</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/DESIGN.md">UI design spec</a>.
+        <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">coddy-agent</a> repository:
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/install.md" target="_blank" rel="noopener noreferrer">install</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/editor-integration.md" target="_blank" rel="noopener noreferrer">editor integration</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">HTTP API</a>,
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/DESIGN.md" target="_blank" rel="noopener noreferrer">UI design spec</a>.
       </p>
     </section>
 
     <footer>
-      <p>MIT · <a href="https://github.com/coddy-project/coddy-agent">coddy-project/coddy-agent</a></p>
-      <p>Install scripts: <a href="install.sh">install.sh</a> · <a href="install.ps1">install.ps1</a></p>
+      <p>MIT · <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">coddy-project/coddy-agent</a></p>
     </footer>
   </div>
   <script>
@@ -146,11 +162,24 @@
         });
       });
       var host = location.hostname;
+      var origin = location.origin;
       if (host === "coddy.dev" || host === "www.coddy.dev") {
         document.getElementById("cmd-unix").textContent =
           "curl -fsSL https://coddy.dev/install.sh | bash";
         document.getElementById("cmd-win").textContent =
           "irm https://coddy.dev/install.ps1 | iex";
+        var canon = document.querySelector('link[rel="canonical"]');
+        if (canon) canon.href = origin + "/";
+        ["og:url", "og:image", "twitter:image"].forEach(function (name) {
+          var el = document.querySelector(
+            name.indexOf("twitter") === 0
+              ? 'meta[name="' + name + '"]'
+              : 'meta[property="' + name + '"]'
+          );
+          if (el && el.content.indexOf("coddy-project.github.io") !== -1) {
+            el.content = el.content.replace("https://coddy-project.github.io", origin);
+          }
+        });
       }
     })();
   </script>

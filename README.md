@@ -10,7 +10,7 @@ Planned custom domain: **coddy.dev** (add a `CNAME` file with that hostname when
 |------|------|
 | `index.html` | Landing page (Coddy UI tokens) |
 | `styles.css` | Shared styles |
-| `assets/` | Logo and screenshots |
+| `assets/` | Logo, `og-image.png` (1280x640 social preview for Open Graph), screenshots |
 | `install.sh` | Linux / macOS installer |
 | `install.ps1` | Windows installer |
 
@@ -30,4 +30,6 @@ curl -fsSL https://coddy-project.github.io/install.sh | bash
 irm https://coddy-project.github.io/install.ps1 | iex
 ```
 
-After **coddy.dev** CNAME is active, the same paths work on `https://coddy.dev/install.sh`.
+After **coddy.dev** CNAME is active, add `CNAME` with `coddy.dev` and update `canonical` / `og:*` URLs in `index.html` (or rely on the hostname script block).
+
+Social preview image: `assets/og-image.png` (from `coddy-logo-social-1280x640.png` in the agent repo).

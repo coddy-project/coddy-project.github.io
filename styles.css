@@ -223,6 +223,23 @@ section h2 {
   padding: 16px 18px;
 }
 
+a.feature-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+a.feature-link:hover {
+  text-decoration: none;
+  border-color: rgba(147, 51, 234, 0.35);
+  transform: translateY(-1px);
+}
+
+a.feature-link:hover h3 {
+  color: #e9d5ff;
+}
+
 .feature h3 {
   margin: 0 0 8px;
   font-size: 1rem;
