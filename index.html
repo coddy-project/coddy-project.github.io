@@ -24,7 +24,7 @@
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="styles.css?v=13" />
+  <link rel="stylesheet" href="styles.css?v=14" />
 </head>
 <body>
   <div class="nav-scrim" id="nav-scrim" hidden></div>
@@ -345,12 +345,16 @@
             var href = link.getAttribute("href") || "";
             if (href.charAt(0) === "#" && href.length > 1) {
               e.preventDefault();
-              var destTop = sectionScrollTop(href);
-              setNavOpen(false, destTop);
               if (history.pushState) {
                 history.pushState(null, "", href);
               } else {
                 location.hash = href;
+              }
+              if (isMobileNav()) {
+                setNavOpen(false, sectionScrollTop(href));
+              } else {
+                setNavOpen(false);
+                scrollToSection(href, navScrollBehavior());
               }
               return;
             }
