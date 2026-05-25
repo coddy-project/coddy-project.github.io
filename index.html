@@ -24,46 +24,58 @@
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
+  <div class="nav-scrim" id="nav-scrim" hidden></div>
+  <header class="site-header">
+    <div class="site-header-inner shell-width">
       <a class="logo" href="/" aria-label="Coddy agent home">
-        <img src="assets/coddy-logo-wordmark.svg" width="188" height="56" alt="Coddy agent" />
+        <img class="logo-wordmark" src="assets/coddy-logo-wordmark.svg" width="188" height="56" alt="Coddy agent" />
       </a>
-      <nav aria-label="Site">
-        <a href="#install">Install</a>
-        <a href="#features">Features</a>
-        <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+      <nav class="nav-drawer" id="site-nav" aria-label="Site menu" aria-hidden="true">
+        <a class="nav-drawer-link" href="#install">Install</a>
+        <a class="nav-drawer-link" href="#features">Features</a>
+        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Releases</a>
       </nav>
-    </header>
+      <button
+        type="button"
+        class="nav-burger"
+        aria-expanded="false"
+        aria-controls="site-nav"
+        aria-label="Open menu"
+      >
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+  <div class="shell">
 
     <section class="hero">
-      <div class="pills">
-        <span class="pill">Go binary</span>
-        <span class="pill">ACP harness</span>
-        <span class="pill">Distroless-ready</span>
-        <span class="pill">On-prem LLMs</span>
+      <div class="hero-skills" role="list" aria-label="Capabilities">
+        <span class="skill-chip" role="listitem">/go-binary</span>
+        <span class="skill-chip" role="listitem">/acp-harness</span>
+        <span class="skill-chip" role="listitem">/distroless-ready</span>
+        <span class="skill-chip" role="listitem">/on-prem-llms</span>
       </div>
       <h1>Run a coding agent from one static binary</h1>
       <p class="tagline">
         Coddy is a harness for software work: ReAct loop, filesystem and shell tools, MCP, project rules,
         skills, optional browser UI, scheduler, and long-term memory. Built for containers, IDE clients, and your own API keys.
       </p>
-      <div class="cta-row">
-        <a class="btn btn-primary" href="#install">Install</a>
-        <a class="btn btn-ghost" href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">Source code</a>
-      </div>
     </section>
 
     <section id="install">
       <div class="glass install-block">
-        <h2>Quick install</h2>
-        <div class="tabs" role="tablist">
-          <button type="button" class="tab active" data-tab="unix" role="tab" aria-selected="true">Linux / macOS</button>
-          <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false">Windows</button>
+        <div class="install-block-head">
+          <h2>Quick install</h2>
+          <div class="tabs" role="tablist" aria-label="Install platform">
+            <button type="button" class="tab active" data-tab="unix" role="tab" aria-selected="true">Linux / macOS</button>
+            <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false">Windows</button>
+          </div>
         </div>
         <div class="code-wrap active" id="panel-unix" role="tabpanel">
           <div class="install-code">
@@ -194,6 +206,177 @@
           }
         });
       }
+
+      var burger = document.querySelector(".nav-burger");
+      var drawer = document.getElementById("site-nav");
+      var scrim = document.getElementById("nav-scrim");
+      function isMobileNav() {
+        return window.matchMedia("(max-width: 720px)").matches;
+      }
+
+      function scrollHeaderOffset() {
+        if (!isMobileNav()) return 0;
+        var header = document.querySelector(".site-header");
+        return header ? Math.ceil(header.getBoundingClientRect().height) + 8 : 56;
+      }
+
+      function sectionScrollTop(hash) {
+        var id = (hash || "").replace(/^#/, "");
+        if (!id) return null;
+        var target = document.getElementById(id);
+        if (!target) return null;
+        return Math.max(0, target.getBoundingClientRect().top + readScrollY() - scrollHeaderOffset());
+      }
+
+      function navScrollBehavior() {
+        return isMobileNav() ? "instant" : "smooth";
+      }
+
+      function scrollToSection(hash, behavior) {
+        var top = sectionScrollTop(hash);
+        if (top == null) return;
+        window.scrollTo({ top: top, left: 0, behavior: behavior || navScrollBehavior() });
+      }
+
+      var navScrollLockY = 0;
+
+      function readScrollY() {
+        return window.scrollY || window.pageYOffset || 0;
+      }
+
+      function syncSiteHeaderOffset() {
+        var header = document.querySelector(".site-header");
+        if (!header) return;
+        if (!isMobileNav()) {
+          document.documentElement.style.removeProperty("--site-header-offset");
+          return;
+        }
+        document.documentElement.style.setProperty(
+          "--site-header-offset",
+          Math.ceil(header.getBoundingClientRect().height) + "px"
+        );
+      }
+
+      function captureNavScrollY() {
+        if (!isMobileNav()) return;
+        navScrollLockY = readScrollY();
+      }
+
+      function lockPageScroll(lock) {
+        if (!isMobileNav()) return;
+        var root = document.documentElement;
+        if (lock) {
+          navScrollLockY = readScrollY();
+          root.classList.add("nav-scroll-lock");
+        } else {
+          root.classList.remove("nav-scroll-lock");
+        }
+      }
+
+      function unlockPageScroll(scrollTop, behavior) {
+        if (!isMobileNav()) return;
+        var root = document.documentElement;
+        root.classList.remove("nav-scroll-lock");
+        document.body.classList.remove("nav-open");
+        window.scrollTo({ top: scrollTop, left: 0, behavior: behavior || "auto" });
+      }
+
+      function setNavOpen(open, scrollTarget) {
+        if (!burger || !drawer || !scrim) return;
+        if (!isMobileNav()) {
+          drawer.classList.remove("is-open");
+          scrim.classList.remove("is-open");
+          scrim.hidden = true;
+          document.body.classList.remove("nav-open");
+          document.documentElement.classList.remove("nav-scroll-lock");
+          burger.setAttribute("aria-expanded", "false");
+          burger.setAttribute("aria-label", "Open menu");
+          drawer.setAttribute("aria-hidden", "false");
+          return;
+        }
+        burger.setAttribute("aria-expanded", open ? "true" : "false");
+        burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+        if (open) {
+          captureNavScrollY();
+          lockPageScroll(true);
+          document.body.classList.add("nav-open");
+        } else {
+          var hadLock = document.documentElement.classList.contains("nav-scroll-lock");
+          document.body.classList.remove("nav-open");
+          drawer.classList.remove("is-open");
+          drawer.setAttribute("aria-hidden", "true");
+          scrim.classList.remove("is-open");
+          scrim.hidden = true;
+          if (hadLock) {
+            var unlockY = typeof scrollTarget === "number" ? scrollTarget : navScrollLockY;
+            unlockPageScroll(unlockY, typeof scrollTarget === "number" ? navScrollBehavior() : "auto");
+          } else if (typeof scrollTarget === "number") {
+            window.scrollTo({ top: scrollTarget, left: 0, behavior: navScrollBehavior() });
+          }
+          requestAnimationFrame(syncSiteHeaderOffset);
+          return;
+        }
+        drawer.classList.toggle("is-open", open);
+        drawer.setAttribute("aria-hidden", open ? "false" : "true");
+        scrim.classList.toggle("is-open", open);
+        scrim.hidden = !open;
+        requestAnimationFrame(syncSiteHeaderOffset);
+      }
+
+      syncSiteHeaderOffset();
+      window.addEventListener("resize", syncSiteHeaderOffset);
+
+      if (burger && drawer && scrim) {
+        setNavOpen(false);
+        burger.addEventListener("pointerdown", captureNavScrollY, { passive: true });
+        burger.addEventListener("touchstart", captureNavScrollY, { passive: true });
+        burger.addEventListener("mousedown", function (e) {
+          if (!isMobileNav()) return;
+          e.preventDefault();
+        });
+        burger.addEventListener("click", function () {
+          setNavOpen(!drawer.classList.contains("is-open"));
+        });
+        scrim.addEventListener("click", function () {
+          setNavOpen(false);
+        });
+        drawer.querySelectorAll(".nav-drawer-link").forEach(function (link) {
+          link.addEventListener("click", function (e) {
+            var href = link.getAttribute("href") || "";
+            if (href.charAt(0) === "#" && href.length > 1) {
+              e.preventDefault();
+              var destTop = sectionScrollTop(href);
+              setNavOpen(false, destTop);
+              if (history.pushState) {
+                history.pushState(null, "", href);
+              } else {
+                location.hash = href;
+              }
+              return;
+            }
+            setNavOpen(false);
+          });
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && drawer.classList.contains("is-open")) {
+            setNavOpen(false);
+          }
+        });
+        window.addEventListener("resize", function () {
+          setNavOpen(false);
+          syncSiteHeaderOffset();
+        });
+      }
+
+      if (location.hash) {
+        window.requestAnimationFrame(function () {
+          scrollToSection(location.hash, "auto");
+        });
+      }
+
+      window.addEventListener("hashchange", function () {
+        scrollToSection(location.hash, "smooth");
+      });
 
       document.querySelectorAll(".install-copy").forEach(function (btn) {
         btn.addEventListener("click", function () {
