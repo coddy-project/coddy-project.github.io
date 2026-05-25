@@ -259,9 +259,21 @@ section h2 {
 }
 
 .features {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+}
+
+.features-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .features-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .feature {

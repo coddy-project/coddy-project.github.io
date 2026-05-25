@@ -20,8 +20,10 @@
   <meta name="twitter:title" content="Coddy Agent - coding agent harness in one Go binary" />
   <meta name="twitter:description" content="One static Go binary for software agents: ReAct, ACP, web UI, rules, skills, on-prem models." />
   <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
-  <link rel="icon" href="assets/coddy-logo-wordmark.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="assets/og-image.png" />
+  <link rel="icon" href="assets/coddy-favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="assets/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -109,16 +111,16 @@
       <h2>Features</h2>
       <div class="features">
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">
-          <h3>ACP server</h3>
-          <p><code>coddy acp</code> over stdio. JSON-RPC sessions, modes, permissions, and streaming updates for IDE clients and scripts.</p>
+          <h3>ACP</h3>
+          <p><code>coddy acp</code> over stdio. Sessions, modes, permissions, streaming updates for IDE clients and scripts.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">
-          <h3>HTTP API</h3>
-          <p>OpenAI-compatible gateway on <code>coddy http</code>. <code>POST /v1/responses</code>, chat completions, models, and Swagger at <code>/docs/</code>.</p>
+          <h3>HTTP</h3>
+          <p>OpenAI-compatible gateway on <code>coddy http</code>. <code>POST /v1/responses</code>, models, Swagger at <code>/docs/</code>.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md" target="_blank" rel="noopener noreferrer">
-          <h3>Web UI</h3>
-          <p>Embedded SPA at <code>/</code> when built with <code>http,ui</code>. Sessions, streaming chat, plan documents, scheduler drawer, settings.</p>
+          <h3>UI</h3>
+          <p>Embedded SPA at <code>/</code> with <code>http,ui</code>. Chat, sessions, plan documents, scheduler drawer, settings.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">
           <h3>Rules</h3>
@@ -128,9 +130,13 @@
           <h3>Skills</h3>
           <p>Slash commands from <code>SKILL.md</code> packs in <code>skills.dirs</code>, including <code>~/.cursor/skills</code> and project <code>.skills</code>.</p>
         </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/README.md#plan-mode" target="_blank" rel="noopener noreferrer">
-          <h3>Plan mode</h3>
-          <p>Design in <code>plan</code> mode with read-oriented tools, then switch to <code>agent</code> to implement with full access and MCP.</p>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/mcp-integration.md" target="_blank" rel="noopener noreferrer">
+          <h3>MCP</h3>
+          <p>Connect MCP servers from config or per session. Tool definitions merge into the agent and plan loops.</p>
+        </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/react-agent.md" target="_blank" rel="noopener noreferrer">
+          <h3>ReAct</h3>
+          <p>Reasoning, tool calls, and observations in a loop. Built-in tools plus MCP, with <code>agent</code> and <code>plan</code> modes.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/scheduler.md" target="_blank" rel="noopener noreferrer">
           <h3>Scheduler</h3>
@@ -142,25 +148,6 @@
         </a>
       </div>
     </section>
-
-    <section id="docs">
-      <h2>Documentation</h2>
-      <p>
-        Full docs live in the
-        <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">coddy-agent</a> repository:
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/install.md" target="_blank" rel="noopener noreferrer">install</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">ACP protocol</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">rules</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/skills.md" target="_blank" rel="noopener noreferrer">skills</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">HTTP API</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md" target="_blank" rel="noopener noreferrer">Web UI</a>,
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/DESIGN.md" target="_blank" rel="noopener noreferrer">UI design</a>.
-      </p>
-    </section>
-
-    <footer>
-      <p>MIT · <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">coddy-project/coddy-agent</a></p>
-    </footer>
   </div>
   <script>
     (function () {
