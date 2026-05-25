@@ -221,35 +221,61 @@ section h2 {
 
 .feature {
   padding: 16px 18px;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 a.feature-link {
   display: block;
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
-a.feature-link:hover {
+a.feature-link:hover,
+a.feature-link:focus-visible {
   text-decoration: none;
-  border-color: rgba(147, 51, 234, 0.35);
-  transform: translateY(-1px);
+  background: rgba(45, 38, 58, 0.88);
+  border-color: rgba(147, 51, 234, 0.42);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(147, 51, 234, 0.12);
+  transform: translateY(-2px);
 }
 
-a.feature-link:hover h3 {
-  color: #e9d5ff;
+a.feature-link:hover h3,
+a.feature-link:focus-visible h3 {
+  color: #f3e8ff;
+}
+
+a.feature-link:hover p,
+a.feature-link:focus-visible p {
+  color: #d4d4d8;
+}
+
+a.feature-link:hover code,
+a.feature-link:focus-visible code {
+  color: #f5d0fe;
 }
 
 .feature h3 {
   margin: 0 0 8px;
   font-size: 1rem;
   color: var(--accent-soft);
+  transition: color 0.18s ease;
 }
 
 .feature p {
   margin: 0;
   font-size: 0.9rem;
   color: var(--muted);
+  transition: color 0.18s ease;
+}
+
+.feature code {
+  transition: color 0.18s ease;
 }
 
 .pills {
