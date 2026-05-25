@@ -260,8 +260,14 @@ section h2 {
 
 .features {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .features {
+    grid-template-columns: 1fr;
+  }
 }
 
 .feature {
@@ -381,7 +387,6 @@ a.feature-link:focus-visible code {
 footer {
   margin-top: 56px;
   padding-top: 24px;
-  border-top: 1px solid var(--glass-border);
   text-align: center;
   font-size: 0.85rem;
   color: var(--muted);
