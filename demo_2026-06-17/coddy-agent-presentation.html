@@ -280,13 +280,12 @@
     </div>
     <div style="margin-top:20px;">
       <div style="font-size:42px;color:var(--text);font-weight:600;">Павел Рыков</div>
-      <div style="font-size:32px;color:var(--muted);margin-top:12px;">aka <span style="color:var(--accent2);font-weight:700;">Павел Злой</span></div>
+      <div style="font-size:32px;color:var(--muted);margin-top:12px;">aka <span style="color:var(--accent2);font-weight:700;">Pavel Zloi</span></div>
     </div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:20px;">
-      <span class="badge">go 1.25</span>
       <span class="badge">single binary</span>
-      <span class="badge">distroless ready</span>
-      <span class="badge">ACP harness</span>
+      <span class="badge">distroless harness</span>
+      <span class="badge">ACP, OpenAI API</span>
       <span class="badge">MIT</span>
     </div>
   </div>
@@ -322,21 +321,21 @@
       <span class="ico">📦</span>
       <div class="ptxt">
         <strong>Тяжёлые рантаймы не влезают в distroless</strong>
-        <span>Claude Code = Node.js. В scratch или distroless образ не запустишь. Container fleets ждут.</span>
+        <span>Claude Code = Node.js. В scratch или distroless образ не запустишь. Рой (swarm) агентов ждут.</span>
       </div>
     </li>
     <li>
       <span class="ico">🔌</span>
       <div class="ptxt">
         <strong>Нет единого backend для всех клиентов</strong>
-        <span>Cursor, скрипты, CI-пайплайн, Telegram-бот — у каждого отдельная история, нет общего стейта.</span>
+        <span>Cursor, ClaudeCode, Codex, OpenClaw, CI-пайплайн, Telegram-бот — у каждого отдельная история, нет общего стейта.</span>
       </div>
     </li>
     <li>
       <span class="ico">🦙</span>
       <div class="ptxt">
         <strong>On-premise модели остаются за бортом</strong>
-        <span>Ollama, DeepSeek, Qwen локально — нормального AI agent harness для них нет.</span>
+        <span>llama.cpp, vLLM, Ollama, DeepSeek, Qwen локально — универсального harness для них нет.</span>
       </div>
     </li>
   </ul>
@@ -353,15 +352,19 @@
   <div class="feature-grid" style="margin-top:36px;">
     <div class="card">
       <div class="ctitle">🐋&nbsp; Distroless-ready</div>
-      <div class="cdesc">Работает в scratch, distroless/static, read-only rootfs. Идеально для container fleets.</div>
+      <div class="cdesc">Может работать в scratch образе и даже в read-only rootfs. Идеально для роя агентов.</div>
     </div>
     <div class="card">
-      <div class="ctitle">🔌&nbsp; ACP harness</div>
-      <div class="cdesc">Agent Control Protocol — протокол-первый дизайн. Один backend для Cursor, Zed, HTTP, мессенджеров.</div>
+      <div class="ctitle">🔌&nbsp; ACP</div>
+      <div class="cdesc">Agent Control Protocol — общий backend для VS Code, Obsidian, Zed и т.д.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🔌&nbsp; OpenAI API</div>
+      <div class="cdesc">Возможность интеграции с любым внешним приложение через OpenAI-совместимое API.</div>
     </div>
     <div class="card">
       <div class="ctitle">🤖&nbsp; Multi-provider LLM</div>
-      <div class="cdesc">OpenAI, Anthropic, Ollama, любой OpenAI-compatible API. Никакого vendor lock-in.</div>
+      <div class="cdesc">OpenAI, Anthropic, Ollama, любой OpenAI-compatible API. Никакого вендорлока.</div>
     </div>
     <div class="card">
       <div class="ctitle">🔒&nbsp; On-premise first</div>
@@ -377,7 +380,7 @@
   <h2 class="accent-line">Архитектура</h2>
   <div class="arch">
     <div class="arch-row">
-      <div class="an cl">Cursor / Zed</div>
+      <div class="an cl">Obsidian / Zed</div>
       <div class="an cl">Browser UI</div>
       <div class="an cl">Telegram Bot</div>
       <div class="an cl">Scripts / CI</div>
@@ -394,14 +397,14 @@
     </div>
     <div class="arch-sep">↓</div>
     <div class="arch-row">
-      <div class="an re">⚡ &nbsp;ReAct Loop&nbsp; · &nbsp;THINK → ACT → OBSERVE → …</div>
+      <div class="an re">⚡ &nbsp;ReAct Loop&nbsp; · &nbsp;THINK → ACT → OBSERVE → RETRY</div>
     </div>
     <div class="arch-sep">↓</div>
     <div class="arch-row">
-      <div class="an pr">LLM Provider<small>OpenAI · Anthropic · Ollama</small></div>
+      <div class="an pr">LLM Provider<small>OpenAI · Anthropic · vLLM</small></div>
       <div class="an pr">Tools (30+)<small>FS · Shell · SSH · Web</small></div>
       <div class="an pr">MCP Servers<small>External tools</small></div>
-      <div class="an pr">Memory · Scheduler<small>Optional modules</small></div>
+      <div class="an pr">Memory Copilot · Cron-like Scheduler<small>Optional modules</small></div>
     </div>
   </div>
 </section>
@@ -414,7 +417,7 @@
   <div class="feature-grid">
     <div class="card">
       <div class="ctitle">🔧&nbsp; 30+ инструментов</div>
-      <div class="cdesc">FS-операции, run_command, SSH через чистый Go (без внешних бинарников), веб-поиск через DuckDuckGo + readability.</div>
+      <div class="cdesc">FS-операции, run_command, SSH через чистый Go (без внешних зависимостей), веб-поиск через Google и DuckDuckGo + readability.</div>
     </div>
     <div class="card">
       <div class="ctitle">⚡&nbsp; Skills — slash-команды</div>
@@ -422,18 +425,18 @@
     </div>
     <div class="card">
       <div class="ctitle">📋&nbsp; Rules — правила проекта</div>
-      <div class="cdesc">Автоматически читает .cursor/rules, .claude/rules, .coddy/rules. Один раз написал — работает везде.</div>
+      <div class="cdesc">Автоматически читает .cursor/rules, .claude/rules, .codex/rules/, .coddy/rules. Один раз написал — работает везде.</div>
     </div>
     <div class="card">
       <div class="ctitle">🧠&nbsp; Long-term memory</div>
-      <div class="cdesc">Глобальная и project-local память между сессиями. Recall и persist пассы вокруг основного LLM.</div>
+      <div class="cdesc">Глобальная и project-local память между сессиями. Recall и persist вне основного LLM.</div>
     </div>
     <div class="card">
       <div class="ctitle">⏰&nbsp; Cron scheduler</div>
-      <div class="cdesc">Запуск агента по расписанию. Markdown-формат заданий. Управление прямо в веб-UI.</div>
+      <div class="cdesc">Запуск задач агента по расписанию. Markdown-формат заданий. Управление прямо в веб-UI.</div>
     </div>
     <div class="card">
-      <div class="ctitle">🔌&nbsp; MCP серверы</div>
+      <div class="ctitle">🔌&nbsp; MCP-серверы</div>
       <div class="cdesc">Подключение любых MCP — GitHub, Filesystem, БД. Инструменты автоматически в ReAct loop.</div>
     </div>
   </div>
@@ -475,14 +478,14 @@
     <div class="mode-cmd">coddy acp</div>
     <div>
       <div class="mode-title">ACP · JSON-RPC 2.0 over stdio</div>
-      <div class="mode-desc">Cursor и Zed как external agent. Streaming, permission prompts, восстановление сессий.</div>
+      <div class="mode-desc">Obsidian или Zed как external agent. Streaming, permission prompts, восстановление сессий.</div>
     </div>
   </div>
   <div class="mode-card">
     <div class="mode-cmd">coddy http</div>
     <div>
       <div class="mode-title">OpenAI-compatible API + встроенная SPA</div>
-      <div class="mode-desc"><strong style="color:var(--accent2);">POST /v1/responses</strong> — любой OpenAI-клиент работает с Coddy как бэкендом. n8n, Open WebUI, ваш Python-скрипт.</div>
+      <div class="mode-desc"><strong style="color:var(--accent2);">POST /v1/responses</strong> — любой OpenAI-клиент работает с Coddy как бэкендом. n8n, Open WebUI или ваш Python-скрипт.</div>
     </div>
   </div>
   <div class="mode-card">
@@ -505,35 +508,35 @@
   <h2 class="accent-line">Результаты, уроки, планы</h2>
   <div class="two-col">
     <div>
-      <h3 style="color:var(--green);">✅&nbsp; Результаты</h3>
+      <h3 style="color:var(--green);">Результаты</h3>
       <ul class="alist">
-        <li>35 МБ binary запускается в scratch образе</li>
-        <li>GPT-4o, DeepSeek, Qwen через Ollama — одна конфигурация</li>
-        <li>Cursor + Browser + Telegram — одна история сессий</li>
-        <li>Rules из .cursor/rules работают без изменений</li>
+        <li>35 МБ binary запускается в scratch docker-образе</li>
+        <li>Opus-4.8, GPT-5.5, DeepSeek-4-Flash, Qwen-3.6-35b через Ollama — для всего одна конфигурация</li>
+        <li>VS Code + Obosidian + браузер + Telegram — общее хранилище со всей историей всех сессий</li>
+        <li>Правила проекта из .cursor/rules/ работают без изменений из коробки</li>
         <li>SSH на удалённые хосты без внешних бинарников</li>
       </ul>
-      <h3 style="color:var(--amber);margin-top:30px;">💡&nbsp; Уроки</h3>
+      <h3 style="color:var(--amber);margin-top:30px;">Уроки</h3>
       <ul class="alist">
         <li>Protocol-first дизайн — правильный выбор с дня 1</li>
-        <li>Go single binary = идеальный harness для container-first</li>
-        <li>Build tags — элегантное управление feature set</li>
+        <li>Go single binary - идеальный harness для container-first</li>
+        <li>Build tags — автоматическое проставление тегов при мердже PR</li>
       </ul>
     </div>
     <div>
-      <h3 style="color:var(--accent2);">🚀&nbsp; Планы</h3>
+      <h3 style="color:var(--accent2);">Планы</h3>
       <ul class="alist">
-        <li>Discord и Slack адаптеры через Gateway interface</li>
-        <li>Расширение ecosystem skills и rules</li>
-        <li>Vector search в long-term memory</li>
+        <li>Discord и Slack адаптеры через Gateway интерфейс</li>
+        <li>Расширение экосистемы skills</li>
+        <li>Векторный поиск в Memory Copilot</li>
         <li>Улучшение мобильного UI и PWA</li>
-        <li>Готовые образы для container fleet деплоя</li>
+        <li>Готовые образы для agent swarm деплоя</li>
       </ul>
       <div class="hl" style="margin-top:30px;font-size:26px;text-align:left;">
         Целевая ниша:<br>
-        <span style="color:var(--accent2);">on-premise enterprise</span>,
-        <span style="color:var(--accent2);">container fleets</span>,
-        <span style="color:var(--accent2);">CI/CD pipelines</span>
+        <span style="color:var(--accent2);">on-premise энтерпрайз</span>,
+        <span style="color:var(--accent2);">agents swarm (container fleet)</span>,
+        <span style="color:var(--accent2);">CI/CD пайпланы</span>
       </div>
     </div>
   </div>
