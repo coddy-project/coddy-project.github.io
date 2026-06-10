@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coddy Agent — Демо день 2026</title>
+  <link rel="stylesheet" href="assets/reveal.css">
+  <style>
+    :root {
+      --bg:      #0e0e12;
+      --bg2:     #1a1a22;
+      --bg3:     #252530;
+      --accent:  #9333ea;
+      --accent2: #a855f7;
+      --text:    #f0f0f5;
+      --muted:   #b0b0bd;
+      --dim:     #8a8a98;
+      --green:   #22c55e;
+      --amber:   #f59e0b;
+      --blue:    #3b82f6;
+    }
+
+    /* ── Base — все размеры в px от 1920x1080 канваса Reveal ── */
+    .reveal-viewport { background: var(--bg); }
+    .reveal {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+      font-size: 36px;
+    }
+    .reveal .slides {
+      text-align: left;
+    }
+    .reveal .slides section {
+      padding: 30px 0;
+      text-align: left;
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      color: var(--text);
+      text-transform: none;
+      letter-spacing: -0.02em;
+      margin: 0 0 30px;
+      line-height: 1.15;
+    }
+    .reveal h1  { font-size: 96px; font-weight: 800; }
+    .reveal h2  { font-size: 72px; font-weight: 700; }
+    .reveal h3  { font-size: 40px; font-weight: 700; }
+    .reveal p   { margin: 12px 0; line-height: 1.4; }
+    .reveal ul  { list-style: none; padding: 0; margin: 0; }
+    .reveal img { margin: 0; }
+    .reveal strong { color: var(--text); }
+
+    /* ── Accent underline heading ── */
+    .accent-line {
+      display: inline-block;
+      border-bottom: 6px solid var(--accent);
+      padding-bottom: 16px;
+      margin-bottom: 50px !important;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      background: var(--bg3);
+      border: 2px solid rgba(147,51,234,0.6);
+      color: var(--accent2);
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 26px;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      vertical-align: middle;
+      margin: 0 6px;
+      font-weight: 600;
+    }
+
+    /* ── Problem list — крупные карточки ── */
+    .problem-list {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .problem-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 30px;
+      background: var(--bg2);
+      border-left: 8px solid var(--accent);
+      padding: 28px 40px;
+      border-radius: 0 14px 14px 0;
+    }
+    .problem-list .ico { font-size: 64px; flex-shrink: 0; line-height: 1; }
+    .problem-list .ptxt strong { font-size: 38px; color: var(--text); display: block; margin-bottom: 8px; }
+    .problem-list .ptxt span   { font-size: 28px; color: var(--muted); line-height: 1.45; }
+
+    /* ── Feature cards ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .card {
+      background: var(--bg2);
+      border: 1px solid rgba(147,51,234,0.25);
+      border-radius: 14px;
+      padding: 28px 32px;
+    }
+    .card .ctitle {
+      color: var(--accent2);
+      font-weight: 700;
+      font-size: 32px;
+      margin-bottom: 14px;
+    }
+    .card .cdesc {
+      color: var(--muted);
+      font-size: 24px;
+      line-height: 1.5;
+    }
+
+    /* ── Architecture diagram ── */
+    .arch {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      width: 100%;
+    }
+    .arch-row {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+    .an {
+      border-radius: 12px;
+      padding: 22px 24px;
+      text-align: center;
+      flex: 1;
+      border: 2px solid var(--bg3);
+      background: var(--bg2);
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .an small {
+      font-size: 20px;
+      color: var(--muted);
+      display: block;
+      margin-top: 6px;
+      font-weight: 400;
+    }
+    .an.cl  { border-color: var(--blue);    color: var(--blue);    }
+    .an.tr  { border-color: var(--accent);  color: var(--accent2); font-family: 'JetBrains Mono', monospace; }
+    .an.co  { border-color: var(--green);   color: var(--green);   flex: 4; }
+    .an.re  { background: var(--accent);    color: #fff; font-weight: 800; flex: 4; border: none; font-size: 32px; }
+    .an.pr  { border-color: var(--bg3);     color: var(--muted);   }
+    .arch-sep { text-align: center; color: var(--accent); font-size: 32px; line-height: 1; }
+    .arch-lbl { text-align: center; color: var(--dim); font-size: 22px; letter-spacing: 0.4em; }
+
+    /* ── Mode cards ── */
+    .mode-card {
+      background: var(--bg2);
+      border: 1px solid rgba(147,51,234,0.2);
+      border-radius: 14px;
+      padding: 26px 36px;
+      margin: 18px 0;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    .mode-cmd {
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      background: var(--bg3);
+      color: var(--accent2);
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 30px;
+      flex-shrink: 0;
+      min-width: 320px;
+      text-align: center;
+      font-weight: 700;
+    }
+    .mode-title { color: var(--text); font-weight: 700; font-size: 32px; }
+    .mode-desc  { color: var(--muted); font-size: 24px; margin-top: 8px; line-height: 1.45; }
+
+    /* ── Screenshot — glow rim so dark UI screenshots don't blend into dark slide bg ── */
+    .ss {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid rgba(147,51,234,0.45);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 0 60px rgba(147,51,234,0.25),
+        0 20px 60px rgba(0,0,0,0.7);
+    }
+    .ss img { width: 100%; display: block; }
+    .ss-cap { font-size: 22px; color: var(--dim); text-align: center; margin-top: 14px; }
+
+    /* ── Two-column ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* ── Highlight ── */
+    .hl {
+      background: linear-gradient(135deg, rgba(147,51,234,0.18), rgba(124,58,237,0.05));
+      border: 2px solid rgba(147,51,234,0.5);
+      border-radius: 16px;
+      padding: 26px 40px;
+      margin: 20px 0;
+      font-size: 36px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* ── Arrow list ── */
+    .alist li {
+      display: flex;
+      gap: 16px;
+      padding: 10px 0;
+      font-size: 26px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .alist li::before {
+      content: "→";
+      color: var(--accent2);
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+
+    /* ── QR section ── */
+    .qr-row {
+      display: flex;
+      gap: 100px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 30px;
+    }
+    .qr-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    .qr-frame {
+      background: #fff;
+      border-radius: 18px;
+      padding: 20px;
+    }
+    .qr-frame img { width: 340px; height: 340px; display: block; }
+    .qr-lbl  { color: var(--text);   font-size: 30px; font-weight: 700; margin-top: 8px; }
+    .qr-link { color: var(--accent2); font-size: 24px; font-family: 'JetBrains Mono', monospace; }
+    .qr-divider {
+      width: 2px;
+      background: rgba(147,51,234,0.25);
+      align-self: stretch;
+      margin: 20px 0;
+    }
+
+    /* ── Reveal overrides ── */
+    .reveal .progress              { background: var(--bg3); height: 6px; }
+    .reveal .progress span         { background: var(--accent); }
+    .reveal .controls              { color: var(--accent); }
+    .reveal .controls button       { color: var(--accent); }
+    .reveal .slide-number          { background: transparent; color: var(--dim); font-size: 18px; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 1 — Титул
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:40px;">
+    <img src="assets/coddy-logo-wordmark.svg" alt="Coddy Agent" style="height:180px;">
+    <div style="width:120px;height:6px;background:var(--accent);border-radius:3px;"></div>
+    <div style="font-size:54px;color:var(--muted);font-weight:400;letter-spacing:0.01em;">
+      Distroless harness для on-premise AI
+    </div>
+    <div style="margin-top:20px;">
+      <div style="font-size:42px;color:var(--text);font-weight:600;">Павел Рыков</div>
+      <div style="font-size:32px;color:var(--muted);margin-top:12px;">aka <span style="color:var(--accent2);font-weight:700;">Павел Злой</span></div>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:20px;">
+      <span class="badge">go 1.25</span>
+      <span class="badge">single binary</span>
+      <span class="badge">distroless ready</span>
+      <span class="badge">ACP harness</span>
+      <span class="badge">MIT</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 2 — UI первый взгляд
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line" style="display:block;text-align:center;width:fit-content;margin:0 auto 30px;">Смотрите, как это выглядит</h2>
+  <div class="ss" style="max-width:1380px;margin:0 auto;">
+    <img src="assets/live-start.png" alt="Coddy Agent UI — главный экран">
+  </div>
+  <p class="ss-cap" style="margin-top:20px;">
+    Встроенный веб-интерфейс · запущен локально · on-premise
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 3 — Проблема
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line">Проблема</h2>
+  <ul class="problem-list">
+    <li>
+      <span class="ico">☁️</span>
+      <div class="ptxt">
+        <strong>Облако = чужой компьютер</strong>
+        <span>Код улетает во внешние API. Compliance, NDA, корпоративная безопасность — несовместимо с cloud-first агентами.</span>
+      </div>
+    </li>
+    <li>
+      <span class="ico">📦</span>
+      <div class="ptxt">
+        <strong>Тяжёлые рантаймы не влезают в distroless</strong>
+        <span>Claude Code = Node.js. В scratch или distroless образ не запустишь. Container fleets ждут.</span>
+      </div>
+    </li>
+    <li>
+      <span class="ico">🔌</span>
+      <div class="ptxt">
+        <strong>Нет единого backend для всех клиентов</strong>
+        <span>Cursor, скрипты, CI-пайплайн, Telegram-бот — у каждого отдельная история, нет общего стейта.</span>
+      </div>
+    </li>
+    <li>
+      <span class="ico">🦙</span>
+      <div class="ptxt">
+        <strong>On-premise модели остаются за бортом</strong>
+        <span>Ollama, DeepSeek, Qwen локально — нормального AI agent harness для них нет.</span>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 4 — Решение
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line">Решение — Coddy Agent</h2>
+  <div class="hl">
+    Один статический Go-бинарник.&nbsp;&nbsp; <span style="color:var(--accent2);">35 МБ.</span>&nbsp;&nbsp; Без рантайма.
+  </div>
+  <div class="feature-grid" style="margin-top:36px;">
+    <div class="card">
+      <div class="ctitle">🐋&nbsp; Distroless-ready</div>
+      <div class="cdesc">Работает в scratch, distroless/static, read-only rootfs. Идеально для container fleets.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🔌&nbsp; ACP harness</div>
+      <div class="cdesc">Agent Control Protocol — протокол-первый дизайн. Один backend для Cursor, Zed, HTTP, мессенджеров.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🤖&nbsp; Multi-provider LLM</div>
+      <div class="cdesc">OpenAI, Anthropic, Ollama, любой OpenAI-compatible API. Никакого vendor lock-in.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🔒&nbsp; On-premise first</div>
+      <div class="cdesc">Данные не покидают ваш контур. Docker Compose — 2 строки. Или просто запустите бинарник.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 5 — Архитектура
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line">Архитектура</h2>
+  <div class="arch">
+    <div class="arch-row">
+      <div class="an cl">Cursor / Zed</div>
+      <div class="an cl">Browser UI</div>
+      <div class="an cl">Telegram Bot</div>
+      <div class="an cl">Scripts / CI</div>
+    </div>
+    <div class="arch-lbl">↕  ↕  ↕  ↕</div>
+    <div class="arch-row">
+      <div class="an tr">coddy acp<small>JSON-RPC 2.0 · stdio</small></div>
+      <div class="an tr">coddy http<small>OpenAI-compatible REST</small></div>
+      <div class="an tr">coddy gateway<small>Telegram · Discord · …</small></div>
+    </div>
+    <div class="arch-sep">↓</div>
+    <div class="arch-row">
+      <div class="an co">Session Manager<small>history · rules · skills · mode · persistence</small></div>
+    </div>
+    <div class="arch-sep">↓</div>
+    <div class="arch-row">
+      <div class="an re">⚡ &nbsp;ReAct Loop&nbsp; · &nbsp;THINK → ACT → OBSERVE → …</div>
+    </div>
+    <div class="arch-sep">↓</div>
+    <div class="arch-row">
+      <div class="an pr">LLM Provider<small>OpenAI · Anthropic · Ollama</small></div>
+      <div class="an pr">Tools (30+)<small>FS · Shell · SSH · Web</small></div>
+      <div class="an pr">MCP Servers<small>External tools</small></div>
+      <div class="an pr">Memory · Scheduler<small>Optional modules</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 6 — Возможности
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line">Возможности</h2>
+  <div class="feature-grid">
+    <div class="card">
+      <div class="ctitle">🔧&nbsp; 30+ инструментов</div>
+      <div class="cdesc">FS-операции, run_command, SSH через чистый Go (без внешних бинарников), веб-поиск через DuckDuckGo + readability.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">⚡&nbsp; Skills — slash-команды</div>
+      <div class="cdesc">SKILL.md → .coddy/skills → готовая /команда. Переиспользуемые рабочие процессы без кода.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">📋&nbsp; Rules — правила проекта</div>
+      <div class="cdesc">Автоматически читает .cursor/rules, .claude/rules, .coddy/rules. Один раз написал — работает везде.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🧠&nbsp; Long-term memory</div>
+      <div class="cdesc">Глобальная и project-local память между сессиями. Recall и persist пассы вокруг основного LLM.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">⏰&nbsp; Cron scheduler</div>
+      <div class="cdesc">Запуск агента по расписанию. Markdown-формат заданий. Управление прямо в веб-UI.</div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🔌&nbsp; MCP серверы</div>
+      <div class="cdesc">Подключение любых MCP — GitHub, Filesystem, БД. Инструменты автоматически в ReAct loop.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 7 — UI в деле
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line" style="display:block;text-align:center;width:fit-content;margin:0 auto 40px;">Интерфейс в деле</h2>
+  <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:30px;align-items:start;">
+    <div>
+      <div class="ss">
+        <img src="assets/screenshot-fullhd-chat.png" alt="Чат с tool call timeline">
+      </div>
+      <p class="ss-cap" style="font-size:26px;">Чат · tool call timeline · streaming</p>
+    </div>
+    <div>
+      <div class="ss">
+        <img src="assets/screenshot-fullhd-history.png" alt="История сессий">
+      </div>
+      <p class="ss-cap" style="font-size:26px;">История сессий · поиск</p>
+    </div>
+    <div>
+      <div class="ss">
+        <img src="assets/screenshot-fullhd-scheduler.png" alt="Планировщик">
+      </div>
+      <p class="ss-cap" style="font-size:26px;">Cron scheduler</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 8 — Три режима
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line">Три режима работы</h2>
+  <div class="mode-card">
+    <div class="mode-cmd">coddy acp</div>
+    <div>
+      <div class="mode-title">ACP · JSON-RPC 2.0 over stdio</div>
+      <div class="mode-desc">Cursor и Zed как external agent. Streaming, permission prompts, восстановление сессий.</div>
+    </div>
+  </div>
+  <div class="mode-card">
+    <div class="mode-cmd">coddy http</div>
+    <div>
+      <div class="mode-title">OpenAI-compatible API + встроенная SPA</div>
+      <div class="mode-desc"><strong style="color:var(--accent2);">POST /v1/responses</strong> — любой OpenAI-клиент работает с Coddy как бэкендом. n8n, Open WebUI, ваш Python-скрипт.</div>
+    </div>
+  </div>
+  <div class="mode-card">
+    <div class="mode-cmd">coddy gateway</div>
+    <div>
+      <div class="mode-title">Telegram Bot (и другие мессенджеры)</div>
+      <div class="mode-desc">Per-user сессии, ACL, isolation modes. Расширяемо: Discord, Slack — через Gateway adapter.</div>
+    </div>
+  </div>
+  <div style="margin-top:32px;text-align:center;font-size:28px;color:var(--muted);">
+    Все три режима используют <strong style="color:var(--accent2);">одно хранилище сессий</strong> —
+    IDE + браузер + Telegram синхронизированы автоматически
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 9 — Результаты + Планы
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line">Результаты, уроки, планы</h2>
+  <div class="two-col">
+    <div>
+      <h3 style="color:var(--green);">✅&nbsp; Результаты</h3>
+      <ul class="alist">
+        <li>35 МБ binary запускается в scratch образе</li>
+        <li>GPT-4o, DeepSeek, Qwen через Ollama — одна конфигурация</li>
+        <li>Cursor + Browser + Telegram — одна история сессий</li>
+        <li>Rules из .cursor/rules работают без изменений</li>
+        <li>SSH на удалённые хосты без внешних бинарников</li>
+      </ul>
+      <h3 style="color:var(--amber);margin-top:30px;">💡&nbsp; Уроки</h3>
+      <ul class="alist">
+        <li>Protocol-first дизайн — правильный выбор с дня 1</li>
+        <li>Go single binary = идеальный harness для container-first</li>
+        <li>Build tags — элегантное управление feature set</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="color:var(--accent2);">🚀&nbsp; Планы</h3>
+      <ul class="alist">
+        <li>Discord и Slack адаптеры через Gateway interface</li>
+        <li>Расширение ecosystem skills и rules</li>
+        <li>Vector search в long-term memory</li>
+        <li>Улучшение мобильного UI и PWA</li>
+        <li>Готовые образы для container fleet деплоя</li>
+      </ul>
+      <div class="hl" style="margin-top:30px;font-size:26px;text-align:left;">
+        Целевая ниша:<br>
+        <span style="color:var(--accent2);">on-premise enterprise</span>,
+        <span style="color:var(--accent2);">container fleets</span>,
+        <span style="color:var(--accent2);">CI/CD pipelines</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     СЛАЙД 10 — QR
+═══════════════════════════════════════════ -->
+<section data-background-color="#0e0e12">
+  <h2 class="accent-line" style="text-align:center;display:block;margin:0 auto 60px;width:fit-content;">Ссылки</h2>
+  <div class="qr-row">
+    <div class="qr-item">
+      <div class="qr-frame">
+        <img src="assets/qr-github.png" alt="QR GitHub">
+      </div>
+      <div class="qr-lbl">Репозиторий</div>
+      <div class="qr-link">github.com/coddy-project/coddy-agent</div>
+    </div>
+    <div class="qr-divider"></div>
+    <div class="qr-item">
+      <div class="qr-frame">
+        <img src="assets/qr-telegram.png" alt="QR Telegram">
+      </div>
+      <div class="qr-lbl">Telegram-канал Павла Злого</div>
+      <div class="qr-link">t.me/evilfreelancer</div>
+    </div>
+  </div>
+  <div style="margin-top:60px;text-align:center;">
+    <div style="font-size:32px;color:var(--text);">⭐&nbsp; Звёздочки и PR приветствуются!</div>
+    <div style="font-size:22px;color:var(--dim);margin-top:14px;">MIT License · Go 1.25 · v0.9.9</div>
+  </div>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="assets/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    transition: 'fade',
+    transitionSpeed: 'fast',
+    controls: true,
+    progress: true,
+    slideNumber: 'c/t',
+    width: 1920,
+    height: 1080,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 2.0,
+    center: true,
+  });
+</script>
+</body>
+</html>
