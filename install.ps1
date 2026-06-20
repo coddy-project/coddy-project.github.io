@@ -6,7 +6,8 @@ param(
     [string]$Version = $env:CODDY_VERSION,
     [string]$Repo = $(if ($env:CODDY_REPO) { $env:CODDY_REPO } else { "coddy-project/coddy-agent" }),
     [string]$InstallDir = $(if ($env:CODDY_INSTALL_DIR) { $env:CODDY_INSTALL_DIR } else { "" }),
-    [string]$Home = $(if ($env:CODDY_HOME) { $env:CODDY_HOME } else { "" }),
+    [Alias("Home")]
+    [string]$CoddyHome = $(if ($env:CODDY_HOME) { $env:CODDY_HOME } else { "" }),
     [string]$Api = $(if ($env:CODDY_API) { $env:CODDY_API } else { "https://api.github.com" }),
     [switch]$Yes
 )
@@ -18,8 +19,8 @@ function Write-Info([string]$Message) { Write-Host "coddy-install: $Message" }
 if (-not $InstallDir) {
     $InstallDir = Join-Path $env:LOCALAPPDATA "Programs\coddy"
 }
-if (-not $Home) {
-    $Home = Join-Path $env:USERPROFILE ".coddy"
+if (-not $CoddyHome) {
+    $CoddyHome = Join-Path $env:USERPROFILE ".coddy"
 }
 
 $arch = "amd64"
@@ -46,7 +47,7 @@ if (-not $tag) { throw "coddy-install: empty release tag" }
 $asset = "coddy_${tag}_windows_${arch}.zip"
 $downloadUrl = "https://github.com/$Repo/releases/download/$tag/$asset"
 
-New-Item -ItemType Directory -Force -Path $InstallDir, $Home, (Join-Path $Home "sessions"), (Join-Path $Home "skills") | Out-Null
+New-Item -ItemType Directory -Force -Path $InstallDir, $CoddyHome, (Join-Path $CoddyHome "sessions"), (Join-Path $CoddyHome "skills") | Out-Null
 
 $dest = Join-Path $InstallDir "coddy.exe"
 if ((Test-Path $dest) -and -not $Yes) {
@@ -72,7 +73,7 @@ try {
     Remove-Item -Recurse -Force -Path $tmp -ErrorAction SilentlyContinue
 }
 
-$config = Join-Path $Home "config.yaml"
+$config = Join-Path $CoddyHome "config.yaml"
 if (-not (Test-Path $config)) {
     $exampleUrl = "https://raw.githubusercontent.com/$Repo/$tag/config.example.yaml"
     Write-Info "fetching $exampleUrl"
