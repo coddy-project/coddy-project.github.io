@@ -3,22 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Coddy Agent - coding agent harness in one Go binary</title>
-  <meta name="description" content="Coddy Agent is a distroless-friendly coding harness: one Go binary, ACP, embedded UI, rules, skills, scheduler, and on-prem LLM support." />
+  <title>Coddy Agent - general-purpose agent in one Go binary</title>
+  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary, ACP, embedded UI, rules, skills, Telegram gateway, scheduler, long-term memory, and on-prem LLM support." />
   <meta name="theme-color" content="#9333ea" />
   <link rel="canonical" href="https://coddy.dev/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Coddy Agent" />
-  <meta property="og:title" content="Coddy Agent - coding agent harness in one Go binary" />
-  <meta property="og:description" content="One static Go binary for software agents: ReAct, ACP, web UI, Cursor-style rules, Docker-ready, your API keys." />
+  <meta property="og:title" content="Coddy Agent - general-purpose agent in one Go binary" />
+  <meta property="og:description" content="One static Go binary for software agents: ReAct, ACP, web UI, Telegram gateway, scheduler, memory, Cursor-style rules, Docker-ready, your API keys." />
   <meta property="og:url" content="https://coddy.dev/" />
   <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
   <meta property="og:image:width" content="1280" />
   <meta property="og:image:height" content="640" />
   <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Coddy Agent - coding agent harness in one Go binary" />
-  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, ACP, web UI, rules, skills, on-prem models." />
+  <meta name="twitter:title" content="Coddy Agent - general-purpose agent in one Go binary" />
+  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, ACP, web UI, Telegram gateway, scheduler, memory, on-prem models." />
   <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
   <link rel="icon" href="assets/coddy-favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
@@ -60,11 +60,13 @@
         <span class="skill-chip" role="listitem">/acp-harness</span>
         <span class="skill-chip" role="listitem">/distroless-ready</span>
         <span class="skill-chip" role="listitem">/on-prem-llms</span>
+        <span class="skill-chip" role="listitem">/telegram-gateway</span>
       </div>
-      <h1>Run a coding agent from one static binary</h1>
+      <h1>Run a general-purpose agent from one static binary</h1>
       <p class="tagline">
-        Coddy is a harness for software work: ReAct loop, filesystem and shell tools, MCP, project rules,
-        skills, optional browser UI, scheduler, and long-term memory. Built for containers, IDE clients, and your own API keys.
+        Coddy is an agent harness: ReAct loop, filesystem and shell tools, MCP, project rules, skills,
+        browser UI, Telegram gateway, scheduler, and long-term memory.
+        Built for containers, IDE clients, and your own API keys.
       </p>
     </section>
 
@@ -108,9 +110,9 @@
     <section id="about">
       <h2>What is Coddy</h2>
       <p>
-        Most agent stacks chase a general chat assistant. Coddy targets a <strong>coding agent</strong>:
+        Coddy started as a coding agent and grew into a <strong>general-purpose harness</strong>:
         Cursor-style rules and skills on disk, plan and agent modes, tool permissions, streaming UI, and sessions
-        you can resume from an IDE, browser, or automation.
+        you can resume from an IDE, browser, Telegram, or automation.
       </p>
       <p>
         Ship it as a single binary in <strong>distroless</strong> or <strong>from-scratch</strong> images, or run a
@@ -136,11 +138,11 @@
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">
           <h3>Rules</h3>
-          <p>Auto-discover <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.claude/rules</code>, and <code>.codex/rules</code> under the project cwd.</p>
+          <p>Auto-discover <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>, and nested <code>AGENTS.md</code> under the project cwd.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/skills.md" target="_blank" rel="noopener noreferrer">
           <h3>Skills</h3>
-          <p>Slash commands from <code>SKILL.md</code> packs in <code>skills.dirs</code>, including <code>~/.cursor/skills</code> and project <code>.skills</code>.</p>
+          <p>Slash commands from <code>SKILL.md</code> packs in <code>skills.dirs</code>. Install from registries with <code>npx skills</code> or from Settings → Skills in the web UI.</p>
         </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/mcp-integration.md" target="_blank" rel="noopener noreferrer">
           <h3>MCP</h3>
@@ -158,6 +160,17 @@
           <h3>Memory</h3>
           <p>Optional long-term memory copilot and session memory routes.</p>
         </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/gateway.md" target="_blank" rel="noopener noreferrer">
+          <h3>Gateway</h3>
+          <p>Telegram bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.</p>
+        </a>
+        <!-- Uncomment when context compaction ships in a release:
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#compaction" target="_blank" rel="noopener noreferrer">
+          <h3>Compaction</h3>
+          <p><code>/compact</code> command plus automatic history summarization at a context threshold. Full transcript stays on disk.</p>
+        </a>
+        -->
+
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
           <h3>Multimodal</h3>
           <p>Attach images and files in the composer when the model supports it. Assets saved to the session directory and injected into the agent context.</p>
