@@ -24,7 +24,7 @@
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="styles.css?v=14" />
+  <link rel="stylesheet" href="styles.css?v=15" />
 </head>
 <body>
   <div class="nav-scrim" id="nav-scrim" hidden></div>
@@ -35,6 +35,7 @@
       </a>
       <nav class="nav-drawer" id="site-nav" aria-label="Site menu" aria-hidden="true">
         <a class="nav-drawer-link" href="#install">Install</a>
+        <a class="nav-drawer-link" href="#demos">Demos</a>
         <a class="nav-drawer-link" href="#features">Features</a>
         <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Releases</a>
@@ -106,6 +107,52 @@
     <figure class="preview">
       <img src="assets/screenshot-fullhd-start.png" width="1920" height="1080" alt="Coddy start screen with composer and agent mode" loading="lazy" />
     </figure>
+
+    <section id="demos">
+      <h2>See it in action</h2>
+      <div class="demo-cards">
+        <article class="glass demo-card">
+          <div class="demo-card-head">
+            <h3>Console TUI</h3>
+            <p>
+              Run <code>coddy</code> in a terminal: pick a model with <code>Ctrl+L</code>, approve edits and
+              commands as the agent works, ship with the <code>/commit</code> skill, resume any session with
+              <code>coddy -c</code>, then drive a remote server with <code>--remote</code>.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="demo-player"
+            data-video="assets/demo/coddy-tui-demo.mp4"
+            aria-label="Play demo: Coddy console TUI, 3 minutes 47 seconds"
+          >
+            <img src="assets/demo/poster-tui.jpg" width="1280" height="720" alt="Coddy console TUI with the model selector open" loading="lazy" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">3:47</span>
+          </button>
+        </article>
+        <article class="glass demo-card">
+          <div class="demo-card-head">
+            <h3>Web UI</h3>
+            <p>
+              The same agent served by <code>coddy http</code>: streamed tool calls, a permission card with a
+              real diff, session history, and the environment switch that points the UI at a remote
+              <code>coddy http</code> server.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="demo-player"
+            data-video="assets/demo/coddy-webui-demo.mp4"
+            aria-label="Play demo: Coddy web UI, 4 minutes 44 seconds"
+          >
+            <img src="assets/demo/poster-webui.jpg" width="1280" height="720" alt="Coddy web UI start screen with the model menu open" loading="lazy" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">4:44</span>
+          </button>
+        </article>
+      </div>
+    </section>
 
     <section id="about">
       <h2>What is Coddy</h2>
@@ -397,6 +444,26 @@
 
       window.addEventListener("hashchange", function () {
         scrollToSection(location.hash, "smooth");
+      });
+
+      document.querySelectorAll(".demo-player").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          if (btn.dataset.loaded) return;
+          btn.dataset.loaded = "1";
+          var poster = btn.querySelector("img");
+          var video = document.createElement("video");
+          video.className = "demo-video";
+          video.controls = true;
+          video.autoplay = true;
+          video.playsInline = true;
+          video.setAttribute("playsinline", "");
+          video.preload = "auto";
+          if (poster) video.poster = poster.currentSrc || poster.src;
+          video.src = btn.getAttribute("data-video");
+          btn.replaceWith(video);
+          var p = video.play();
+          if (p && p.catch) p.catch(function () {});
+        });
       });
 
       document.querySelectorAll(".install-copy").forEach(function (btn) {
