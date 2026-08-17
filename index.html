@@ -4,13 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Coddy Agent - general-purpose agent in one Go binary</title>
-  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary, ACP, embedded UI, rules, skills, Telegram gateway, scheduler, long-term memory, and on-prem LLM support." />
+  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary with a terminal console, ACP, embedded web UI, rules, skills, Telegram gateway, scheduler, long-term memory, and on-prem LLM support." />
   <meta name="theme-color" content="#9333ea" />
   <link rel="canonical" href="https://coddy.dev/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Coddy Agent" />
   <meta property="og:title" content="Coddy Agent - general-purpose agent in one Go binary" />
-  <meta property="og:description" content="One static Go binary for software agents: ReAct, ACP, web UI, Telegram gateway, scheduler, memory, Cursor-style rules, Docker-ready, your API keys." />
+  <meta property="og:description" content="One static Go binary for software agents: ReAct, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, Cursor-style rules, Docker-ready, your API keys." />
   <meta property="og:url" content="https://coddy.dev/" />
   <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
   <meta property="og:image:width" content="1280" />
@@ -18,13 +18,13 @@
   <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Coddy Agent - general-purpose agent in one Go binary" />
-  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, ACP, web UI, Telegram gateway, scheduler, memory, on-prem models." />
+  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, on-prem models." />
   <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
   <link rel="icon" href="assets/coddy-favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="styles.css?v=15" />
+  <link rel="stylesheet" href="styles.css?v=16" />
 </head>
 <body>
   <div class="nav-scrim" id="nav-scrim" hidden></div>
@@ -59,6 +59,7 @@
       <div class="hero-skills" role="list" aria-label="Capabilities">
         <span class="skill-chip" role="listitem">/go-binary</span>
         <span class="skill-chip" role="listitem">/acp-harness</span>
+        <span class="skill-chip" role="listitem">/console-tui</span>
         <span class="skill-chip" role="listitem">/distroless-ready</span>
         <span class="skill-chip" role="listitem">/on-prem-llms</span>
         <span class="skill-chip" role="listitem">/telegram-gateway</span>
@@ -66,8 +67,9 @@
       <h1>Run a general-purpose agent from one static binary</h1>
       <p class="tagline">
         Coddy is an agent harness: ReAct loop, filesystem and shell tools, MCP, project rules, skills,
-        browser UI, Telegram gateway, scheduler, and long-term memory.
-        Built for containers, IDE clients, and your own API keys.
+        background tasks, scheduler, and long-term memory.
+        Drive it from a terminal, a browser, your editor over ACP, or Telegram.
+        Built for containers and your own API keys.
       </p>
     </section>
 
@@ -95,7 +97,8 @@
         <p class="hint">
           Downloads the latest release binary, installs to your PATH, and creates
           <code>~/.coddy/config.yaml</code> from the example when missing. Then set a provider key and run
-          <code>coddy http</code> or <code>coddy acp</code>.
+          <code>coddy</code> for the terminal console, <code>coddy http</code> for the web UI, or
+          <code>coddy acp</code> for an editor client.
         </p>
       </div>
       <p class="hint" style="text-align: center;">
@@ -105,7 +108,13 @@
     </section>
 
     <figure class="preview">
-      <img src="assets/screenshot-fullhd-start.png" width="1920" height="1080" alt="Coddy start screen with composer and agent mode" loading="lazy" />
+      <img src="assets/screenshot-fullhd-start.png" width="1920" height="1080" alt="Coddy web UI start screen: composer with workspace chips, agent mode, and the model selector" loading="lazy" />
+      <figcaption>The embedded web UI served by <code>coddy http</code>.</figcaption>
+    </figure>
+
+    <figure class="preview">
+      <img src="assets/screenshot-console-chat.png" width="1920" height="1066" alt="Coddy console TUI in a terminal: a read tool call, a thinking block, and the status footer" loading="lazy" />
+      <figcaption>The same agent in a terminal: run <code>coddy</code> with no arguments.</figcaption>
     </figure>
 
     <section id="demos">
@@ -158,8 +167,9 @@
       <h2>What is Coddy</h2>
       <p>
         Coddy started as a coding agent and grew into a <strong>general-purpose harness</strong>:
-        Cursor-style rules and skills on disk, plan and agent modes, tool permissions, streaming UI, and sessions
-        you can resume from an IDE, browser, Telegram, or automation.
+        Cursor-style rules and skills on disk, plan and agent modes, tool permissions, streaming output, and sessions
+        you can resume from a terminal, an IDE, a browser, Telegram, or automation - the same
+        <code>$CODDY_HOME</code> bundle whichever surface opens it.
       </p>
       <p>
         Ship it as a single binary in <strong>distroless</strong> or <strong>from-scratch</strong> images, or run a
@@ -183,6 +193,14 @@
           <h3>UI</h3>
           <p>Embedded SPA at <code>/</code> with <code>http,ui</code>. Chat, sessions, plan documents, scheduler drawer, settings, multimodal file attachments.</p>
         </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/cli.md" target="_blank" rel="noopener noreferrer">
+          <h3>Console</h3>
+          <p>Bare <code>coddy</code> on a terminal with the <code>cli</code> tag. Streaming transcript, tool boxes, permission modals, <code>coddy -c</code> to resume, <code>coddy -p</code> for one-shot output.</p>
+        </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/remote-control.md" target="_blank" rel="noopener noreferrer">
+          <h3>Remote</h3>
+          <p>Point the console or <code>coddy acp</code> at a running server with <code>--remote</code>, or switch the web UI between local and remote from the composer.</p>
+        </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">
           <h3>Rules</h3>
           <p>Auto-discover <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>, and nested <code>AGENTS.md</code> under the project cwd.</p>
@@ -199,6 +217,10 @@
           <h3>ReAct</h3>
           <p>Reasoning, tool calls, and observations in a loop. Built-in tools plus MCP, with <code>agent</code> and <code>plan</code> modes.</p>
         </a>
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/background-tasks.md" target="_blank" rel="noopener noreferrer">
+          <h3>Background tasks</h3>
+          <p>Long commands run detached with <code>background: true</code>. A Tasks panel tracks them against the model's own estimate; the agent collects output later.</p>
+        </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/scheduler.md" target="_blank" rel="noopener noreferrer">
           <h3>Scheduler</h3>
           <p>Cron jobs with a UI drawer and agent tools for recurring tasks.</p>
@@ -211,13 +233,14 @@
           <h3>Gateway</h3>
           <p>Telegram bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.</p>
         </a>
-        <!-- Uncomment when context compaction ships in a release:
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#compaction" target="_blank" rel="noopener noreferrer">
           <h3>Compaction</h3>
           <p><code>/compact</code> command plus automatic history summarization at a context threshold. Full transcript stays on disk.</p>
         </a>
-        -->
-
+        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#agent-self-configuration" target="_blank" rel="noopener noreferrer">
+          <h3>Self-configuration</h3>
+          <p>The agent edits its own YAML through staged <code>config_set</code> commands. Nothing lands until a commit you approve, which then validates and hot-reloads.</p>
+        </a>
         <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
           <h3>Multimodal</h3>
           <p>Attach images and files in the composer when the model supports it. Assets saved to the session directory and injected into the agent context.</p>

@@ -318,6 +318,20 @@ code {
   height: auto;
 }
 
+.preview figcaption {
+  padding: 10px 14px;
+  border-top: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.preview figcaption code {
+  font-family: var(--skill-chip-font);
+  font-size: 0.8rem;
+  color: var(--accent-soft);
+}
+
 section {
   margin-bottom: 40px;
 }
