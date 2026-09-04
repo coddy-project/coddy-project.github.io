@@ -4,13 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Coddy Agent - general-purpose agent in one Go binary</title>
-  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary with a terminal console, ACP, embedded web UI, rules, skills, Telegram gateway, scheduler, long-term memory, and on-prem LLM support." />
+  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary with a terminal console, ACP, embedded web UI, subagents, rules, skills, MCP, Telegram gateway, scheduler, and your own API keys." />
   <meta name="theme-color" content="#9333ea" />
   <link rel="canonical" href="https://coddy.dev/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Coddy Agent" />
   <meta property="og:title" content="Coddy Agent - general-purpose agent in one Go binary" />
-  <meta property="og:description" content="One static Go binary for software agents: ReAct, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, Cursor-style rules, Docker-ready, your API keys." />
+  <meta property="og:description" content="One static Go binary for software agents: ReAct, subagents, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, Cursor-style rules, Docker-ready, your API keys." />
   <meta property="og:url" content="https://coddy.dev/" />
   <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
   <meta property="og:image:width" content="1280" />
@@ -18,13 +18,13 @@
   <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Coddy Agent - general-purpose agent in one Go binary" />
-  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, on-prem models." />
+  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, subagents, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, on-prem models." />
   <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
   <link rel="icon" href="assets/coddy-favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="styles.css?v=16" />
+  <link rel="stylesheet" href="styles.css?v=17" />
 </head>
 <body>
   <div class="nav-scrim" id="nav-scrim" hidden></div>
@@ -35,10 +35,10 @@
       </a>
       <nav class="nav-drawer" id="site-nav" aria-label="Site menu" aria-hidden="true">
         <a class="nav-drawer-link" href="#install">Install</a>
-        <a class="nav-drawer-link" href="#demos">Demos</a>
+        <a class="nav-drawer-link" href="#demos">Demo</a>
         <a class="nav-drawer-link" href="#features">Features</a>
+        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
         <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Releases</a>
       </nav>
       <button
         type="button"
@@ -56,21 +56,32 @@
   <div class="shell">
 
     <section class="hero">
-      <div class="hero-skills" role="list" aria-label="Capabilities">
-        <span class="skill-chip" role="listitem">/go-binary</span>
-        <span class="skill-chip" role="listitem">/acp-harness</span>
-        <span class="skill-chip" role="listitem">/console-tui</span>
-        <span class="skill-chip" role="listitem">/distroless-ready</span>
-        <span class="skill-chip" role="listitem">/on-prem-llms</span>
-        <span class="skill-chip" role="listitem">/telegram-gateway</span>
-      </div>
+      <a
+        class="release-pill"
+        id="release-pill"
+        href="https://github.com/coddy-project/coddy-agent/releases/latest"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span class="release-pill-dot" aria-hidden="true"></span>
+        <span class="release-pill-version" id="release-pill-version">v1.0.0</span>
+        <span class="release-pill-label">release notes</span>
+      </a>
       <h1>Run a general-purpose agent from one static binary</h1>
       <p class="tagline">
-        Coddy is an agent harness: ReAct loop, filesystem and shell tools, MCP, project rules, skills,
-        background tasks, scheduler, and long-term memory.
+        Coddy is an agent harness: a ReAct loop with filesystem and shell tools, MCP, project rules, skills,
+        subagents, background tasks, and long-term memory.
         Drive it from a terminal, a browser, your editor over ACP, or Telegram.
         Built for containers and your own API keys.
       </p>
+      <div class="hero-skills" role="list" aria-label="Capabilities">
+        <span class="skill-chip" role="listitem">/go-binary</span>
+        <span class="skill-chip" role="listitem">/console-tui</span>
+        <span class="skill-chip" role="listitem">/acp-harness</span>
+        <span class="skill-chip" role="listitem">/subagents</span>
+        <span class="skill-chip" role="listitem">/distroless-ready</span>
+        <span class="skill-chip" role="listitem">/on-prem-llms</span>
+      </div>
     </section>
 
     <section id="install">
@@ -78,17 +89,17 @@
         <div class="install-block-head">
           <h2>Quick install</h2>
           <div class="tabs" role="tablist" aria-label="Install platform">
-            <button type="button" class="tab active" data-tab="unix" role="tab" aria-selected="true">Linux / macOS</button>
-            <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false">Windows</button>
+            <button type="button" class="tab active" data-tab="unix" role="tab" aria-selected="true" aria-controls="panel-unix" id="tab-unix">Linux / macOS</button>
+            <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false" aria-controls="panel-win" id="tab-win">Windows</button>
           </div>
         </div>
-        <div class="code-wrap active" id="panel-unix" role="tabpanel">
+        <div class="code-wrap active" id="panel-unix" role="tabpanel" aria-labelledby="tab-unix">
           <div class="install-code">
             <button type="button" class="install-copy" data-copy-for="cmd-unix" aria-label="Copy install command">Copy</button>
             <pre><code id="cmd-unix">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
           </div>
         </div>
-        <div class="code-wrap" id="panel-win" role="tabpanel">
+        <div class="code-wrap" id="panel-win" role="tabpanel" aria-labelledby="tab-win">
           <div class="install-code">
             <button type="button" class="install-copy" data-copy-for="cmd-win" aria-label="Copy install command">Copy</button>
             <pre><code id="cmd-win">irm https://coddy.dev/install.ps1 | iex</code></pre>
@@ -98,68 +109,80 @@
           Downloads the latest release binary, installs to your PATH, and creates
           <code>~/.coddy/config.yaml</code> from the example when missing. Then set a provider key and run
           <code>coddy</code> for the terminal console, <code>coddy http</code> for the web UI, or
-          <code>coddy acp</code> for an editor client.
+          <code>coddy acp</code> for an editor client. Upgrade later with <code>coddy update -y</code>.
         </p>
       </div>
-      <p class="hint" style="text-align: center;">
+      <p class="hint install-alt">
         Docker: <code>ghcr.io/coddy-project/coddy-agent</code> -
         <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">compose setup</a>
+        · Other install methods:
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/install.md" target="_blank" rel="noopener noreferrer">docs/install.md</a>
       </p>
     </section>
 
-    <figure class="preview">
-      <img src="assets/screenshot-fullhd-start.png" width="1920" height="1080" alt="Coddy web UI start screen: composer with workspace chips, agent mode, and the model selector" loading="lazy" />
-      <figcaption>The embedded web UI served by <code>coddy http</code>.</figcaption>
-    </figure>
-
-    <figure class="preview">
-      <img src="assets/screenshot-console-chat.png" width="1920" height="1066" alt="Coddy console TUI in a terminal: a read tool call, a thinking block, and the status footer" loading="lazy" />
-      <figcaption>The same agent in a terminal: run <code>coddy</code> with no arguments.</figcaption>
-    </figure>
-
     <section id="demos">
       <h2>See it in action</h2>
-      <div class="demo-cards">
-        <article class="glass demo-card">
-          <div class="demo-card-head">
-            <h3>Console TUI</h3>
-            <p>
-              Run <code>coddy</code> in a terminal: pick a model with <code>Ctrl+L</code>, approve edits and
-              commands as the agent works, ship with the <code>/commit</code> skill, resume any session with
-              <code>coddy -c</code>, then drive a remote server with <code>--remote</code>.
-            </p>
-          </div>
+      <div class="glass showcase">
+        <div class="showcase-tabs" role="tablist" aria-label="Coddy surfaces">
+          <button type="button" class="showcase-tab active" role="tab" aria-selected="true" aria-controls="shot-terminal" id="tab-terminal" data-shot="shot-terminal">Terminal</button>
+          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-webui" id="tab-webui" data-shot="shot-webui">Web UI</button>
+          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-acp" id="tab-acp" data-shot="shot-acp">Editor (ACP)</button>
+        </div>
+
+        <div class="showcase-panel" id="shot-terminal" role="tabpanel" aria-labelledby="tab-terminal" tabindex="0">
           <button
             type="button"
             class="demo-player"
             data-video="assets/demo/coddy-tui-demo.mp4"
-            aria-label="Play demo: Coddy console TUI, 3 minutes 47 seconds"
+            aria-label="Play demo: Coddy console TUI, 3 minutes 46 seconds"
           >
             <img src="assets/demo/poster-tui.jpg" width="1280" height="720" alt="Coddy console TUI with the model selector open" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">3:47</span>
+            <span class="demo-duration" aria-hidden="true">3:46</span>
           </button>
-        </article>
-        <article class="glass demo-card">
-          <div class="demo-card-head">
-            <h3>Web UI</h3>
-            <p>
-              The same agent served by <code>coddy http</code>: streamed tool calls, a permission card with a
-              real diff, session history, and the environment switch that points the UI at a remote
-              <code>coddy http</code> server.
-            </p>
-          </div>
+          <p class="showcase-caption">
+            Bare <code>coddy</code> in a terminal: pick a model with <code>Ctrl+L</code>, approve edits and commands
+            as the agent works, resume with <code>coddy -c</code>, drive a remote server with <code>--remote</code>.
+          </p>
+        </div>
+
+        <div class="showcase-panel" id="shot-webui" role="tabpanel" aria-labelledby="tab-webui" tabindex="0" hidden>
           <button
             type="button"
             class="demo-player"
             data-video="assets/demo/coddy-webui-demo.mp4"
-            aria-label="Play demo: Coddy web UI, 4 minutes 44 seconds"
+            aria-label="Play demo: Coddy web UI, 2 minutes 22 seconds"
           >
             <img src="assets/demo/poster-webui.jpg" width="1280" height="720" alt="Coddy web UI start screen with the model menu open" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">4:44</span>
+            <span class="demo-duration" aria-hidden="true">2:22</span>
           </button>
-        </article>
+          <p class="showcase-caption">
+            The same agent served by <code>coddy http</code>: streamed tool calls, a permission card with a real diff,
+            session history, seven themes, and an environment switch that points the UI at a remote server.
+          </p>
+        </div>
+
+        <div class="showcase-panel" id="shot-acp" role="tabpanel" aria-labelledby="tab-acp" tabindex="0" hidden>
+          <button
+            type="button"
+            class="demo-player"
+            data-video="assets/demo/coddy-zed-acp-demo.mp4"
+            aria-label="Play demo: Coddy inside Zed over ACP, 2 minutes 57 seconds"
+          >
+            <img src="assets/demo/poster-zed.jpg" width="1280" height="720" alt="Zed with the Coddy thread open in the agent panel" loading="lazy" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">2:57</span>
+          </button>
+          <p class="showcase-caption">
+            Zed launches <code>coddy acp</code> for the workspace, and coddy's own modes, models and permission
+            policy show up in the editor's agent panel; its skills arrive as slash commands. One entry in Zed's
+            <code>settings.json</code>:
+          </p>
+          <pre class="showcase-code"><code>"agent_servers": {
+  "Coddy": { "type": "custom", "command": "coddy", "args": ["acp"] }
+}</code></pre>
+        </div>
       </div>
     </section>
 
@@ -167,9 +190,9 @@
       <h2>What is Coddy</h2>
       <p>
         Coddy started as a coding agent and grew into a <strong>general-purpose harness</strong>:
-        Cursor-style rules and skills on disk, plan and agent modes, tool permissions, streaming output, and sessions
-        you can resume from a terminal, an IDE, a browser, Telegram, or automation - the same
-        <code>$CODDY_HOME</code> bundle whichever surface opens it.
+        Cursor-style rules and skills on disk, <code>agent</code>, <code>plan</code> and <code>ask</code> modes, tool
+        permissions, streaming output, and sessions you can resume from a terminal, an IDE, a browser, Telegram, or
+        automation - the same <code>$CODDY_HOME</code> bundle whichever surface opens it.
       </p>
       <p>
         Ship it as a single binary in <strong>distroless</strong> or <strong>from-scratch</strong> images, or run a
@@ -180,75 +203,135 @@
 
     <section id="features">
       <h2>Features</h2>
-      <div class="features">
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">
-          <h3>ACP</h3>
-          <p><code>coddy acp</code> over stdio. Sessions, modes, permissions, streaming updates for IDE clients and scripts.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">
-          <h3>HTTP</h3>
-          <p>OpenAI-compatible gateway on <code>coddy http</code>. <code>POST /v1/responses</code>, models, Swagger at <code>/docs/</code>.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md" target="_blank" rel="noopener noreferrer">
-          <h3>UI</h3>
-          <p>Embedded SPA at <code>/</code> with <code>http,ui</code>. Chat, sessions, plan documents, scheduler drawer, settings, multimodal file attachments.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/cli.md" target="_blank" rel="noopener noreferrer">
-          <h3>Console</h3>
-          <p>Bare <code>coddy</code> on a terminal with the <code>cli</code> tag. Streaming transcript, tool boxes, permission modals, <code>coddy -c</code> to resume, <code>coddy -p</code> for one-shot output.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/remote-control.md" target="_blank" rel="noopener noreferrer">
-          <h3>Remote</h3>
-          <p>Point the console or <code>coddy acp</code> at a running server with <code>--remote</code>, or switch the web UI between local and remote from the composer.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">
-          <h3>Rules</h3>
-          <p>Auto-discover <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>, and nested <code>AGENTS.md</code> under the project cwd.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/skills.md" target="_blank" rel="noopener noreferrer">
-          <h3>Skills</h3>
-          <p>Slash commands from <code>SKILL.md</code> packs in <code>skills.dirs</code>. Install from registries with <code>npx skills</code> or from Settings → Skills in the web UI.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/mcp-integration.md" target="_blank" rel="noopener noreferrer">
-          <h3>MCP</h3>
-          <p>Connect MCP servers from config or per session. Tool definitions merge into the agent and plan loops.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/react-agent.md" target="_blank" rel="noopener noreferrer">
-          <h3>ReAct</h3>
-          <p>Reasoning, tool calls, and observations in a loop. Built-in tools plus MCP, with <code>agent</code> and <code>plan</code> modes.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/background-tasks.md" target="_blank" rel="noopener noreferrer">
-          <h3>Background tasks</h3>
-          <p>Long commands run detached with <code>background: true</code>. A Tasks panel tracks them against the model's own estimate; the agent collects output later.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/scheduler.md" target="_blank" rel="noopener noreferrer">
-          <h3>Scheduler</h3>
-          <p>Cron jobs with a UI drawer and agent tools for recurring tasks.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/external/memory/README.md" target="_blank" rel="noopener noreferrer">
-          <h3>Memory</h3>
-          <p>Optional long-term memory copilot and session memory routes.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/gateway.md" target="_blank" rel="noopener noreferrer">
-          <h3>Gateway</h3>
-          <p>Telegram bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#compaction" target="_blank" rel="noopener noreferrer">
-          <h3>Compaction</h3>
-          <p><code>/compact</code> command plus automatic history summarization at a context threshold. Full transcript stays on disk.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#agent-self-configuration" target="_blank" rel="noopener noreferrer">
-          <h3>Self-configuration</h3>
-          <p>The agent edits its own YAML through staged <code>config_set</code> commands. Nothing lands until a commit you approve, which then validates and hot-reloads.</p>
-        </a>
-        <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
-          <h3>Multimodal</h3>
-          <p>Attach images and files in the composer when the model supports it. Assets saved to the session directory and injected into the agent context.</p>
-        </a>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Agent core</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/react-agent.md" target="_blank" rel="noopener noreferrer">
+            <h4>ReAct loop</h4>
+            <p>Reasoning, tool calls, and observations in a loop, with runaway-loop guards on repeated output and repeated tool calls.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent#operating-modes" target="_blank" rel="noopener noreferrer">
+            <h4>Three modes</h4>
+            <p><code>agent</code> runs the full toolset, <code>plan</code> writes plan documents only, <code>ask</code> is read-only research with web search.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/subagents.md" target="_blank" rel="noopener noreferrer">
+            <h4>Subagents</h4>
+            <p><code>spawn_agent</code> delegates a bounded task to a child agent with its own context and session. Markdown definitions that can only narrow the parent's tools.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/background-tasks.md" target="_blank" rel="noopener noreferrer">
+            <h4>Background tasks</h4>
+            <p>Long commands run detached with <code>background: true</code>. A Tasks panel tracks them against the model's own estimate; the agent collects output later.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#compaction" target="_blank" rel="noopener noreferrer">
+            <h4>Compaction</h4>
+            <p><code>/compact</code> plus automatic summarization at a context threshold. The recent turns stay verbatim and the full transcript stays on disk.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/external/memory/README.md" target="_blank" rel="noopener noreferrer">
+            <h4>Long-term memory</h4>
+            <p>Optional memory copilot that recalls across sessions, with per-session memory routes on the HTTP surface.</p>
+          </a>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Where you run it</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/cli.md" target="_blank" rel="noopener noreferrer">
+            <h4>Console</h4>
+            <p>Bare <code>coddy</code> on a terminal. Streaming transcript, tool boxes, permission modals, <code>coddy -c</code> to resume, <code>coddy -p</code> for one-shot output.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md" target="_blank" rel="noopener noreferrer">
+            <h4>Web UI</h4>
+            <p>Embedded SPA at <code>/</code> with the <code>http,ui</code> tags. Chat, sessions, plan documents, Tasks and scheduler drawers, live settings.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">
+            <h4>ACP</h4>
+            <p><code>coddy acp</code> over stdio. Sessions, modes, permissions, and streaming updates for Zed, Obsidian, VS Code, or your own script.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">
+            <h4>HTTP API</h4>
+            <p>OpenAI-compatible gateway on <code>coddy http</code>. <code>POST /v1/responses</code>, models, Swagger at <code>/docs/</code>.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/remote-control.md" target="_blank" rel="noopener noreferrer">
+            <h4>Remote control</h4>
+            <p>Point the console or <code>coddy acp</code> at a running server with <code>--remote</code>, or switch the web UI between local and remote from the composer.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/gateway.md" target="_blank" rel="noopener noreferrer">
+            <h4>Telegram gateway</h4>
+            <p>Bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.</p>
+          </a>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Project context and control</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">
+            <h4>Rules</h4>
+            <p>Auto-discovers <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>, and nested <code>AGENTS.md</code> under the session cwd.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/skills.md" target="_blank" rel="noopener noreferrer">
+            <h4>Skills</h4>
+            <p>Slash commands from <code>SKILL.md</code> packs in <code>skills.dirs</code>. Install from registries with <code>npx skills</code> or from Settings → Skills.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/mcp-integration.md" target="_blank" rel="noopener noreferrer">
+            <h4>MCP servers</h4>
+            <p>Connect MCP servers from config or per session. Their tool definitions merge into the agent and plan loops.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/mcp-integration.md#workspace-trust-for-project-local-servers" target="_blank" rel="noopener noreferrer">
+            <h4>Permissions and trust</h4>
+            <p>Edits and commands ask before they run, and a grant can widen to a whole program. Project-local MCP servers and subagent files need an explicit approval first.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#agent-self-configuration" target="_blank" rel="noopener noreferrer">
+            <h4>Self-configuration</h4>
+            <p>The agent edits its own YAML through staged <code>config_set</code> commands. Nothing lands until a commit you approve, which validates and hot-reloads.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
+            <h4>Multimodal</h4>
+            <p>Attach images and files in the composer when the model supports it. Assets are saved to the session directory and injected into the agent context.</p>
+          </a>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Models and operations</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config.md" target="_blank" rel="noopener noreferrer">
+            <h4>Any provider</h4>
+            <p>OpenAI, Anthropic, Ollama, NeuralDeep, any OpenAI-compatible API, plus ChatGPT sign-in through the Codex backend. Your keys, your endpoints.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md#per-session-reasoning-level" target="_blank" rel="noopener noreferrer">
+            <h4>Reasoning levels</h4>
+            <p>A composer dropdown picks the effort for reasoning models, mapped to OpenAI <code>reasoning_effort</code> or Anthropic thinking budgets.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/scheduler.md" target="_blank" rel="noopener noreferrer">
+            <h4>Scheduler</h4>
+            <p>Cron jobs with a UI drawer and agent tools, so recurring work runs without a session open.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config.md#ssh-remote-execution" target="_blank" rel="noopener noreferrer">
+            <h4>SSH commands</h4>
+            <p><code>ssh_run_command</code> reaches remote hosts over pure-Go SSH, authenticating from your SSH agent or <code>~/.ssh</code> keys.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">
+            <h4>Docker and distroless</h4>
+            <p>Published images on <code>ghcr.io</code> for amd64 and arm64, or drop the static binary into a scratch image with a read-only rootfs.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md" target="_blank" rel="noopener noreferrer">
+            <h4>Themes and language</h4>
+            <p>Seven web UI themes and an English or Russian interface, switched in Settings → Appearance without touching the config.</p>
+          </a>
+        </div>
       </div>
     </section>
 
     <footer>
+      <p class="footer-links">
+        <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
+        <a href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+      </p>
       <p>
         Coddy Project ·
         <a href="https://github.com/coddy-project" target="_blank" rel="noopener noreferrer">github.com/coddy-project</a>
@@ -257,19 +340,53 @@
   </div>
   <script>
     (function () {
-      var tabs = document.querySelectorAll(".tab");
-      var panels = { unix: document.getElementById("panel-unix"), win: document.getElementById("panel-win") };
-      tabs.forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          var id = btn.getAttribute("data-tab");
-          tabs.forEach(function (t) {
-            t.classList.toggle("active", t === btn);
-            t.setAttribute("aria-selected", t === btn ? "true" : "false");
+      function wireTablist(tabs, activate) {
+        tabs.forEach(function (btn, index) {
+          btn.addEventListener("click", function () {
+            activate(btn);
           });
-          Object.keys(panels).forEach(function (k) {
-            panels[k].classList.toggle("active", k === id);
+          btn.addEventListener("keydown", function (e) {
+            var step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+            if (!step) return;
+            e.preventDefault();
+            var next = tabs[(index + step + tabs.length) % tabs.length];
+            activate(next);
+            next.focus();
           });
         });
+      }
+
+      var installTabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+      var installPanels = { unix: document.getElementById("panel-unix"), win: document.getElementById("panel-win") };
+      wireTablist(installTabs, function (btn) {
+        var id = btn.getAttribute("data-tab");
+        installTabs.forEach(function (t) {
+          var on = t === btn;
+          t.classList.toggle("active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        Object.keys(installPanels).forEach(function (k) {
+          installPanels[k].classList.toggle("active", k === id);
+        });
+      });
+
+      var showcaseTabs = Array.prototype.slice.call(document.querySelectorAll(".showcase-tab"));
+      wireTablist(showcaseTabs, function (btn) {
+        var id = btn.getAttribute("data-shot");
+        showcaseTabs.forEach(function (t) {
+          var on = t === btn;
+          t.classList.toggle("active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+          t.tabIndex = on ? 0 : -1;
+          var panel = document.getElementById(t.getAttribute("data-shot"));
+          if (!panel) return;
+          if (!on) {
+            var playing = panel.querySelector("video");
+            if (playing && !playing.paused) playing.pause();
+          }
+          panel.hidden = !on;
+        });
+        void id;
       });
 
       function copyInstallText(text) {
@@ -507,6 +624,21 @@
             .catch(function () {});
         });
       });
+
+      var releaseVersion = document.getElementById("release-pill-version");
+      if (releaseVersion && window.fetch) {
+        fetch("https://api.github.com/repos/coddy-project/coddy-agent/releases/latest", {
+          headers: { Accept: "application/vnd.github+json" }
+        })
+          .then(function (r) {
+            return r.ok ? r.json() : null;
+          })
+          .then(function (data) {
+            var tag = data && data.tag_name ? String(data.tag_name).replace(/^v/, "") : "";
+            if (/^\d+\.\d+\.\d+/.test(tag)) releaseVersion.textContent = "v" + tag;
+          })
+          .catch(function () {});
+      }
     })();
   </script>
 </body>
