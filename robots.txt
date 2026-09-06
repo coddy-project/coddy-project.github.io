@@ -1,0 +1,34 @@
+# coddy.dev - landing page for Coddy Agent
+# Source: https://github.com/coddy-project/coddy-project.github.io
+# Everything here is public; search engines and AI crawlers are welcome.
+
+User-agent: *
+Allow: /
+
+# AI search, assistant and training crawlers, listed explicitly so a stricter
+# group added in front of this file cannot silently override the intent.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: Amazonbot
+User-agent: meta-externalagent
+User-agent: DuckAssistBot
+User-agent: MistralAI-User
+User-agent: cohere-ai
+User-agent: YouBot
+User-agent: CCBot
+User-agent: Bytespider
+Allow: /
+
+Sitemap: https://coddy.dev/sitemap.xml

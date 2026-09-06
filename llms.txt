@@ -1,0 +1,52 @@
+# Coddy Agent
+
+> Coddy Agent is an open-source (MIT) general-purpose AI agent that ships as one static Go binary: a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, background tasks, a cron scheduler and long-term memory, driven from a terminal console, an embedded web UI, an OpenAI-compatible HTTP API, the Agent Client Protocol (ACP) for editors such as Zed, or a Telegram gateway.
+
+Key facts:
+
+- Website: https://coddy.dev/ (this page). Source code and documentation: https://github.com/coddy-project/coddy-agent
+- Install on Linux or macOS: `curl -fsSL https://coddy.dev/install.sh | bash`. Install on Windows: `irm https://coddy.dev/install.ps1 | iex`. Docker image: `ghcr.io/coddy-project/coddy-agent` (amd64 and arm64). Upgrade in place with `coddy update -y`.
+- Commands: `coddy` opens the terminal console, `coddy http` serves the web UI and the REST API, `coddy acp` runs the ACP server for editors, `coddy gateway` starts the Telegram bot, `coddy -p "..."` prints a one-shot answer.
+- Models: any OpenAI-compatible API or Anthropic with your own keys and endpoints, including local servers such as Ollama, llama.cpp and vLLM, plus NeuralDeep and ChatGPT sign-in through the Codex backend. Model entries live in `~/.coddy/config.yaml`.
+- Runs in distroless and from-scratch containers with a read-only root filesystem; no runtime dependencies. Written in Go 1.25.
+- Reads Cursor-style rules (`.cursor/rules`, `.coddy/rules`, `.claude/rules`, `.codex/rules`), `AGENTS.md`, and `SKILL.md` skill packs from the project.
+- The documentation below is the Markdown kept in the repository, so it always matches the current release.
+
+## Docs
+
+- [README](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/README.md): overview, quick start, operating modes (agent, plan, ask), build tags and the full feature list.
+- [Install](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/install.md): installer scripts, release binaries per platform, Docker, and first-run configuration.
+- [Configuration](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/config.md): providers and models, permissions, MCP, skills, memory, SSH remote execution, and agent self-configuration.
+- [config.yaml field reference](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/config-reference.md): every YAML field with defaults, including compaction and reasoning levels.
+- [Terminal console](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/cli.md): the interactive TUI, one-shot mode, resuming sessions, remote mode against a running server.
+- [Web UI](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ui.md): embedded single-page app served by `coddy http`, sessions, plan documents, attachments, themes and languages.
+- [HTTP API](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/http-api.md): OpenAI-compatible endpoints (`/v1/responses`, `/v1/chat/completions`, `/v1/models`) and the `/coddy` REST surface.
+- [ACP protocol](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/acp-protocol.md): how `coddy acp` implements the Agent Client Protocol for Zed, Obsidian, VS Code and custom clients.
+- [Telegram gateway](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/gateway.md): bot setup, per-user sessions, group isolation modes, admin ACL, proxies.
+- [Update](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/update.md): `coddy update`, release channels and rollback.
+
+## Agent features
+
+- [Rules](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/rules.md): discovery of Cursor, Coddy, Claude and Codex rule directories and nested `AGENTS.md`.
+- [Skills](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/skills.md): `SKILL.md` packs as slash commands, `skills.dirs`, installing from registries.
+- [Subagents](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/subagents.md): `spawn_agent`, Markdown subagent definitions, trust receipts, tool narrowing.
+- [MCP integration](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/mcp-integration.md): connecting MCP servers from config or per session, workspace trust for project-local servers.
+- [Background tasks](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/background-tasks.md): detached shell commands, the Tasks panel, adoption of long-running foreground commands.
+- [Scheduler](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/scheduler.md): cron jobs with a UI drawer and agent tools.
+- [Long-term memory](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/external/memory/README.md): the optional memory copilot and its HTTP routes.
+- [Custom tools](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/custom-tools.md): adding your own tools to the agent.
+- [Remote control](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/remote-control.md): pointing the console, ACP or the web UI at a remote `coddy http` server.
+
+## Operations
+
+- [Docker](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/docker.md): published images, compose examples, distroless and scratch deployments.
+- [Building from source](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/build.md): `make build` and the `http`, `ui`, `cli`, `scheduler`, `memory`, `gateway` build tags.
+- [Releases](https://github.com/coddy-project/coddy-agent/releases): release notes and binaries for Linux, macOS and Windows.
+- [License](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/LICENSE): MIT.
+
+## Optional
+
+- [Architecture](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/architecture.md): packages, session manager, persistence, transport layers.
+- [ReAct agent design](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/react-agent.md): the reasoning and tool loop, runaway guards.
+- [Codex hooks](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/codex-hooks.md), [OpenCode hooks](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/opencode-hooks.md), [ZCode hooks](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/zcode-hooks.md): delivering the same project rules to other coding agents.
+- [Install script (Linux, macOS)](https://coddy.dev/install.sh) and [install script (Windows)](https://coddy.dev/install.ps1): the exact scripts behind the one-line install commands.

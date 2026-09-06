@@ -7,8 +7,11 @@
   <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary with a terminal console, ACP, embedded web UI, subagents, rules, skills, MCP, Telegram gateway, scheduler, and your own API keys." />
   <meta name="theme-color" content="#9333ea" />
   <link rel="canonical" href="https://coddy.dev/" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="author" content="Coddy Project" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Coddy Agent" />
+  <meta property="og:locale" content="en_US" />
   <meta property="og:title" content="Coddy Agent - general-purpose agent in one Go binary" />
   <meta property="og:description" content="One static Go binary for software agents: ReAct, subagents, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, Cursor-style rules, Docker-ready, your API keys." />
   <meta property="og:url" content="https://coddy.dev/" />
@@ -24,7 +27,151 @@
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="styles.css?v=17" />
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+  <link rel="stylesheet" href="styles.css?v=18" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://coddy.dev/#organization",
+        "name": "Coddy Project",
+        "url": "https://coddy.dev/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://coddy.dev/assets/apple-touch-icon.png",
+          "width": 180,
+          "height": 180
+        },
+        "sameAs": [
+          "https://github.com/coddy-project",
+          "https://github.com/coddy-project/coddy-agent"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://coddy.dev/#website",
+        "url": "https://coddy.dev/",
+        "name": "Coddy Agent",
+        "description": "Official site of Coddy Agent: install commands, demos, features, and documentation links.",
+        "inLanguage": "en",
+        "publisher": {
+          "@id": "https://coddy.dev/#organization"
+        }
+      },
+      {
+        "@type": [
+          "SoftwareApplication",
+          "SoftwareSourceCode"
+        ],
+        "@id": "https://coddy.dev/#software",
+        "name": "Coddy Agent",
+        "alternateName": "Coddy",
+        "url": "https://coddy.dev/",
+        "description": "Coddy Agent is an open-source, general-purpose AI agent in one static Go binary: a ReAct loop with filesystem and shell tools, MCP, project rules, skills, subagents, background tasks, a cron scheduler, and long-term memory, driven from a terminal console, an embedded web UI, an OpenAI-compatible HTTP API, the Agent Client Protocol (ACP) for editors, or a Telegram gateway. Works with any OpenAI-compatible provider or Anthropic using your own API keys, including local models, and runs in distroless containers.",
+        "applicationCategory": "DeveloperApplication",
+        "applicationSubCategory": "AI agent",
+        "operatingSystem": "Linux, macOS, Windows",
+        "programmingLanguage": "Go",
+        "runtimePlatform": "Go 1.25",
+        "codeRepository": "https://github.com/coddy-project/coddy-agent",
+        "downloadUrl": "https://github.com/coddy-project/coddy-agent/releases/latest",
+        "installUrl": "https://coddy.dev/#install",
+        "softwareHelp": {
+          "@type": "CreativeWork",
+          "name": "Coddy Agent documentation",
+          "url": "https://github.com/coddy-project/coddy-agent/tree/main/docs"
+        },
+        "releaseNotes": "https://github.com/coddy-project/coddy-agent/releases",
+        "license": "https://github.com/coddy-project/coddy-agent/blob/main/LICENSE",
+        "isAccessibleForFree": true,
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "image": "https://coddy.dev/assets/og-image.png",
+        "screenshot": [
+          "https://coddy.dev/assets/demo/poster-webui.jpg",
+          "https://coddy.dev/assets/demo/poster-tui.jpg",
+          "https://coddy.dev/assets/demo/poster-zed.jpg"
+        ],
+        "featureList": [
+          "ReAct loop with filesystem and shell tools",
+          "Terminal console TUI, embedded web UI, OpenAI-compatible HTTP API",
+          "Agent Client Protocol (ACP) server for Zed, Obsidian, VS Code",
+          "Telegram gateway",
+          "MCP servers, Cursor-style rules, skills, AGENTS.md",
+          "Subagents, background tasks, cron scheduler, long-term memory, context compaction",
+          "Any OpenAI-compatible provider or Anthropic, local models via Ollama, llama.cpp, vLLM",
+          "Single static binary, Docker images for amd64 and arm64, distroless and scratch images"
+        ],
+        "keywords": "AI agent, coding agent, agent harness, Go, single binary, ACP, MCP, self-hosted, Ollama, OpenAI-compatible, Telegram bot, distroless",
+        "author": {
+          "@id": "https://coddy.dev/#organization"
+        },
+        "publisher": {
+          "@id": "https://coddy.dev/#organization"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://coddy.dev/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is Coddy Agent?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which LLM providers and models does Coddy work with?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, always with your own keys and endpoints. ChatGPT sign-in works through the Codex backend. Models are declared in config.yaml and switched per session."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I install Coddy?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. Docker images for amd64 and arm64 are published as ghcr.io/coddy-project/coddy-agent, and coddy update -y upgrades an existing install."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can Coddy run on-premises with local models?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Point a model entry at a local OpenAI-compatible server such as Ollama, llama.cpp, or vLLM and no prompt leaves your network. The binary is static, so it also runs in distroless or from-scratch containers with a read-only root filesystem, one agent per task."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which editors and clients can host Coddy?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "coddy acp speaks the Agent Client Protocol over stdio, so Zed, Obsidian, VS Code, or your own script get sessions, modes, permissions, streaming updates, and skills as slash commands. coddy http serves an OpenAI-compatible REST API with the embedded web UI, and the Telegram gateway runs the same agent in chats."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How is Coddy different from other coding agents?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and AGENTS.md from the repository, so it fits projects already set up for other agents."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <div class="nav-scrim" id="nav-scrim" hidden></div>
@@ -38,7 +185,18 @@
         <a class="nav-drawer-link" href="#demos">Demo</a>
         <a class="nav-drawer-link" href="#features">Features</a>
         <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
-        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a
+          class="release-pill nav-release"
+          id="release-pill"
+          href="https://github.com/coddy-project/coddy-agent/releases/latest"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Latest release on GitHub"
+        >
+          <svg class="release-pill-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+          <span class="visually-hidden">GitHub, latest release </span>
+          <span class="release-pill-version" id="release-pill-version">v1.0.1</span>
+        </a>
       </nav>
       <button
         type="button"
@@ -53,20 +211,9 @@
       </button>
     </div>
   </header>
-  <div class="shell">
+  <main class="shell">
 
     <section class="hero">
-      <a
-        class="release-pill"
-        id="release-pill"
-        href="https://github.com/coddy-project/coddy-agent/releases/latest"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span class="release-pill-dot" aria-hidden="true"></span>
-        <span class="release-pill-version" id="release-pill-version">v1.0.0</span>
-        <span class="release-pill-label">release notes</span>
-      </a>
       <h1>Run a general-purpose agent from one static binary</h1>
       <p class="tagline">
         Coddy is an agent harness: a ReAct loop with filesystem and shell tools, MCP, project rules, skills,
@@ -124,17 +271,34 @@
       <h2>See it in action</h2>
       <div class="glass showcase">
         <div class="showcase-tabs" role="tablist" aria-label="Coddy surfaces">
-          <button type="button" class="showcase-tab active" role="tab" aria-selected="true" aria-controls="shot-terminal" id="tab-terminal" data-shot="shot-terminal">Terminal</button>
-          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-webui" id="tab-webui" data-shot="shot-webui">Web UI</button>
+          <button type="button" class="showcase-tab active" role="tab" aria-selected="true" aria-controls="shot-webui" id="tab-webui" data-shot="shot-webui">Web UI</button>
+          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-terminal" id="tab-terminal" data-shot="shot-terminal">Terminal</button>
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-acp" id="tab-acp" data-shot="shot-acp">Editor (ACP)</button>
         </div>
 
-        <div class="showcase-panel" id="shot-terminal" role="tabpanel" aria-labelledby="tab-terminal" tabindex="0">
+        <div class="showcase-panel" id="shot-webui" role="tabpanel" aria-labelledby="tab-webui" tabindex="0">
+          <button
+            type="button"
+            class="demo-player"
+            data-video="assets/demo/coddy-webui-demo.mp4"
+            aria-label="Play demo: Coddy web UI, 2:22"
+          >
+            <img src="assets/demo/poster-webui.jpg" width="1280" height="720" alt="Coddy web UI start screen with the model menu open" loading="eager" fetchpriority="high" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">2:22</span>
+          </button>
+          <p class="showcase-caption">
+            The same agent served by <code>coddy http</code>: streamed tool calls, a permission card with a real diff,
+            session history, seven themes, and an environment switch that points the UI at a remote server.
+          </p>
+        </div>
+
+        <div class="showcase-panel" id="shot-terminal" role="tabpanel" aria-labelledby="tab-terminal" tabindex="0" hidden>
           <button
             type="button"
             class="demo-player"
             data-video="assets/demo/coddy-tui-demo.mp4"
-            aria-label="Play demo: Coddy console TUI, 3 minutes 46 seconds"
+            aria-label="Play demo: Coddy console TUI, 3:46"
           >
             <img src="assets/demo/poster-tui.jpg" width="1280" height="720" alt="Coddy console TUI with the model selector open" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
@@ -146,29 +310,12 @@
           </p>
         </div>
 
-        <div class="showcase-panel" id="shot-webui" role="tabpanel" aria-labelledby="tab-webui" tabindex="0" hidden>
-          <button
-            type="button"
-            class="demo-player"
-            data-video="assets/demo/coddy-webui-demo.mp4"
-            aria-label="Play demo: Coddy web UI, 2 minutes 22 seconds"
-          >
-            <img src="assets/demo/poster-webui.jpg" width="1280" height="720" alt="Coddy web UI start screen with the model menu open" loading="lazy" />
-            <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">2:22</span>
-          </button>
-          <p class="showcase-caption">
-            The same agent served by <code>coddy http</code>: streamed tool calls, a permission card with a real diff,
-            session history, seven themes, and an environment switch that points the UI at a remote server.
-          </p>
-        </div>
-
         <div class="showcase-panel" id="shot-acp" role="tabpanel" aria-labelledby="tab-acp" tabindex="0" hidden>
           <button
             type="button"
             class="demo-player"
             data-video="assets/demo/coddy-zed-acp-demo.mp4"
-            aria-label="Play demo: Coddy inside Zed over ACP, 2 minutes 57 seconds"
+            aria-label="Play demo: Coddy inside Zed over ACP, 2:57"
           >
             <img src="assets/demo/poster-zed.jpg" width="1280" height="720" alt="Zed with the Coddy thread open in the agent panel" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
@@ -325,19 +472,51 @@
       </div>
     </section>
 
-    <footer>
+    <section id="faq">
+      <h2>Questions</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <h3>What is Coddy Agent?</h3>
+          <p>Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Which LLM providers and models does Coddy work with?</h3>
+          <p>Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, always with your own keys and endpoints. ChatGPT sign-in works through the Codex backend. Models are declared in <code>config.yaml</code> and switched per session.</p>
+        </div>
+        <div class="faq-item">
+          <h3>How do I install Coddy?</h3>
+          <p>Linux and macOS: <code>curl -fsSL https://coddy.dev/install.sh | bash</code>. Windows: <code>irm https://coddy.dev/install.ps1 | iex</code>. The script downloads the latest release binary, puts it on your PATH, and creates <code>~/.coddy/config.yaml</code> from the example. Docker images for amd64 and arm64 are published as <code>ghcr.io/coddy-project/coddy-agent</code>, and <code>coddy update -y</code> upgrades an existing install.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Can Coddy run on-premises with local models?</h3>
+          <p>Yes. Point a model entry at a local OpenAI-compatible server such as Ollama, llama.cpp, or vLLM and no prompt leaves your network. The binary is static, so it also runs in distroless or from-scratch containers with a read-only root filesystem, one agent per task.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Which editors and clients can host Coddy?</h3>
+          <p><code>coddy acp</code> speaks the Agent Client Protocol over stdio, so Zed, Obsidian, VS Code, or your own script get sessions, modes, permissions, streaming updates, and skills as slash commands. <code>coddy http</code> serves an OpenAI-compatible REST API with the embedded web UI, and the Telegram gateway runs the same agent in chats.</p>
+        </div>
+        <div class="faq-item">
+          <h3>How is Coddy different from other coding agents?</h3>
+          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="shell-width">
       <p class="footer-links">
         <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
         <a href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Releases</a>
         <a href="https://github.com/coddy-project/coddy-agent/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+        <a href="/llms.txt">llms.txt</a>
       </p>
       <p>
         Coddy Project ·
         <a href="https://github.com/coddy-project" target="_blank" rel="noopener noreferrer">github.com/coddy-project</a>
       </p>
-    </footer>
-  </div>
+    </div>
+  </footer>
   <script>
     (function () {
       function wireTablist(tabs, activate) {
@@ -544,7 +723,7 @@
         scrim.addEventListener("click", function () {
           setNavOpen(false);
         });
-        drawer.querySelectorAll(".nav-drawer-link").forEach(function (link) {
+        drawer.querySelectorAll(".nav-drawer-link, .nav-release").forEach(function (link) {
           link.addEventListener("click", function (e) {
             var href = link.getAttribute("href") || "";
             if (href.charAt(0) === "#" && href.length > 1) {

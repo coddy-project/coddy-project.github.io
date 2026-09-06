@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://coddy.dev/</loc>
+    <lastmod>2026-09-06</lastmod>
+    <image:image>
+      <image:loc>https://coddy.dev/assets/og-image.png</image:loc>
+      <image:title>Coddy Agent - general-purpose agent in one Go binary</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://coddy.dev/assets/demo/poster-webui.jpg</image:loc>
+      <image:title>Coddy web UI</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://coddy.dev/assets/demo/poster-tui.jpg</image:loc>
+      <image:title>Coddy console TUI</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://coddy.dev/assets/demo/poster-zed.jpg</image:loc>
+      <image:title>Coddy inside Zed over ACP</image:title>
+    </image:image>
+  </url>
+</urlset>

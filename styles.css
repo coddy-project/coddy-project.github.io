@@ -81,7 +81,7 @@ a:hover {
   z-index: 1;
   max-width: 920px;
   margin: 0 auto;
-  padding: 0 20px 64px;
+  padding: 0 20px 0;
 }
 
 .site-header {
@@ -157,7 +157,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 20px;
+  margin: 0;
   padding: 5px 14px 5px 11px;
   border-radius: 999px;
   border: 1px solid var(--glass-border);
@@ -174,12 +174,34 @@ a:hover {
   text-decoration: none;
 }
 
-.release-pill-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.18);
+.release-pill-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: color 0.18s ease;
+}
+
+.release-pill:hover .release-pill-icon {
+  color: var(--text);
+}
+
+.nav-drawer .release-pill {
+  padding: 4px 12px 4px 9px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .release-pill-version {
@@ -337,6 +359,18 @@ code {
   margin: 12px 0 0;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.hint a,
+.faq-item a {
+  text-decoration: underline;
+  text-decoration-color: rgba(192, 132, 252, 0.45);
+  text-underline-offset: 3px;
+}
+
+.hint a:hover,
+.faq-item a:hover {
+  text-decoration-color: currentColor;
 }
 
 .install-alt {
@@ -533,6 +567,34 @@ a.feature-link:focus-visible code {
   transition: color 0.18s ease;
 }
 
+.faq-list {
+  display: grid;
+  gap: 16px;
+}
+
+.faq-item + .faq-item {
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.faq-item h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.faq-item p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.faq-item code {
+  font-family: var(--skill-chip-font);
+  font-size: 0.85em;
+}
+
 .hero-skills {
   display: flex;
   flex-wrap: wrap;
@@ -678,9 +740,11 @@ a.feature-link:focus-visible code {
   margin: 0 0 10px;
 }
 
-footer {
+.site-footer {
+  position: relative;
+  z-index: 1;
   margin-top: 56px;
-  padding-top: 24px;
+  padding: 24px 0 64px;
   text-align: center;
   font-size: 0.85rem;
   color: var(--muted);
@@ -700,7 +764,7 @@ footer {
   }
 
   .shell {
-    padding: 16px 14px 40px;
+    padding: 16px 14px 0;
   }
 
   .shell-width {
@@ -865,6 +929,22 @@ footer {
     color: #f3e8ff;
   }
 
+  .nav-drawer .release-pill {
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .nav-drawer .release-pill:hover {
+    background: rgba(147, 51, 234, 0.18);
+  }
+
   .hero {
     margin-bottom: 32px;
   }
@@ -922,7 +1002,8 @@ footer {
     margin-bottom: 32px;
   }
 
-  footer {
+  .site-footer {
     margin-top: 40px;
+    padding-bottom: 40px;
   }
 }
