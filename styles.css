@@ -221,6 +221,16 @@ a:hover {
   color: transparent;
 }
 
+.hero-br {
+  display: none;
+}
+
+@media (min-width: 721px) {
+  .hero-br {
+    display: inline;
+  }
+}
+
 .hero .tagline {
   margin: 0 auto 24px;
   max-width: 36rem;
