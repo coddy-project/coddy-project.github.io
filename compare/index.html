@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coddy vs other agent harnesses - 2026 comparison</title>
+  <meta name="description" content="Coddy compared with 17 other AI agent harnesses in September 2026: Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build. Five tables on delivery, surfaces, extensibility, context and security." />
+  <meta name="theme-color" content="#9333ea" />
+  <link rel="canonical" href="https://coddy.dev/compare/" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta name="author" content="Coddy Project" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Coddy Agent" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:title" content="Coddy vs other agent harnesses - 2026 comparison" />
+  <meta property="og:description" content="Eighteen agent harnesses side by side: delivery, surfaces, extensibility, context handling and the trust model. Where Coddy wins and where it lags." />
+  <meta property="og:url" content="https://coddy.dev/compare/" />
+  <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Coddy vs other agent harnesses - 2026 comparison" />
+  <meta name="twitter:description" content="Eighteen agent harnesses side by side: delivery, surfaces, extensibility, context handling and the trust model." />
+  <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
+  <link rel="icon" href="/assets/coddy-favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/assets/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+  <link rel="stylesheet" href="/styles.css?v=20" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        "@id": "https://coddy.dev/compare/#article",
+        "headline": "Coddy vs other agent harnesses - 2026 comparison",
+        "description": "Coddy Agent compared with seventeen other AI agent harnesses in September 2026 across delivery, surfaces, extensibility, context handling, autonomy and the trust model.",
+        "inLanguage": "en",
+        "datePublished": "2026-09-07",
+        "dateModified": "2026-09-07",
+        "isPartOf": { "@id": "https://coddy.dev/#website" },
+        "mainEntityOfPage": { "@id": "https://coddy.dev/compare/#webpage" },
+        "about": { "@id": "https://coddy.dev/#software" },
+        "author": { "@id": "https://coddy.dev/#organization" },
+        "publisher": { "@id": "https://coddy.dev/#organization" },
+        "image": "https://coddy.dev/assets/og-image.png"
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://coddy.dev/compare/#webpage",
+        "url": "https://coddy.dev/compare/",
+        "name": "Coddy vs other agent harnesses - 2026 comparison",
+        "isPartOf": { "@id": "https://coddy.dev/#website" },
+        "breadcrumb": { "@id": "https://coddy.dev/compare/#breadcrumb" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://coddy.dev/compare/#breadcrumb",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Coddy Agent", "item": "https://coddy.dev/" },
+          { "@type": "ListItem", "position": 2, "name": "Comparison", "item": "https://coddy.dev/compare/" }
+        ]
+      },
+      {
+        "@type": "ItemList",
+        "@id": "https://coddy.dev/compare/#harnesses",
+        "name": "Agent harnesses compared",
+        "numberOfItems": 18,
+        "itemListOrder": "https://schema.org/ItemListUnordered",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Coddy" },
+          { "@type": "ListItem", "position": 2, "name": "Claude Code" },
+          { "@type": "ListItem", "position": 3, "name": "Codex CLI" },
+          { "@type": "ListItem", "position": 4, "name": "OpenCode" },
+          { "@type": "ListItem", "position": 5, "name": "Pi" },
+          { "@type": "ListItem", "position": 6, "name": "OMP (oh-my-pi)" },
+          { "@type": "ListItem", "position": 7, "name": "DeepSeek Harness" },
+          { "@type": "ListItem", "position": 8, "name": "OpenClaw" },
+          { "@type": "ListItem", "position": 9, "name": "Hermes Agent" },
+          { "@type": "ListItem", "position": 10, "name": "Goose" },
+          { "@type": "ListItem", "position": 11, "name": "Aider" },
+          { "@type": "ListItem", "position": 12, "name": "Cline" },
+          { "@type": "ListItem", "position": 13, "name": "OpenHands" },
+          { "@type": "ListItem", "position": 14, "name": "Crush" },
+          { "@type": "ListItem", "position": 15, "name": "Reasonix" },
+          { "@type": "ListItem", "position": 16, "name": "CodeWhale" },
+          { "@type": "ListItem", "position": 17, "name": "Grok Build" },
+          { "@type": "ListItem", "position": 18, "name": "Antigravity CLI" }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://coddy.dev/compare/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Which agent harnesses ship as a single binary with no runtime?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Six of the eighteen harnesses compared here: Coddy, Reasonix and Crush in Go, and Codex CLI, CodeWhale and Grok Build in Rust. The rest need Node.js or Python on the host. Of those six, only Coddy also carries a web UI, a cron scheduler, long-term memory and a messenger gateway inside the same file, switched on with Go build tags."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How is Coddy different from Claude Code, Codex CLI and OpenCode?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Coddy is one MIT-licensed static Go binary with four entry points over one shared session store: a terminal console, an ACP server for editors, an OpenAI-compatible HTTP gateway with an embedded web UI, and a Telegram gateway. It also reads the config other agents already leave in a repository - Cursor and Claude Code rules, AGENTS.md, .claude/agents subagent definitions, Claude Code hooks.json and Cursor-style mcp.json - so it drops into projects set up for another tool."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Where does Coddy lag behind other coding agents?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Coddy has no kernel-level sandbox, so isolation relies on the permission gate plus a container, while Codex CLI enforces Landlock, seccomp and Seatbelt in-process. It has no LSP or DAP integration, unlike OMP and OpenCode. It uses ordinary edit and apply_patch rather than a hash-anchored edit format. It has no workspace checkpoints to roll a failed autonomous run back, and no built-in fan-out of subagents across git worktrees."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which coding agents support the Agent Client Protocol?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "More than 25 agents speak ACP as of 2026. Among the harnesses compared here, Coddy, OpenCode, Goose, Reasonix, Grok Build and OMP run it natively, while Claude Code and Codex CLI are hosted through adapters. Coddy implements the agent side with coddy acp over stdio, exposing sessions, modes, permissions, streaming updates and skills as slash commands."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="page-wide">
+  <div class="nav-scrim" id="nav-scrim" hidden></div>
+  <header class="site-header">
+    <div class="site-header-inner shell-width">
+      <a class="logo" href="/" aria-label="Coddy agent home">
+        <img class="logo-wordmark" src="/assets/coddy-logo-wordmark.svg" width="188" height="56" alt="Coddy agent" />
+      </a>
+      <nav class="nav-drawer" id="site-nav" aria-label="Site menu" aria-hidden="true">
+        <a class="nav-drawer-link" href="/#install">Install</a>
+        <a class="nav-drawer-link" href="/#demos">Demo</a>
+        <a class="nav-drawer-link" href="/#features">Features</a>
+        <a class="nav-drawer-link" href="/compare/" aria-current="page">Compare</a>
+        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
+        <a
+          class="release-pill nav-release"
+          id="release-pill"
+          href="https://github.com/coddy-project/coddy-agent/releases/latest"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Latest release on GitHub"
+        >
+          <svg class="release-pill-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+          <span class="visually-hidden">GitHub, latest release </span>
+          <span class="release-pill-version" id="release-pill-version">v1.0.8</span>
+        </a>
+      </nav>
+      <button
+        type="button"
+        class="nav-burger"
+        aria-expanded="false"
+        aria-controls="site-nav"
+        aria-label="Open menu"
+      >
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+  <main class="shell">
+
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="/">Coddy Agent</a> / <span aria-current="page">Comparison</span>
+    </nav>
+
+    <section class="page-hero">
+      <h1>Coddy vs the 2026 agent harnesses</h1>
+      <p class="tagline">
+        Eighteen harnesses side by side. What they are written in, where you can talk to them, how you extend them,
+        what they do to a long session, and what stops them from running something you did not ask for.
+        Coddy is one row among seventeen others, including the places where it loses.
+      </p>
+      <p class="page-meta">
+        Compiled September 2026. Coddy read straight from its own source at v1.0.8; every other project from its
+        repository, docs and current reviews. <a href="#sources">Sources at the bottom.</a>
+      </p>
+    </section>
+
+    <section id="numbers">
+      <h2>Coddy at a glance</h2>
+      <div class="stat-row">
+        <div class="glass stat">
+          <span class="stat-value">1 binary</span>
+          <span class="stat-label">Static Go, no runtime, distroless-ready</span>
+        </div>
+        <div class="glass stat">
+          <span class="stat-value">4 surfaces</span>
+          <span class="stat-label">Terminal, editor over ACP, web UI, Telegram</span>
+        </div>
+        <div class="glass stat">
+          <span class="stat-value">288 scenarios</span>
+          <span class="stat-label">Gherkin specs across 59 feature files</span>
+        </div>
+        <div class="glass stat">
+          <span class="stat-value">17 tag builds</span>
+          <span class="stat-label">Test matrix green on every build-tag combination</span>
+        </div>
+      </div>
+      <p class="cmp-note">
+        Behind those numbers: 79k lines of Go, 71k lines of tests in 254 files, 1583 test functions, and an embedded
+        SPA of 49k lines of TypeScript. Counted on v1.0.8.
+      </p>
+    </section>
+
+    <section id="what-is-coddy">
+      <h2>What Coddy is, in one section</h2>
+      <div class="prose">
+        <p>
+          Coddy calls itself a <strong>harness</strong> and means it. The core is protocol plumbing - an ACP JSON-RPC
+          server, a session manager, configuration, MCP wiring - plus a ReAct loop over swappable LLM providers.
+          The coding agent is a product profile on top, assembled from prompts and a default toolset. Change the
+          prompt and the toolset and the same core becomes a different agent.
+        </p>
+        <p>
+          The practical consequence is delivery. One static Go binary drops into <code>scratch</code> or
+          <code>distroless</code> with no system shell. The <code>grep</code> and <code>glob</code> tools use system
+          ripgrep when it exists and fall back to built-in Go implementations when it does not, so the agent still
+          works in a container that holds nothing but the agent.
+        </p>
+        <p>
+          Four entry points share one <code>$CODDY_HOME</code>: <code>coddy acp</code> for editors,
+          <code>coddy http</code> for the REST gateway and the embedded web UI, bare <code>coddy</code> for the
+          terminal console, and <code>coddy gateway</code> for messengers. A session started in the terminal opens in
+          a browser and continues in an editor, because the session bundle lives in one place on disk. On top of that,
+          <code>--remote</code> points the console or ACP at a running server elsewhere.
+        </p>
+        <p>
+          A few mechanisms are worth naming because they rarely show up elsewhere. <strong>Result eviction</strong>
+          collapses stale <code>read</code> and <code>grep</code> output into placeholders in the projection sent to
+          the model, while <code>keep_result</code> lets the model pin what it still needs. The <strong>loop
+          guard</strong> cuts a stream that degenerates into repetition and stops re-running a tool called with
+          byte-identical arguments. On a rate limit the resilient wrapper raises a typed
+          <code>QuotaResetError</code>, and with <code>agent.wait_for_limit_reset</code> the turn sleeps until the
+          quota returns and then replays the very same call. <strong>Self-configuration</strong> gives the agent
+          staged, uci-style commands over its own YAML, where nothing touches the file until a commit you approve,
+          which validates, snapshots and hot-reloads.
+        </p>
+      </div>
+    </section>
+
+    <section id="field">
+      <h2>How the field splits</h2>
+      <div class="prose">
+        <p>
+          By mid-2026 the genre had separated into four camps, and comparing them on one set of axes only confuses
+          things.
+        </p>
+        <p>
+          <strong>Lab CLIs</strong> - Claude Code, Codex CLI, Antigravity CLI, Grok Build, Qwen Code, Kimi CLI. Built
+          by the model vendors, they set the conventions (<code>AGENTS.md</code>, MCP, skills) and live next to a
+          subscription.
+        </p>
+        <p>
+          <strong>General-purpose open harnesses</strong> - OpenCode, Pi, OMP, DeepSeek Harness, Crush, Reasonix,
+          CodeWhale, Goose, Aider, Cline, OpenHands, Continue and Coddy. This is where the feature race actually
+          happens.
+        </p>
+        <p>
+          <strong>Personal assistant gateways</strong> - OpenClaw, Hermes Agent and a swarm of clones. Their premise
+          is that a personal agent hits the gateway problem before it hits the model problem, so the first thing they
+          build is a process owning channels, queues, sessions and memory, with the model attached to the side.
+        </p>
+        <p>
+          <strong>Commercial platforms</strong> - Amp, Cursor CLI, Factory Droid, Devin. They sell team workflows,
+          parallelism and tracker integrations.
+        </p>
+        <p>
+          Two events shaped the year. Google switched Gemini CLI off for individual accounts on 18 June and moved
+          everyone to the closed, Go-based Antigravity CLI, breaking CI pipelines on the way and cutting the free
+          tier from a thousand requests a day to roughly twenty. And in March the Claude Code sources leaked, which
+          produced Claw Code, a clean-room rewrite in Python and Rust that set a GitHub record for star velocity.
+          The second story does not affect the technical picture, but it explains why 2026 star counts jump around
+          so much.
+        </p>
+      </div>
+    </section>
+
+    <section id="tables">
+      <h2>The tables</h2>
+      <p class="cmp-caption">
+        Five views over the same eighteen harnesses. Cells read "no data" where a project does not document the
+        answer; guessing would be worse than an honest gap. Tables scroll sideways on narrow screens.
+      </p>
+      <div class="cmp-block">
+        <h3 id="table-foundation">Foundation and delivery</h3>
+        <p class="cmp-caption">What each harness is written in, how it is licensed, and how it reaches your machine.</p>
+        <div class="cmp-scroll" tabindex="0" role="region" aria-labelledby="table-foundation">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Harness</th>
+                <th scope="col">Maintainer</th>
+                <th scope="col">Language</th>
+                <th scope="col">License</th>
+                <th scope="col">Delivery</th>
+                <th scope="col">Stars, Sep 2026</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td>Coddy Project</td>
+                <td>Go</td>
+                <td>MIT</td>
+                <td>one static binary, build tags, distroless</td>
+                <td>~0.14k</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>Anthropic</td>
+                <td>TypeScript</td>
+                <td>source-available</td>
+                <td>npm, installers, desktop, web</td>
+                <td>~144k</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>OpenAI</td>
+                <td>Rust</td>
+                <td>Apache-2.0</td>
+                <td>binary, npm, brew</td>
+                <td>~122k</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>SST</td>
+                <td>TypeScript</td>
+                <td>MIT</td>
+                <td>npm, brew, scoop, AUR, Nix</td>
+                <td>~206k</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>earendil-works</td>
+                <td>TypeScript</td>
+                <td>MIT</td>
+                <td>npm (SDK and CLI)</td>
+                <td>~103k</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>can1357, Stencil Labs</td>
+                <td>Rust + TypeScript</td>
+                <td>MIT</td>
+                <td>bun, brew, Nix, script</td>
+                <td>~30k</td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>DeepSeek</td>
+                <td>TypeScript</td>
+                <td>MIT</td>
+                <td>npx, pnpm build</td>
+                <td>~203-215k</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>community, P. Steinberger</td>
+                <td>TypeScript</td>
+                <td>MIT</td>
+                <td>npm, script, Docker</td>
+                <td>~375-389k</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>Nous Research</td>
+                <td>Python + Node</td>
+                <td>MIT</td>
+                <td>script (Python 3.11+, Node, ripgrep, ffmpeg)</td>
+                <td>~243k</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>AAIF, Linux Foundation</td>
+                <td>Rust</td>
+                <td>Apache-2.0</td>
+                <td>binary, desktop app</td>
+                <td>~54k</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>Paul Gauthier</td>
+                <td>Python</td>
+                <td>Apache-2.0</td>
+                <td>pip</td>
+                <td>~49k</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>Cline</td>
+                <td>TypeScript</td>
+                <td>Apache-2.0</td>
+                <td>IDE extension, CLI, binaries</td>
+                <td>~68k</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>All Hands AI</td>
+                <td>Python</td>
+                <td>MIT</td>
+                <td>pip, Docker</td>
+                <td>~86k</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>Charmbracelet</td>
+                <td>Go</td>
+                <td>FSL-1.1-MIT</td>
+                <td>binary, brew, npm</td>
+                <td>~28k</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>community</td>
+                <td>Go</td>
+                <td>MIT</td>
+                <td>one binary, <code>CGO_ENABLED=0</code></td>
+                <td>~35k</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>community</td>
+                <td>Rust</td>
+                <td>MIT</td>
+                <td>binary</td>
+                <td>~41k</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>xAI</td>
+                <td>Rust</td>
+                <td>Apache-2.0</td>
+                <td>binary</td>
+                <td>~26k</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>Google</td>
+                <td>Go</td>
+                <td>proprietary</td>
+                <td>binary</td>
+                <td>no public repo</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cmp-block">
+        <h3 id="table-surfaces">Surfaces</h3>
+        <p class="cmp-caption">Where you can actually talk to the agent, and whether those entry points share one set of sessions.</p>
+        <div class="cmp-scroll" tabindex="0" role="region" aria-labelledby="table-surfaces">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Harness</th>
+                <th scope="col">Terminal</th>
+                <th scope="col">Editor (ACP)</th>
+                <th scope="col">HTTP + web UI</th>
+                <th scope="col">Desktop</th>
+                <th scope="col">Messengers</th>
+                <th scope="col">Headless / CI</th>
+                <th scope="col">Remote</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td>TUI</td>
+                <td>ACP server</td>
+                <td>embedded SPA</td>
+                <td>no</td>
+                <td>Telegram, extensible</td>
+                <td><code>coddy -p</code>, REST</td>
+                <td><code>--remote</code></td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>yes</td>
+                <td>via adapter</td>
+                <td>separate web app</td>
+                <td>yes</td>
+                <td>Slack tag</td>
+                <td><code>-p</code>, SDK</td>
+                <td>cloud</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>yes</td>
+                <td>via adapter</td>
+                <td>cloud product, separate</td>
+                <td>no</td>
+                <td>no</td>
+                <td><code>codex exec</code></td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>yes</td>
+                <td>native</td>
+                <td>server plus sharing</td>
+                <td>yes</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>server</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>yes</td>
+                <td>RPC</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>print/JSON, SDK</td>
+                <td>RPC</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>yes</td>
+                <td><code>omp acp</code></td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td><code>omp -p</code>, RPC, SDK</td>
+                <td>relay <code>/collab</code></td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>web-first, <code>dsh web</code></td>
+                <td>no</td>
+                <td>no</td>
+                <td>headless</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>gateway</td>
+                <td>yes</td>
+                <td>25+ channels</td>
+                <td>yes</td>
+                <td>gateway</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>no</td>
+                <td>8 channels</td>
+                <td>yes</td>
+                <td>Modal, Daytona, SSH</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>yes</td>
+                <td>native</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>no</td>
+                <td>recipes</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>scripted</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>CLI</td>
+                <td>IDE extension</td>
+                <td>no</td>
+                <td>no</td>
+                <td>Slack, Linear</td>
+                <td>SDK</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>partial</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>yes</td>
+                <td>ACP</td>
+                <td>dashboard</td>
+                <td>prerelease</td>
+                <td>QQ</td>
+                <td>yes</td>
+                <td>shared local engine</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td><code>codewhale exec</code></td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>yes</td>
+                <td>ACP</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>yes</td>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>cloud</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cmp-block">
+        <h3 id="table-extensibility">Extensibility</h3>
+        <p class="cmp-caption">How you teach a harness about your project and plug new capabilities into it.</p>
+        <div class="cmp-scroll" tabindex="0" role="region" aria-labelledby="table-extensibility">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Harness</th>
+                <th scope="col">MCP</th>
+                <th scope="col">Skills</th>
+                <th scope="col">Subagents</th>
+                <th scope="col">Hooks</th>
+                <th scope="col">Rules / AGENTS.md</th>
+                <th scope="col">Plugins</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td>3 transports, 3 config levels</td>
+                <td><code>SKILL.md</code>, skills.sh, agents standard</td>
+                <td>yes, capabilities only narrow</td>
+                <td>11 events, Claude Code format</td>
+                <td><code>.cursor</code>, <code>.claude</code>, <code>.codex</code>, <code>.coddy</code>, <code>AGENTS.md</code></td>
+                <td>skill marketplaces</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>yes</td>
+                <td>yes, origin of the format</td>
+                <td>yes</td>
+                <td>yes, origin of the format</td>
+                <td><code>CLAUDE.md</code>, <code>AGENTS.md</code></td>
+                <td>yes, versioned bundles</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>client and server</td>
+                <td>none of its own</td>
+                <td>no</td>
+                <td>yes</td>
+                <td><code>AGENTS.md</code>, origin</td>
+                <td>profiles</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>yes</td>
+                <td>none of its own</td>
+                <td>build, plan, general</td>
+                <td>no</td>
+                <td><code>AGENTS.md</code></td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>yes</td>
+                <td>through app code</td>
+                <td>through the SDK</td>
+                <td>no</td>
+                <td>minimal</td>
+                <td>npm packages</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>yes, inherits other tools' configs</td>
+                <td><code>manage_skill</code></td>
+                <td>yes, parallel, typed results</td>
+                <td>stream rules</td>
+                <td>inherits 7 ecosystems</td>
+                <td>TypeScript extensions</td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>yes</td>
+                <td>plugin</td>
+                <td>plugin, plus delegation to Claude Code and Codex</td>
+                <td>plugin (loops)</td>
+                <td>no data</td>
+                <td>everything is a plugin</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>yes</td>
+                <td>own system, selective injection</td>
+                <td>yes</td>
+                <td>yes</td>
+                <td>no data</td>
+                <td>ClawHub</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>yes</td>
+                <td>agentskills.io, self-authored</td>
+                <td>yes, isolated</td>
+                <td>no data</td>
+                <td><code>SOUL.md</code>, <code>MEMORY.md</code>, <code>USER.md</code></td>
+                <td>Skills Hub</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>70+ extensions</td>
+                <td>YAML recipes</td>
+                <td>yes, separate processes</td>
+                <td>no</td>
+                <td><code>.goosehints</code></td>
+                <td>extensions</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>partial</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>conventions files</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>parallel agents</td>
+                <td>no</td>
+                <td>Cline rules</td>
+                <td>marketplace</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>yes</td>
+                <td>microagents</td>
+                <td>yes</td>
+                <td>no</td>
+                <td>microagents</td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td><code>CRUSH.md</code></td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>stdio, SSE, HTTP</td>
+                <td>markdown playbooks</td>
+                <td>no data</td>
+                <td>yes, on tools and events</td>
+                <td><code>.reasonix/</code></td>
+                <td>Extension Protocol v1</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>role fleets</td>
+                <td>no</td>
+                <td>no data</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>parallel, on git worktrees</td>
+                <td>no</td>
+                <td><code>AGENTS.md</code></td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>no data</td>
+                <td>no data</td>
+                <td>multi-agent, no data</td>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cmp-block">
+        <h3 id="table-context">Context, memory and autonomy</h3>
+        <p class="cmp-caption">What happens to a long session, and how much work a harness can carry without you watching.</p>
+        <div class="cmp-scroll" tabindex="0" role="region" aria-labelledby="table-context">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Harness</th>
+                <th scope="col">Compaction</th>
+                <th scope="col">Result eviction</th>
+                <th scope="col">Long-term memory</th>
+                <th scope="col">Scheduler</th>
+                <th scope="col">Background tasks</th>
+                <th scope="col">Checkpoints</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td><code>/compact</code> plus auto at 80%</td>
+                <td>yes, with <code>keep_result</code> pins</td>
+                <td>memory copilot, separate pass</td>
+                <td>cron inside the binary</td>
+                <td>yes, adopts timed-out foreground work</td>
+                <td>config snapshots, session branches</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>auto</td>
+                <td>partial</td>
+                <td>file-based memory</td>
+                <td>task scheduler</td>
+                <td>yes</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>auto</td>
+                <td>no</td>
+                <td><code>AGENTS.md</code></td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>auto</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>through the app</td>
+                <td>no</td>
+                <td>through the app</td>
+                <td>no</td>
+                <td>no</td>
+                <td>session replay</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>snapcompact</td>
+                <td>no data</td>
+                <td>retain/recall, SQLite, Hindsight</td>
+                <td>no</td>
+                <td>parallel subagents</td>
+                <td>edit previews</td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>plugin</td>
+                <td>no data</td>
+                <td>storage plugin</td>
+                <td>scheduling plugin</td>
+                <td>loops plugin</td>
+                <td>no data</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>skills and local workspace</td>
+                <td>yes</td>
+                <td>yes</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>self-improving loop, FTS5, Honcho</td>
+                <td>built-in cron</td>
+                <td>yes</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td><code>goose schedule</code></td>
+                <td>yes</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>repomap</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>git commits</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>parallel agents</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>microagents</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>pruning before compaction</td>
+                <td>yes, to protect the prefix cache</td>
+                <td>fragments pinned in the prefix</td>
+                <td>no</td>
+                <td>yes</td>
+                <td>per turn</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>workspace snapshots</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+                <td>no</td>
+                <td>worktree parallelism</td>
+                <td>worktree</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cmp-block">
+        <h3 id="table-security">Security and trust</h3>
+        <p class="cmp-caption">What stops an agent, or a repository you just cloned, from doing something you did not ask for.</p>
+        <div class="cmp-scroll" tabindex="0" role="region" aria-labelledby="table-security">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Harness</th>
+                <th scope="col">Sandbox</th>
+                <th scope="col">Permissions</th>
+                <th scope="col">Trust for project files</th>
+                <th scope="col">Subagent limits</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td>container, distroless, read-only rootfs</td>
+                <td>dialog, program-wide grants guarded against shell metacharacters</td>
+                <td>digest-bound receipts for MCP, subagents and hooks</td>
+                <td>capabilities only narrow</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>built in</td>
+                <td>permissions, auto mode</td>
+                <td>folder trust</td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>kernel level (Landlock, seccomp, Seatbelt)</td>
+                <td>approval policy</td>
+                <td>folder trust</td>
+                <td>no subagents</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>no</td>
+                <td>plan blocks edits, asks before bash</td>
+                <td>no</td>
+                <td>no data</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>Gondolin, Docker, OpenShell</td>
+                <td>through the app</td>
+                <td>no</td>
+                <td>through the app</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>subagent workspace isolation</td>
+                <td>yes</td>
+                <td>inherits other tools' configs with no gate</td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>sandbox plugin</td>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>none by default</td>
+                <td>yes</td>
+                <td>ClawHub skills</td>
+                <td>no data</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>Docker, Singularity, Modal, Daytona, Vercel</td>
+                <td>yes</td>
+                <td>no data</td>
+                <td>process isolation</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>no</td>
+                <td>yes</td>
+                <td>no</td>
+                <td>separate processes</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>no</td>
+                <td>edit confirmation</td>
+                <td>no</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>no</td>
+                <td>yes</td>
+                <td>no data</td>
+                <td>no data</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>Docker required</td>
+                <td>yes</td>
+                <td>no</td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>no</td>
+                <td>yes</td>
+                <td>no</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>workspace sandbox</td>
+                <td>per-workspace command allowlist</td>
+                <td>no data</td>
+                <td>no data</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>no</td>
+                <td>three approval modes</td>
+                <td>no</td>
+                <td>no</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>worktree</td>
+                <td>yes</td>
+                <td>no data</td>
+                <td>worktree</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+                <td>no data</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="cmp-note">
+        Star counts are orders of magnitude. Directories disagree by tens of thousands because the snapshots were
+        taken on different days, and this field grew in jumps through 2026.
+      </p>
+    </section>
+
+    <section id="verdict">
+      <h2>Where Coddy wins, where it lags</h2>
+      <div class="verdict-grid">
+        <div class="glass verdict">
+          <h3>Strengths</h3>
+          <ul>
+            <li>
+              <b>Density per binary</b>
+              Six of the eighteen ship as one static file with no runtime. Only Coddy also carries the web UI, the
+              scheduler, long-term memory and a messenger gateway inside that same file, switched on with build tags.
+            </li>
+            <li>
+              <b>Breadth of surfaces over shared state</b>
+              Reasonix matches the four-surface layout, but trades the messenger gateway for a QQ channel. Gateway
+              assistants have more channels and weaker coding, and no ACP.
+            </li>
+            <li>
+              <b>Self-configuration</b>
+              No other harness in this set exposes typed, staged edits to its own YAML with validation, a snapshot,
+              hot reload and a rollback.
+            </li>
+            <li>
+              <b>Trust for files that arrive with a checkout</b>
+              MCP servers, subagent definitions and hook files all pass one receipt mechanism bound to the workspace,
+              the file and its digest. Rewrite the declaration and Coddy asks again. Claude Code gates by name,
+              Codex by folder.
+            </li>
+            <li>
+              <b>Compatibility instead of a private format</b>
+              Cursor rules, Claude Code rules, subagents and <code>hooks.json</code>, Cursor-style
+              <code>mcp.json</code>, <code>AGENTS.md</code> and agents-standard skills all load as they are. Only OMP
+              does something comparable.
+            </li>
+            <li>
+              <b>Result eviction with explicit pins</b>
+              A model that marks what to keep in context, found here only in Coddy and Reasonix, and in Reasonix it
+              serves a different goal.
+            </li>
+          </ul>
+        </div>
+        <div class="glass verdict">
+          <h3>Gaps</h3>
+          <ul>
+            <li>
+              <b>No kernel-level sandbox</b>
+              Protection comes from the permission gate, the modes, and a container with a read-only rootfs. Codex
+              CLI enforces Landlock, seccomp and Seatbelt in the process itself, which matters more than any dialog
+              when the code is not yours.
+            </li>
+            <li>
+              <b>No LSP, no DAP</b>
+              OMP wires a language server into every edit and drives real debuggers; OpenCode ships LSP for twenty-odd
+              languages. Coddy treats files as text, so a project-wide rename goes through grep.
+            </li>
+            <li>
+              <b>Plain edit format</b>
+              OMP's hashline anchors a patch to a content hash, cutting output tokens by about 61% against string
+              replacement and lifting patch success sharply on weaker models. Coddy uses ordinary <code>edit</code>
+              and <code>apply_patch</code>.
+            </li>
+            <li>
+              <b>No workspace checkpoints</b>
+              Reasonix snapshots every turn, CodeWhale snapshots the workspace, Grok Build isolates runs in worktrees.
+              Coddy rolls back configuration and branches sessions, but not files.
+            </li>
+            <li>
+              <b>No fan-out mode</b>
+              Subagents run, but there is no built-in "split this across N worktrees and merge the results" workflow
+              of the kind Grok Build and OMP ship.
+            </li>
+            <li>
+              <b>Ecosystem size</b>
+              Three orders of magnitude fewer people than OpenCode, and those are the people who file bugs, write
+              skills and hit the edge cases first. Reading other tools' skills and rules softens this; a plugin
+              registry of comparable size is not coming.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="pick">
+      <h2>When to pick which</h2>
+      <div class="prose">
+        <p>
+          <strong>Choose Coddy</strong> when the agent has to live inside a container with no shell, when one session
+          must open from a terminal, an editor, a browser and Telegram, when recurring work needs a scheduler with no
+          external cron, and when your repositories already carry Cursor or Claude Code rules you would rather not
+          rewrite.
+        </p>
+        <p>
+          <strong>Choose something else</strong> when the day is spent on a large codebase with a strong model and you
+          want fast, symbol-aware edits - OMP or OpenCode give more there. Running unfamiliar code from an unfamiliar
+          repository is safer under Codex CLI and its sandbox. For a personal assistant that lives in messengers,
+          OpenClaw or Hermes are built for exactly that.
+        </p>
+      </div>
+    </section>
+
+    <section id="install-cta">
+      <div class="glass callout">
+        <p>
+          <b>Try the row you just read about.</b> One command installs the binary, writes
+          <code>~/.coddy/config.yaml</code> and puts <code>coddy</code> on your PATH. Bring your own key, or point it
+          at a local model.
+        </p>
+        <div class="callout-actions">
+          <a class="btn" href="/#install">Install Coddy</a>
+          <a class="btn btn--ghost" href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="sources">
+      <h2>Method and sources</h2>
+      <div class="prose">
+        <p>
+          Coddy was read directly from
+          <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">its own repository</a>
+          at v1.0.8 - the README, <code>docs/architecture.md</code>, the agent, tools, LLM and permission packages,
+          and the <code>features/</code> specifications. The full binary was built and the whole test matrix was run
+          before publishing these claims.
+        </p>
+        <p>Every other project comes from its own repository, its documentation, and reviews current in September 2026.</p>
+      </div>
+      <ul class="src-list">
+        <li><a href="https://thenewstack.io/openclaw-hermes-agent-harness/" target="_blank" rel="noopener noreferrer">The New Stack, OpenClaw and Hermes on what an agent is</a></li>
+        <li><a href="https://claw4science.org/blog/agent-harness-three-way" target="_blank" rel="noopener noreferrer">OpenClaw vs Hermes vs Pi, three-way comparison</a></li>
+        <li><a href="https://pinggy.io/blog/best_open_source_cli_coding_agents/" target="_blank" rel="noopener noreferrer">Pinggy, best open-source CLI coding agents in 2026</a></li>
+        <li><a href="https://github.com/bradagi/awesome-cli-coding-agents" target="_blank" rel="noopener noreferrer">awesome-cli-coding-agents, a directory of 120+ tools</a></li>
+        <li><a href="https://github.com/can1357/oh-my-pi" target="_blank" rel="noopener noreferrer">OMP (oh-my-pi)</a> and <a href="https://omp.sh/" target="_blank" rel="noopener noreferrer">omp.sh</a></li>
+        <li><a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">DeepSeek Harness</a></li>
+        <li><a href="https://github.com/sst/opencode" target="_blank" rel="noopener noreferrer">OpenCode</a></li>
+        <li><a href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener noreferrer">Pi</a></li>
+        <li><a href="https://github.com/nousresearch/hermes-agent" target="_blank" rel="noopener noreferrer">Hermes Agent</a></li>
+        <li><a href="https://github.com/openclaw/openclaw" target="_blank" rel="noopener noreferrer">OpenClaw</a></li>
+        <li><a href="https://github.com/esengine/DeepSeek-Reasonix" target="_blank" rel="noopener noreferrer">Reasonix</a></li>
+        <li><a href="https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/" target="_blank" rel="noopener noreferrer">Google on moving from Gemini CLI to Antigravity CLI</a></li>
+        <li><a href="https://zed.dev/acp" target="_blank" rel="noopener noreferrer">Zed, the ACP agent registry</a></li>
+        <li><a href="https://deepwiki.com/block/goose/4.1.5-scheduler-and-recurring-tasks" target="_blank" rel="noopener noreferrer">Goose, recipes and the scheduler</a></li>
+        <li><a href="https://devthrottle.com/coding-agents/amp" target="_blank" rel="noopener noreferrer">Amp by Sourcegraph, review</a></li>
+      </ul>
+      <p class="cmp-note">
+        Spotted something wrong or out of date about your project?
+        <a href="https://github.com/coddy-project/coddy-project.github.io/issues" target="_blank" rel="noopener noreferrer">Open an issue</a>
+        and the row gets fixed.
+      </p>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="shell-width">
+      <p class="footer-links">
+        <a href="/">Home</a>
+        <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
+        <a href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
+        <a href="/llms.txt">llms.txt</a>
+      </p>
+      <p>
+        Coddy Project ·
+        <a href="https://github.com/coddy-project" target="_blank" rel="noopener noreferrer">github.com/coddy-project</a>
+      </p>
+    </div>
+  </footer>
+  <script src="/nav.js?v=1" defer></script>
+</body>
+</html>
