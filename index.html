@@ -28,7 +28,7 @@
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
-  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="stylesheet" href="styles.css?v=20" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -58,6 +58,13 @@
         "inLanguage": "en",
         "publisher": {
           "@id": "https://coddy.dev/#organization"
+        },
+        "hasPart": {
+          "@type": "WebPage",
+          "@id": "https://coddy.dev/compare/#webpage",
+          "url": "https://coddy.dev/compare/",
+          "name": "Coddy vs other agent harnesses - 2026 comparison",
+          "description": "Coddy compared with seventeen other AI agent harnesses across delivery, surfaces, extensibility, context handling and the trust model."
         }
       },
       {
@@ -84,6 +91,7 @@
           "url": "https://github.com/coddy-project/coddy-agent/tree/main/docs"
         },
         "releaseNotes": "https://github.com/coddy-project/coddy-agent/releases",
+        "sameAs": "https://github.com/coddy-project/coddy-agent",
         "license": "https://github.com/coddy-project/coddy-agent/blob/main/LICENSE",
         "isAccessibleForFree": true,
         "offers": {
@@ -164,7 +172,7 @@
             "name": "How is Coddy different from other coding agents?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and AGENTS.md from the repository, so it fits projects already set up for other agents."
+              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with seventeen other harnesses is published at https://coddy.dev/compare/."
             }
           }
         ]
@@ -184,6 +192,7 @@
         <a class="nav-drawer-link" href="#install">Install</a>
         <a class="nav-drawer-link" href="#demos">Demo</a>
         <a class="nav-drawer-link" href="#features">Features</a>
+        <a class="nav-drawer-link" href="/compare/">Compare</a>
         <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
         <a
           class="release-pill nav-release"
@@ -472,6 +481,26 @@
       </div>
     </section>
 
+    <section id="compare">
+      <h2>How Coddy compares</h2>
+      <div class="glass compare-teaser">
+        <h3>Coddy vs the 2026 agent harnesses</h3>
+        <p>
+          Eighteen harnesses read side by side in September 2026 - Claude Code, Codex CLI, OpenCode, Pi, OMP,
+          DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build,
+          Antigravity CLI and Coddy - across delivery, surfaces, extensibility, context handling and the trust model.
+        </p>
+        <ul>
+          <li><b>Six of eighteen</b> ship as one static file with no runtime. Only Coddy also carries a web UI, a scheduler, memory and a messenger gateway inside it.</li>
+          <li><b>Nobody else</b> in the set lets the agent stage edits to its own YAML with validation, a snapshot and a rollback.</li>
+          <li><b>Where it loses:</b> no kernel sandbox like Codex CLI, no LSP or DAP like OMP, no workspace checkpoints like Reasonix.</li>
+        </ul>
+        <p>
+          <a href="/compare/">Read the full comparison with all five tables</a>
+        </p>
+      </div>
+    </section>
+
     <section id="faq">
       <h2>Questions</h2>
       <div class="faq-list">
@@ -497,7 +526,7 @@
         </div>
         <div class="faq-item">
           <h3>How is Coddy different from other coding agents?</h3>
-          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents.</p>
+          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. See the <a href="/compare/">side-by-side comparison with seventeen other harnesses</a>.</p>
         </div>
       </div>
     </section>
@@ -590,181 +619,6 @@
         });
       }
 
-      var burger = document.querySelector(".nav-burger");
-      var drawer = document.getElementById("site-nav");
-      var scrim = document.getElementById("nav-scrim");
-      function isMobileNav() {
-        return window.matchMedia("(max-width: 720px)").matches;
-      }
-
-      function scrollHeaderOffset() {
-        if (!isMobileNav()) return 0;
-        var header = document.querySelector(".site-header");
-        return header ? Math.ceil(header.getBoundingClientRect().height) + 8 : 56;
-      }
-
-      function sectionScrollTop(hash) {
-        var id = (hash || "").replace(/^#/, "");
-        if (!id) return null;
-        var target = document.getElementById(id);
-        if (!target) return null;
-        return Math.max(0, target.getBoundingClientRect().top + readScrollY() - scrollHeaderOffset());
-      }
-
-      function navScrollBehavior() {
-        return isMobileNav() ? "instant" : "smooth";
-      }
-
-      function scrollToSection(hash, behavior) {
-        var top = sectionScrollTop(hash);
-        if (top == null) return;
-        window.scrollTo({ top: top, left: 0, behavior: behavior || navScrollBehavior() });
-      }
-
-      var navScrollLockY = 0;
-
-      function readScrollY() {
-        return window.scrollY || window.pageYOffset || 0;
-      }
-
-      function syncSiteHeaderOffset() {
-        var header = document.querySelector(".site-header");
-        if (!header) return;
-        if (!isMobileNav()) {
-          document.documentElement.style.removeProperty("--site-header-offset");
-          return;
-        }
-        document.documentElement.style.setProperty(
-          "--site-header-offset",
-          Math.ceil(header.getBoundingClientRect().height) + "px"
-        );
-      }
-
-      function captureNavScrollY() {
-        if (!isMobileNav()) return;
-        navScrollLockY = readScrollY();
-      }
-
-      function lockPageScroll(lock) {
-        if (!isMobileNav()) return;
-        var root = document.documentElement;
-        if (lock) {
-          navScrollLockY = readScrollY();
-          root.classList.add("nav-scroll-lock");
-        } else {
-          root.classList.remove("nav-scroll-lock");
-        }
-      }
-
-      function unlockPageScroll(scrollTop, behavior) {
-        if (!isMobileNav()) return;
-        var root = document.documentElement;
-        root.classList.remove("nav-scroll-lock");
-        document.body.classList.remove("nav-open");
-        window.scrollTo({ top: scrollTop, left: 0, behavior: behavior || "auto" });
-      }
-
-      function setNavOpen(open, scrollTarget) {
-        if (!burger || !drawer || !scrim) return;
-        if (!isMobileNav()) {
-          drawer.classList.remove("is-open");
-          scrim.classList.remove("is-open");
-          scrim.hidden = true;
-          document.body.classList.remove("nav-open");
-          document.documentElement.classList.remove("nav-scroll-lock");
-          burger.setAttribute("aria-expanded", "false");
-          burger.setAttribute("aria-label", "Open menu");
-          drawer.setAttribute("aria-hidden", "false");
-          return;
-        }
-        burger.setAttribute("aria-expanded", open ? "true" : "false");
-        burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
-        if (open) {
-          captureNavScrollY();
-          lockPageScroll(true);
-          document.body.classList.add("nav-open");
-        } else {
-          var hadLock = document.documentElement.classList.contains("nav-scroll-lock");
-          document.body.classList.remove("nav-open");
-          drawer.classList.remove("is-open");
-          drawer.setAttribute("aria-hidden", "true");
-          scrim.classList.remove("is-open");
-          scrim.hidden = true;
-          if (hadLock) {
-            var unlockY = typeof scrollTarget === "number" ? scrollTarget : navScrollLockY;
-            unlockPageScroll(unlockY, typeof scrollTarget === "number" ? navScrollBehavior() : "auto");
-          } else if (typeof scrollTarget === "number") {
-            window.scrollTo({ top: scrollTarget, left: 0, behavior: navScrollBehavior() });
-          }
-          requestAnimationFrame(syncSiteHeaderOffset);
-          return;
-        }
-        drawer.classList.toggle("is-open", open);
-        drawer.setAttribute("aria-hidden", open ? "false" : "true");
-        scrim.classList.toggle("is-open", open);
-        scrim.hidden = !open;
-        requestAnimationFrame(syncSiteHeaderOffset);
-      }
-
-      syncSiteHeaderOffset();
-      window.addEventListener("resize", syncSiteHeaderOffset);
-
-      if (burger && drawer && scrim) {
-        setNavOpen(false);
-        burger.addEventListener("pointerdown", captureNavScrollY, { passive: true });
-        burger.addEventListener("touchstart", captureNavScrollY, { passive: true });
-        burger.addEventListener("mousedown", function (e) {
-          if (!isMobileNav()) return;
-          e.preventDefault();
-        });
-        burger.addEventListener("click", function () {
-          setNavOpen(!drawer.classList.contains("is-open"));
-        });
-        scrim.addEventListener("click", function () {
-          setNavOpen(false);
-        });
-        drawer.querySelectorAll(".nav-drawer-link, .nav-release").forEach(function (link) {
-          link.addEventListener("click", function (e) {
-            var href = link.getAttribute("href") || "";
-            if (href.charAt(0) === "#" && href.length > 1) {
-              e.preventDefault();
-              if (history.pushState) {
-                history.pushState(null, "", href);
-              } else {
-                location.hash = href;
-              }
-              if (isMobileNav()) {
-                setNavOpen(false, sectionScrollTop(href));
-              } else {
-                setNavOpen(false);
-                scrollToSection(href, navScrollBehavior());
-              }
-              return;
-            }
-            setNavOpen(false);
-          });
-        });
-        document.addEventListener("keydown", function (e) {
-          if (e.key === "Escape" && drawer.classList.contains("is-open")) {
-            setNavOpen(false);
-          }
-        });
-        window.addEventListener("resize", function () {
-          setNavOpen(false);
-          syncSiteHeaderOffset();
-        });
-      }
-
-      if (location.hash) {
-        window.requestAnimationFrame(function () {
-          scrollToSection(location.hash, "auto");
-        });
-      }
-
-      window.addEventListener("hashchange", function () {
-        scrollToSection(location.hash, "smooth");
-      });
-
       document.querySelectorAll(".demo-player").forEach(function (btn) {
         btn.addEventListener("click", function () {
           if (btn.dataset.loaded) return;
@@ -803,22 +657,8 @@
             .catch(function () {});
         });
       });
-
-      var releaseVersion = document.getElementById("release-pill-version");
-      if (releaseVersion && window.fetch) {
-        fetch("https://api.github.com/repos/coddy-project/coddy-agent/releases/latest", {
-          headers: { Accept: "application/vnd.github+json" }
-        })
-          .then(function (r) {
-            return r.ok ? r.json() : null;
-          })
-          .then(function (data) {
-            var tag = data && data.tag_name ? String(data.tag_name).replace(/^v/, "") : "";
-            if (/^\d+\.\d+\.\d+/.test(tag)) releaseVersion.textContent = "v" + tag;
-          })
-          .catch(function () {});
-      }
     })();
   </script>
+  <script src="/nav.js?v=1" defer></script>
 </body>
 </html>
