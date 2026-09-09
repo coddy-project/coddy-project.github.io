@@ -13,7 +13,7 @@ Custom domain: **https://coddy.dev** (`CNAME` → `coddy.dev`).
 | `nav.js` | Shared header behaviour (mobile drawer, anchor scrolling, release pill) used by every page |
 | `styles.css` | Shared styles |
 | `assets/` | Logo, `og-image.png` (1280×640 social preview), screenshots |
-| `install.sh` | Linux / macOS installer |
+| `install.sh` | Linux / macOS installer: binary, man page, shell completions, and the rc-file block that wires them up |
 | `install.ps1` | Windows installer |
 | `robots.txt` | Crawl policy: everything allowed, AI crawlers listed explicitly, sitemap pointer |
 | `sitemap.xml` | Sitemap with image entries for `/` and `/compare/` |
@@ -31,6 +31,19 @@ curl -fsSL https://coddy.dev/install.sh | bash
 
 ```powershell
 irm https://coddy.dev/install.ps1 | iex
+```
+
+`install.sh` installs the binary into `~/.local/bin` and, when the release archive carries them, the
+man page and the bash and zsh completions into the matching `share` directory. A user-level install
+then writes one guarded block to the rc file of the login shell (`~/.zshrc`, or `~/.bashrc` /
+`~/.bash_profile`) so a new terminal has the binary on `PATH`, `man coddy` finds the page, and Tab
+completion works. The block is rewritten in place on every run rather than appended to; a system
+prefix such as `/usr/local` gets none of it, and `--no-shell-setup` opts out.
+
+Handy for testing the script against something other than a real release:
+
+```bash
+CODDY_API=http://127.0.0.1:8080 CODDY_DOWNLOAD_BASE=http://127.0.0.1:8080 ./install.sh -y
 ```
 
 Social preview: `https://coddy.dev/assets/og-image.png`
