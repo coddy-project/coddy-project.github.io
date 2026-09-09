@@ -23,6 +23,7 @@ Key facts:
 - [Install](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/install.md): installer scripts, release binaries per platform, Docker, and first-run configuration.
 - [Configuration](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/config.md): providers and models, permissions, MCP, skills, memory, SSH remote execution, and agent self-configuration.
 - [config.yaml field reference](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/config-reference.md): every YAML field with defaults, including compaction and reasoning levels.
+- [config.yaml JSON Schema](https://coddy.dev/config.schema.json): draft-07 schema for `~/.coddy/config.yaml`. Editors that speak the YAML language server validate and autocomplete the file once it carries the header `# yaml-language-server: $schema=https://coddy.dev/config.schema.json`, which Coddy writes into every config it saves.
 - [Terminal console](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/cli.md): the interactive TUI, one-shot mode, resuming sessions, remote mode against a running server.
 - [Web UI](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ui.md): embedded single-page app served by `coddy http`, sessions, plan documents, attachments, themes and languages.
 - [HTTP API](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/http-api.md): OpenAI-compatible endpoints (`/v1/responses`, `/v1/chat/completions`, `/v1/models`) and the `/coddy` REST surface.

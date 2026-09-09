@@ -15,6 +15,7 @@ Custom domain: **https://coddy.dev** (`CNAME` → `coddy.dev`).
 | `assets/` | Logo, `og-image.png` (1280×640 social preview), screenshots |
 | `install.sh` | Linux / macOS installer: binary, man page, shell completions, and the rc-file block that wires them up |
 | `install.ps1` | Windows installer |
+| `config.schema.json` | JSON Schema for `~/.coddy/config.yaml`, served at https://coddy.dev/config.schema.json for editors |
 | `robots.txt` | Crawl policy: everything allowed, AI crawlers listed explicitly, sitemap pointer |
 | `sitemap.xml` | Sitemap with image entries for `/` and `/compare/` |
 | `llms.txt` | [llms.txt](https://llmstxt.org/) summary for AI assistants, links to the raw docs in `coddy-agent` |
@@ -22,6 +23,21 @@ Custom domain: **https://coddy.dev** (`CNAME` → `coddy.dev`).
 | `CNAME` | GitHub Pages custom domain |
 
 Install scripts are maintained **only in this repo**, not in coddy-agent.
+
+`config.schema.json` is the opposite: a **verbatim mirror** of `docs/config.schema.json` in
+[coddy-agent](https://github.com/coddy-project/coddy-agent), published here because a hosted,
+stable address is what a YAML language server can resolve. Coddy writes that address into every
+`config.yaml` it saves (`# yaml-language-server: $schema=https://coddy.dev/config.schema.json`), so
+the file must stay in step with the agent's config structs. Refresh it whenever those change:
+
+```bash
+cp ../coddy-agent/docs/config.schema.json config.schema.json   # a plain copy, no edits
+git diff --stat config.schema.json
+```
+
+```bash
+curl -s https://coddy.dev/config.schema.json | head -3          # after the deploy
+```
 
 ## Install
 
