@@ -188,7 +188,14 @@
       })
       .then(function (data) {
         var tag = data && data.tag_name ? String(data.tag_name).replace(/^v/, "") : "";
-        if (/^\d+\.\d+\.\d+/.test(tag)) releaseVersion.textContent = "v" + tag;
+        if (!/^\d+\.\d+\.\d+/.test(tag)) return;
+        releaseVersion.textContent = "v" + tag;
+        // The package install commands name an asset file, so they carry the
+        // version too. Fill them from the same answer instead of pinning a
+        // number in the markup that goes stale on the next release.
+        Array.prototype.slice.call(document.querySelectorAll(".pkg-version")).forEach(function (el) {
+          el.textContent = tag;
+        });
       })
       .catch(function () {});
   }

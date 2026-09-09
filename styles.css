@@ -978,8 +978,18 @@ a.feature-link:focus-visible code {
     max-width: none;
   }
 
+  /* The install tabs no longer fit on one line beside the heading at this
+     width, so the head stacks and the tab row takes the full width. */
   .install-block-head {
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .tabs {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .tab {
