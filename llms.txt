@@ -6,7 +6,7 @@ Key facts:
 
 - Website: https://coddy.dev/ (this page). Source code and documentation: https://github.com/coddy-project/coddy-agent
 - Install on Linux or macOS: `curl -fsSL https://coddy.dev/install.sh | bash`. Install on Windows: `irm https://coddy.dev/install.ps1 | iex`. On Linux, every release also publishes `.deb` and `.rpm` packages for amd64 and arm64 (`sudo apt-get install ./coddy_X.Y.Z_linux_amd64.deb`, `sudo dnf install ./coddy_X.Y.Z_linux_amd64.rpm`), and on macOS a Homebrew cask (`brew install --cask coddy`); both add the man page and shell completions and install nothing but the binary and its docs. Docker: `docker run -d -p 12345:12345 -v "$PWD/workspace:/workspace" -v "$PWD/coddy_home:/home/user/.coddy" ghcr.io/coddy-project/coddy-agent:latest`, or the compose file on the site's Docker tab; images are multi-arch (amd64, arm64) and published to the GitHub Container Registry, not Docker Hub. Upgrade in place with `coddy update -y`; on a deb or rpm install run it as root and it installs the newer package instead, and on a Homebrew install it points at `brew upgrade --cask coddy`.
-- Commands: `coddy` opens the terminal console, `coddy http` serves the web UI and the REST API, `coddy acp` runs the ACP server for editors, `coddy gateway` starts the Telegram bot, `coddy -p "..."` prints a one-shot answer.
+- Commands: `coddy` opens the terminal console, `coddy serve` runs every subsystem enabled in `config.yaml` in one process (the web UI and REST API under `httpserver.enable`, the Telegram bot under `gateways.telegram.enable`, the swarm relay under `swarm.enable`, the cron scheduler under `scheduler.enable`), `coddy acp` runs the ACP server for editors, `coddy -p "..."` prints a one-shot answer. Subsystems started by one `coddy serve` share a single set of sessions, so a Telegram conversation is live in the web UI and can be continued in either.
 - Models: any OpenAI-compatible API or Anthropic with your own keys and endpoints, including local servers such as Ollama, llama.cpp and vLLM, plus NeuralDeep and ChatGPT sign-in through the Codex backend. Model entries live in `~/.coddy/config.yaml`.
 - Runs in distroless and from-scratch containers with a read-only root filesystem; no runtime dependencies. Written in Go 1.25.
 - Reads Cursor-style rules (`.cursor/rules`, `.coddy/rules`, `.claude/rules`, `.codex/rules`), `AGENTS.md`, and `SKILL.md` skill packs from the project.
@@ -25,7 +25,7 @@ Key facts:
 - [config.yaml field reference](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/config-reference.md): every YAML field with defaults, including compaction and reasoning levels.
 - [config.yaml JSON Schema](https://coddy.dev/config.schema.json): draft-07 schema for `~/.coddy/config.yaml`. Editors that speak the YAML language server validate and autocomplete the file once it carries the header `# yaml-language-server: $schema=https://coddy.dev/config.schema.json`, which Coddy writes into every config it saves.
 - [Terminal console](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/cli.md): the interactive TUI, one-shot mode, resuming sessions, remote mode against a running server.
-- [Web UI](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ui.md): embedded single-page app served by `coddy http`, sessions, plan documents, attachments, themes and languages.
+- [Web UI](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ui.md): embedded single-page app served by `coddy serve`, sessions, plan documents, attachments, themes and languages.
 - [HTTP API](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/http-api.md): OpenAI-compatible endpoints (`/v1/responses`, `/v1/chat/completions`, `/v1/models`) and the `/coddy` REST surface.
 - [ACP protocol](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/acp-protocol.md): how `coddy acp` implements the Agent Client Protocol for Zed, Obsidian, VS Code and custom clients.
 - [Telegram gateway](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/gateway.md): bot setup, per-user sessions, group isolation modes, admin ACL, proxies.
@@ -41,7 +41,7 @@ Key facts:
 - [Scheduler](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/scheduler.md): cron jobs with a UI drawer and agent tools.
 - [Long-term memory](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/external/memory/README.md): the optional memory copilot and its HTTP routes.
 - [Custom tools](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/custom-tools.md): adding your own tools to the agent.
-- [Remote control](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/remote-control.md): pointing the console, ACP or the web UI at a remote `coddy http` server.
+- [Remote control](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/remote-control.md): pointing the console, ACP or the web UI at a remote `coddy serve` server.
 
 ## Operations
 

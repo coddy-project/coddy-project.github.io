@@ -164,7 +164,7 @@
             "name": "Which editors and clients can host Coddy?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "coddy acp speaks the Agent Client Protocol over stdio, so Zed, Obsidian, VS Code, or your own script get sessions, modes, permissions, streaming updates, and skills as slash commands. coddy http serves an OpenAI-compatible REST API with the embedded web UI, and the Telegram gateway runs the same agent in chats."
+              "text": "coddy acp speaks the Agent Client Protocol over stdio, so Zed, Obsidian, VS Code, or your own script get sessions, modes, permissions, streaming updates, and skills as slash commands. coddy serve runs everything else in one process - the OpenAI-compatible REST API with the embedded web UI, the Telegram gateway, the swarm relay, the cron scheduler - and starts whichever of them config.yaml enables. They share one set of sessions, so a conversation started in a chat is live in the web UI and can be continued in either."
             }
           },
           {
@@ -315,7 +315,7 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
             <pre><code id="cmd-compose">services:
   coddy:
     image: ghcr.io/coddy-project/coddy-agent:latest
-    command: http -H 0.0.0.0 -P 12345
+    command: serve -H 0.0.0.0 -P 12345
     ports:
       - "12345:12345"
     working_dir: /workspace
@@ -346,7 +346,7 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
         <p class="hint">
           Downloads the latest release binary, installs to your PATH, and creates
           <code>~/.coddy/config.yaml</code> from the example when missing. Then set a provider key and run
-          <code>coddy</code> for the terminal console, <code>coddy http</code> for the web UI, or
+          <code>coddy</code> for the terminal console, <code>coddy serve</code> for the web UI, or
           <code>coddy acp</code> for an editor client. Upgrade later with <code>coddy update -y</code>.
         </p>
         <p class="hint">
@@ -387,7 +387,7 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
             <span class="demo-duration" aria-hidden="true">2:22</span>
           </button>
           <p class="showcase-caption">
-            The same agent served by <code>coddy http</code>: streamed tool calls, a permission card with a real diff,
+            The same agent served by <code>coddy serve</code>: streamed tool calls, a permission card with a real diff,
             session history, seven themes, and an environment switch that points the UI at a remote server.
           </p>
         </div>
@@ -497,7 +497,7 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
           </a>
           <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">
             <h4>HTTP API</h4>
-            <p>OpenAI-compatible gateway on <code>coddy http</code>. <code>POST /v1/responses</code>, models, Swagger at <code>/docs/</code>.</p>
+            <p>OpenAI-compatible gateway on <code>coddy serve</code>. <code>POST /v1/responses</code>, models, Swagger at <code>/docs/</code>.</p>
           </a>
           <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/remote-control.md" target="_blank" rel="noopener noreferrer">
             <h4>Remote control</h4>
@@ -612,7 +612,7 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
         </div>
         <div class="faq-item">
           <h3>Which editors and clients can host Coddy?</h3>
-          <p><code>coddy acp</code> speaks the Agent Client Protocol over stdio, so Zed, Obsidian, VS Code, or your own script get sessions, modes, permissions, streaming updates, and skills as slash commands. <code>coddy http</code> serves an OpenAI-compatible REST API with the embedded web UI, and the Telegram gateway runs the same agent in chats.</p>
+          <p><code>coddy acp</code> speaks the Agent Client Protocol over stdio, so Zed, Obsidian, VS Code, or your own script get sessions, modes, permissions, streaming updates, and skills as slash commands. <code>coddy serve</code> runs everything else in one process - the OpenAI-compatible REST API with the embedded web UI, the Telegram gateway, the swarm relay, the cron scheduler - and starts whichever of them <code>config.yaml</code> enables. They share one set of sessions, so a conversation started in a chat is live in the web UI and can be continued in either.</p>
         </div>
         <div class="faq-item">
           <h3>How is Coddy different from other coding agents?</h3>
