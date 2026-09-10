@@ -148,7 +148,7 @@
             "name": "How do I install Coddy?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. On Linux you can instead install the deb or rpm published with every release (apt-get install ./coddy_X.Y.Z_linux_amd64.deb, dnf install ./coddy_X.Y.Z_linux_amd64.rpm), and on macOS the Homebrew cask (brew install --cask coddy); both add the man page and shell completions. Docker images for amd64 and arm64 are published as ghcr.io/coddy-project/coddy-agent, and coddy update -y upgrades an existing install."
+              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. On Linux you can instead install the deb or rpm published with every release (apt-get install ./coddy_X.Y.Z_linux_amd64.deb, dnf install ./coddy_X.Y.Z_linux_amd64.rpm), and on macOS the Homebrew cask (brew install --cask coddy); both add the man page and shell completions. Docker: docker run -d -p 12345:12345 -v \"$PWD/workspace:/workspace\" -v \"$PWD/coddy_home:/home/user/.coddy\" ghcr.io/coddy-project/coddy-agent:latest opens the web UI on localhost:12345, and the Docker tab also carries a docker-compose.yaml to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. coddy update -y upgrades an existing install."
             }
           },
           {
@@ -249,6 +249,7 @@
             <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false" aria-controls="panel-win" id="tab-win">Windows</button>
             <button type="button" class="tab" data-tab="pkg" role="tab" aria-selected="false" aria-controls="panel-pkg" id="tab-pkg">deb / rpm</button>
             <button type="button" class="tab" data-tab="brew" role="tab" aria-selected="false" aria-controls="panel-brew" id="tab-brew">Homebrew</button>
+            <button type="button" class="tab" data-tab="docker" role="tab" aria-selected="false" aria-controls="panel-docker" id="tab-docker">Docker</button>
           </div>
         </div>
         <div class="code-wrap active" id="panel-unix" role="tabpanel" aria-labelledby="tab-unix">
@@ -284,6 +285,62 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
           <p class="hint">
             Until the cask lands in <code>homebrew/cask</code>, install it from the release asset:
             <code>brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code>.
+          </p>
+        </div>
+        <div class="code-wrap" id="panel-docker" role="tabpanel" aria-labelledby="tab-docker">
+          <div class="install-code">
+            <button type="button" class="install-copy" data-copy-for="cmd-docker" aria-label="Copy docker command">Copy</button>
+            <pre><code id="cmd-docker">docker run -d --name coddy \
+  -p 12345:12345 \
+  -e OPENAI_API_KEY \
+  -v "$PWD/workspace:/workspace" \
+  -v "$PWD/coddy_home:/home/user/.coddy" \
+  ghcr.io/coddy-project/coddy-agent:latest</code></pre>
+          </div>
+          <p class="hint">
+            Opens the web UI on <a href="http://localhost:12345" target="_blank" rel="noopener noreferrer">localhost:12345</a>.
+            The image is <code>scratch</code>-based and multi-arch (<code>linux/amd64</code>, <code>linux/arm64</code>);
+            the agent edits files in the mounted workspace, so mount the project you want it to work on.
+            State - sessions, skills, config - lives in the second mount.
+          </p>
+          <p class="hint">
+            Pin a version instead of <code>latest</code> with a tag from the
+            <a href="https://github.com/coddy-project/coddy-agent/pkgs/container/coddy-agent" target="_blank" rel="noopener noreferrer">published images</a>,
+            for example <code>ghcr.io/coddy-project/coddy-agent:1.0.19</code>. Images are published to the GitHub
+            Container Registry, not Docker Hub; <code>docker pull</code> needs no login for public images.
+          </p>
+          <p class="hint">Or with Compose - save as <code>docker-compose.yaml</code> and run <code>docker compose up -d</code>:</p>
+          <div class="install-code">
+            <button type="button" class="install-copy" data-copy-for="cmd-compose" aria-label="Copy compose file">Copy</button>
+            <pre><code id="cmd-compose">services:
+  coddy:
+    image: ghcr.io/coddy-project/coddy-agent:latest
+    command: http -H 0.0.0.0 -P 12345
+    ports:
+      - "12345:12345"
+    working_dir: /workspace
+    environment:
+      CODDY_HOME: /home/user/.coddy
+      CODDY_CWD: /workspace
+      CODDY_CONFIG: /home/user/.coddy/config.yaml
+      OPENAI_API_KEY: ${OPENAI_API_KEY-}
+    volumes:
+      - ./workspace:/workspace
+      - ./coddy_home:/home/user/.coddy
+    healthcheck:
+      test: ["CMD", "/bin/coddy", "--version"]
+      interval: 5s
+      timeout: 3s
+      retries: 20</code></pre>
+          </div>
+          <p class="hint">
+            Sources in the repository:
+            <a href="https://github.com/coddy-project/coddy-agent/blob/main/Dockerfile" target="_blank" rel="noopener noreferrer">Dockerfile</a>,
+            <a href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.yml" target="_blank" rel="noopener noreferrer">docker-compose.yml</a>
+            (the published image) and
+            <a href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.dev.yml" target="_blank" rel="noopener noreferrer">docker-compose.dev.yml</a>
+            (builds from source, so you can pick your own build tags). Full guide:
+            <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">docs/docker.md</a>.
           </p>
         </div>
         <p class="hint">
@@ -603,6 +660,7 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
         win: document.getElementById("panel-win"),
         pkg: document.getElementById("panel-pkg"),
         brew: document.getElementById("panel-brew"),
+        docker: document.getElementById("panel-docker"),
       };
       wireTablist(installTabs, function (btn) {
         var id = btn.getAttribute("data-tab");
