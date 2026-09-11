@@ -28,7 +28,7 @@
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
-  <link rel="stylesheet" href="styles.css?v=24" />
+  <link rel="stylesheet" href="styles.css?v=25" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -245,117 +245,115 @@
         <div class="install-block-head">
           <h2>Quick install</h2>
           <div class="tabs" role="tablist" aria-label="Install platform">
-            <button type="button" class="tab active" data-tab="all" role="tab" aria-selected="true" aria-controls="panel-all" id="tab-all">All platforms</button>
-            <button type="button" class="tab" data-tab="linux" role="tab" aria-selected="false" aria-controls="panel-linux" id="tab-linux">Linux</button>
+            <button type="button" class="tab active" data-tab="linux" role="tab" aria-selected="true" aria-controls="panel-linux" id="tab-linux">Linux</button>
             <button type="button" class="tab" data-tab="mac" role="tab" aria-selected="false" aria-controls="panel-mac" id="tab-mac">macOS</button>
             <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false" aria-controls="panel-win" id="tab-win">Windows</button>
             <button type="button" class="tab" data-tab="docker" role="tab" aria-selected="false" aria-controls="panel-docker" id="tab-docker">Docker</button>
           </div>
         </div>
 
-        <div class="code-wrap active" id="panel-all" role="tabpanel" aria-labelledby="tab-all">
-          <p class="install-label">Linux and macOS</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-all" aria-label="Copy install command">Copy</button>
-            <pre><code id="cmd-all">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
+        <div class="code-wrap active" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux">
+          <div class="method active" data-method="linux-script">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-linux" aria-label="Copy install command">Copy</button>
+              <pre><code id="cmd-linux"><span class="cmd">curl -fsSL https://coddy.dev/install.sh | bash</span></code></pre>
+            </div>
           </div>
-          <p class="install-note">
-            Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code>
-            from the example when it is missing. Windows and Docker have tabs of their own.
+          <div class="method" data-method="linux-deb">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-deb" aria-label="Copy deb install commands">Copy</button>
+              <pre><code id="cmd-deb"><span class="cmd">curl -fsSLO https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.deb</span>
+<span class="cmd">sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.deb</span></code></pre>
+            </div>
+          </div>
+          <div class="method" data-method="linux-rpm">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-rpm" aria-label="Copy rpm install commands">Copy</button>
+              <pre><code id="cmd-rpm"><span class="cmd">curl -fsSLO https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm</span>
+<span class="cmd">sudo dnf install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm</span></code></pre>
+            </div>
+          </div>
+          <div class="install-bar">
+            <div class="methods" role="tablist" aria-label="Linux install method">
+              <button type="button" class="method-tab active" data-method="linux-script" role="tab" aria-selected="true">Script</button>
+              <button type="button" class="method-tab" data-method="linux-deb" role="tab" aria-selected="false">Debian / Ubuntu</button>
+              <button type="button" class="method-tab" data-method="linux-rpm" role="tab" aria-selected="false">Fedora / RHEL</button>
+            </div>
+            <a class="install-view method active" data-method="linux-script" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.sh" target="_blank" rel="noopener noreferrer">View install script <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="linux-deb" href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">Release assets <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="linux-rpm" href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">Release assets <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <p class="install-note method active" data-method="linux-script">
+            Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code> from the example when it is missing.
           </p>
-        </div>
-
-        <div class="code-wrap" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux">
-          <p class="install-label">Install script</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-linux" aria-label="Copy install command">Copy</button>
-            <pre><code id="cmd-linux">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
-          </div>
-          <p class="install-note">
-            Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code>
-            from the example when it is missing.
+          <p class="install-note method" data-method="linux-deb">
+            Swap <code>amd64</code> for <code>arm64</code> on 64-bit ARM, or pick a file from the <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>. The package brings <code>/usr/bin/coddy</code>, <code>man coddy</code> and the shell completions, no service and no system account, and <code>coddy update</code> defers to the package manager.
           </p>
-
-          <p class="install-label">Debian and Ubuntu</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-deb" aria-label="Copy deb install commands">Copy</button>
-            <pre><code id="cmd-deb">curl -fsSLO https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.deb
-sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.deb</code></pre>
-          </div>
-
-          <p class="install-label">Fedora, RHEL and openSUSE</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-rpm" aria-label="Copy rpm install commands">Copy</button>
-            <pre><code id="cmd-rpm">curl -fsSLO https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm
-sudo dnf install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm</code></pre>
-          </div>
-          <p class="install-note">
-            Swap <code>amd64</code> for <code>arm64</code> on 64-bit ARM, or pick a file by hand from the
-            <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>.
-            A package installs <code>/usr/bin/coddy</code>, <code>man coddy</code> and the shell completions,
-            nothing else: no service and no system account. <code>coddy update</code> defers to the package manager.
+          <p class="install-note method" data-method="linux-rpm">
+            openSUSE takes the same file with <code>zypper</code>. Swap <code>amd64</code> for <code>arm64</code> on 64-bit ARM, or pick a file from the <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>. The package brings <code>/usr/bin/coddy</code>, <code>man coddy</code> and the shell completions, no service and no system account, and <code>coddy update</code> defers to the package manager.
           </p>
         </div>
 
         <div class="code-wrap" id="panel-mac" role="tabpanel" aria-labelledby="tab-mac">
-          <p class="install-label">Install script</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-mac" aria-label="Copy install command">Copy</button>
-            <pre><code id="cmd-mac">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
+          <div class="method active" data-method="mac-script">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-mac" aria-label="Copy install command">Copy</button>
+              <pre><code id="cmd-mac"><span class="cmd">curl -fsSL https://coddy.dev/install.sh | bash</span></code></pre>
+            </div>
           </div>
-          <p class="install-note">
-            Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code>
-            from the example when it is missing.
+          <div class="method" data-method="mac-brew">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-brew" aria-label="Copy Homebrew install command">Copy</button>
+              <pre><code id="cmd-brew"><span class="cmd">brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</span></code></pre>
+            </div>
+          </div>
+          <div class="install-bar">
+            <div class="methods" role="tablist" aria-label="macOS install method">
+              <button type="button" class="method-tab active" data-method="mac-script" role="tab" aria-selected="true">Script</button>
+              <button type="button" class="method-tab" data-method="mac-brew" role="tab" aria-selected="false">Homebrew</button>
+            </div>
+            <a class="install-view method active" data-method="mac-script" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.sh" target="_blank" rel="noopener noreferrer">View install script <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="mac-brew" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/homebrew.md" target="_blank" rel="noopener noreferrer">About the cask <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <p class="install-note method active" data-method="mac-script">
+            Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code> from the example when it is missing.
           </p>
-
-          <p class="install-label">Homebrew cask</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-brew" aria-label="Copy Homebrew install command">Copy</button>
-            <pre><code id="cmd-brew">brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code></pre>
-          </div>
-          <p class="install-note">
-            Every release publishes the cask beside its archives. It installs the same binary plus
-            <code>man coddy</code> and the shell completions, and <code>coddy update</code> hands a Homebrew
-            install over to <code>brew upgrade --cask coddy</code>. If macOS blocks the first run, clear the
-            quarantine flag with <code>xattr -d com.apple.quarantine "$(which coddy)"</code>.
+          <p class="install-note method" data-method="mac-brew">
+            Every release publishes the cask beside its archives. It adds <code>man coddy</code> and the shell completions, and <code>coddy update</code> hands over to <code>brew upgrade --cask coddy</code>. If macOS blocks the first run, clear the quarantine flag with <code>xattr -d com.apple.quarantine "$(which coddy)"</code>.
           </p>
         </div>
 
         <div class="code-wrap" id="panel-win" role="tabpanel" aria-labelledby="tab-win">
-          <p class="install-label">PowerShell</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-win" aria-label="Copy install command">Copy</button>
-            <pre><code id="cmd-win">irm https://coddy.dev/install.ps1 | iex</code></pre>
+          <div class="method active">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-win" aria-label="Copy install command">Copy</button>
+              <pre><code id="cmd-win"><span class="cmd">irm https://coddy.dev/install.ps1 | iex</span></code></pre>
+            </div>
           </div>
-          <p class="install-note">
-            Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code>
-            from the example when it is missing.
+          <div class="install-bar">
+            <a class="install-view" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.ps1" target="_blank" rel="noopener noreferrer">View install script <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <p class="install-note active">
+            Run it in PowerShell. Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code> from the example when it is missing.
           </p>
         </div>
 
         <div class="code-wrap" id="panel-docker" role="tabpanel" aria-labelledby="tab-docker">
-          <p class="install-label">Run the image</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-docker" aria-label="Copy docker command">Copy</button>
-            <pre><code id="cmd-docker">docker run -d --name coddy \
+          <div class="method active" data-method="docker-run">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-docker" aria-label="Copy docker command">Copy</button>
+              <pre><code id="cmd-docker"><span class="cmd">docker run -d --name coddy \</span>
   -p 12345:12345 \
   -e OPENAI_API_KEY \
   -v "$PWD/workspace:/workspace" \
   -v "$PWD/coddy_home:/home/user/.coddy" \
   ghcr.io/coddy-project/coddy-agent:latest</code></pre>
+            </div>
           </div>
-          <p class="install-note">
-            Opens the web UI on <a href="http://localhost:12345" target="_blank" rel="noopener noreferrer">localhost:12345</a>.
-            The agent works in the mounted <code>/workspace</code>; sessions, skills and config live in the second mount.
-            The image is <code>scratch</code>-based, built for <code>amd64</code> and <code>arm64</code>, and published to
-            the GitHub Container Registry, so <code>docker pull</code> needs no login. Pin a release instead of
-            <code>latest</code>, for example <code>ghcr.io/coddy-project/coddy-agent:<span class="pkg-version">X.Y.Z</span></code>.
-          </p>
-
-          <p class="install-label">Docker Compose</p>
-          <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-compose" aria-label="Copy compose file">Copy</button>
-            <pre><code id="cmd-compose">services:
+          <div class="method" data-method="docker-compose">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-compose" aria-label="Copy compose file">Copy</button>
+              <pre><code id="cmd-compose">services:
   coddy:
     image: ghcr.io/coddy-project/coddy-agent:latest
     command: serve -H 0.0.0.0 -P 12345
@@ -375,20 +373,26 @@ sudo dnf install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm<
       interval: 5s
       timeout: 3s
       retries: 20</code></pre>
+            </div>
           </div>
-          <p class="install-note">
-            Save it as <code>docker-compose.yaml</code> and run <code>docker compose up -d</code>. In the repository:
-            <a href="https://github.com/coddy-project/coddy-agent/blob/main/Dockerfile" target="_blank" rel="noopener noreferrer">Dockerfile</a>,
-            <a href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.yml" target="_blank" rel="noopener noreferrer">docker-compose.yml</a>
-            for the published image,
-            <a href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.dev.yml" target="_blank" rel="noopener noreferrer">docker-compose.dev.yml</a>
-            to build from source with your own tags, and the guide in
-            <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">docs/docker.md</a>.
+          <div class="install-bar">
+            <div class="methods" role="tablist" aria-label="Docker install method">
+              <button type="button" class="method-tab active" data-method="docker-run" role="tab" aria-selected="true">docker run</button>
+              <button type="button" class="method-tab" data-method="docker-compose" role="tab" aria-selected="false">Compose</button>
+            </div>
+            <a class="install-view method active" data-method="docker-run" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">Docker guide <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="docker-compose" href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.yml" target="_blank" rel="noopener noreferrer">Compose file in the repo <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <p class="install-note method active" data-method="docker-run">
+            Opens the web UI on <a href="http://localhost:12345" target="_blank" rel="noopener noreferrer">localhost:12345</a>. The agent works in the mounted <code>/workspace</code>; sessions, skills and config live in the second mount. The image is built for <code>amd64</code> and <code>arm64</code> and published to the GitHub Container Registry, no login needed to pull. Pin a release instead of <code>latest</code>, for example <code>ghcr.io/coddy-project/coddy-agent:<span class="pkg-version">X.Y.Z</span></code>.
+          </p>
+          <p class="install-note method" data-method="docker-compose">
+            Save it as <code>docker-compose.yaml</code> and run <code>docker compose up -d</code>. In the repository: <a href="https://github.com/coddy-project/coddy-agent/blob/main/Dockerfile" target="_blank" rel="noopener noreferrer">Dockerfile</a>, <a href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.yml" target="_blank" rel="noopener noreferrer">docker-compose.yml</a> for the published image and <a href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.dev.yml" target="_blank" rel="noopener noreferrer">docker-compose.dev.yml</a> to build from source with your own tags.
           </p>
         </div>
 
         <div class="install-next" id="install-next">
-          <p class="install-label">Then set a provider key in <code>~/.coddy/config.yaml</code> and run</p>
+          <p class="install-next-title">Then set a provider key in <code>~/.coddy/config.yaml</code> and run</p>
           <dl class="install-cmds">
             <dt><code>coddy</code></dt>
             <dd>the terminal console</dd>
@@ -703,7 +707,7 @@ sudo dnf install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm<
         var id = t.getAttribute("data-tab");
         installPanels[id] = document.getElementById("panel-" + id);
       });
-      wireTablist(installTabs, function (btn) {
+      function activateInstallTab(btn) {
         var id = btn.getAttribute("data-tab");
         installTabs.forEach(function (t) {
           var on = t === btn;
@@ -717,6 +721,41 @@ sudo dnf install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm<
         // already runs `coddy serve`, so the Docker tab hides it.
         var installNext = document.getElementById("install-next");
         if (installNext) installNext.hidden = id === "docker";
+      }
+      wireTablist(installTabs, activateInstallTab);
+
+      // Open the tab for the visitor's own platform. The markup ships with
+      // Linux selected, which is also the answer when nothing matches.
+      function detectInstallTab() {
+        var hints = [
+          navigator.userAgentData && navigator.userAgentData.platform,
+          navigator.platform,
+          navigator.userAgent,
+        ].filter(Boolean).join(" ");
+        if (/mac|iphone|ipad/i.test(hints)) return "mac";
+        if (/windows|win32|win64/i.test(hints)) return "win";
+        return "linux";
+      }
+      var detectedTab = document.getElementById("tab-" + detectInstallTab());
+      if (detectedTab && !detectedTab.classList.contains("active")) activateInstallTab(detectedTab);
+
+      // Inside a platform panel the segmented control under the command
+      // swaps the command block and its note: every element carrying
+      // data-method in that panel follows the selected tab.
+      Array.prototype.slice.call(document.querySelectorAll(".methods")).forEach(function (group) {
+        var panel = group.closest(".code-wrap");
+        var methodTabs = Array.prototype.slice.call(group.querySelectorAll(".method-tab"));
+        wireTablist(methodTabs, function (btn) {
+          var id = btn.getAttribute("data-method");
+          methodTabs.forEach(function (t) {
+            var on = t === btn;
+            t.classList.toggle("active", on);
+            t.setAttribute("aria-selected", on ? "true" : "false");
+          });
+          Array.prototype.slice.call(panel.querySelectorAll(".method")).forEach(function (el) {
+            el.classList.toggle("active", el.getAttribute("data-method") === id);
+          });
+        });
       });
 
       var showcaseTabs = Array.prototype.slice.call(document.querySelectorAll(".showcase-tab"));
