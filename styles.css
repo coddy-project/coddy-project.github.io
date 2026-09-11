@@ -249,12 +249,17 @@ a:hover {
 .install-block {
   padding: 20px 22px;
   text-align: left;
-  max-width: 640px;
+  /* Five install tabs beside the heading need about 680px; the card is
+     sized so the head stays on one line at desktop width. */
+  max-width: 700px;
   margin: 0 auto 12px;
 }
 
 .install-block-head {
   display: flex;
+  /* When the tab row does not fit beside the heading it drops to its own
+     line instead of spilling past the card border. */
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -273,10 +278,10 @@ a:hover {
 
 .tabs {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin: 0;
+  margin: 0 0 0 auto;
   flex-shrink: 0;
 }
 
