@@ -92,4 +92,4 @@ if ($userPath -notlike "*$InstallDir*") {
 }
 
 & $dest -v
-Write-Info "next: set API keys in $config, then: coddy http"
+Write-Info "next: set API keys in $config, then: coddy serve"

@@ -47,7 +47,7 @@ After install:
   source ~/.zshrc          # or open a new terminal
   coddy -v
   edit ~/.coddy/config.yaml and set your provider API key
-  coddy http    # browser UI on http://127.0.0.1:12345/
+  coddy serve   # web UI and REST API on http://127.0.0.1:12345/
 
 Script URL: ${CODDY_INSTALL_SCRIPT_URL}
 EOF
@@ -308,7 +308,7 @@ fi
 
 log "done: $("$DEST" -v 2>/dev/null || echo "coddy installed")"
 if [ -n "$RC_FILE" ]; then
-  log "next: source ${RC_FILE} (or open a new terminal), set API keys in ${CONFIG}, then: coddy http"
+  log "next: source ${RC_FILE} (or open a new terminal), set API keys in ${CONFIG}, then: coddy serve"
 else
-  log "next: set API keys in ${CONFIG}, then: coddy http"
+  log "next: set API keys in ${CONFIG}, then: coddy serve"
 fi

@@ -233,11 +233,11 @@
           works in a container that holds nothing but the agent.
         </p>
         <p>
-          Four entry points share one <code>$CODDY_HOME</code>: <code>coddy acp</code> for editors,
-          <code>coddy http</code> for the REST gateway and the embedded web UI, bare <code>coddy</code> for the
-          terminal console, and <code>coddy gateway</code> for messengers. A session started in the terminal opens in
-          a browser and continues in an editor, because the session bundle lives in one place on disk. On top of that,
-          <code>--remote</code> points the console or ACP at a running server elsewhere.
+          Every entry point shares one <code>$CODDY_HOME</code>: <code>coddy acp</code> for editors, bare
+          <code>coddy</code> for the terminal console, and <code>coddy serve</code> for the REST gateway, the embedded
+          web UI and the messengers, in one process. A session started in the terminal opens in a browser and continues
+          in an editor, because the session bundle lives in one place on disk. On top of that, <code>--remote</code>
+          points the console or ACP at a running server elsewhere.
         </p>
         <p>
           A few mechanisms are worth naming because they rarely show up elsewhere. <strong>Result eviction</strong>
