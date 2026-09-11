@@ -249,9 +249,10 @@ a:hover {
 .install-block {
   padding: 20px 22px;
   text-align: left;
-  /* Five install tabs beside the heading need about 680px; the card is
-     sized so the head stays on one line at desktop width. */
-  max-width: 700px;
+  /* The heading and the five install tabs need about 570px on one line,
+     which fits at this width; anything wider drops the tab row under the
+     heading (see .install-block-head). */
+  max-width: 640px;
   margin: 0 auto 12px;
 }
 

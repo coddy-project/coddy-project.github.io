@@ -28,7 +28,7 @@
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
-  <link rel="stylesheet" href="styles.css?v=22" />
+  <link rel="stylesheet" href="styles.css?v=23" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -245,28 +245,40 @@
         <div class="install-block-head">
           <h2>Quick install</h2>
           <div class="tabs" role="tablist" aria-label="Install platform">
-            <button type="button" class="tab active" data-tab="unix" role="tab" aria-selected="true" aria-controls="panel-unix" id="tab-unix">Linux / macOS</button>
+            <button type="button" class="tab active" data-tab="all" role="tab" aria-selected="true" aria-controls="panel-all" id="tab-all">All platforms</button>
+            <button type="button" class="tab" data-tab="linux" role="tab" aria-selected="false" aria-controls="panel-linux" id="tab-linux">Linux</button>
+            <button type="button" class="tab" data-tab="mac" role="tab" aria-selected="false" aria-controls="panel-mac" id="tab-mac">macOS</button>
             <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false" aria-controls="panel-win" id="tab-win">Windows</button>
-            <button type="button" class="tab" data-tab="pkg" role="tab" aria-selected="false" aria-controls="panel-pkg" id="tab-pkg">deb / rpm</button>
-            <button type="button" class="tab" data-tab="brew" role="tab" aria-selected="false" aria-controls="panel-brew" id="tab-brew">Homebrew</button>
             <button type="button" class="tab" data-tab="docker" role="tab" aria-selected="false" aria-controls="panel-docker" id="tab-docker">Docker</button>
           </div>
         </div>
-        <div class="code-wrap active" id="panel-unix" role="tabpanel" aria-labelledby="tab-unix">
+        <div class="code-wrap active" id="panel-all" role="tabpanel" aria-labelledby="tab-all">
           <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-unix" aria-label="Copy install command">Copy</button>
-            <pre><code id="cmd-unix">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
+            <button type="button" class="install-copy" data-copy-for="cmd-all" aria-label="Copy install command">Copy</button>
+            <pre><code id="cmd-all">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
           </div>
+          <p class="hint">
+            One line for Linux and macOS: downloads the latest release binary, installs it to your PATH, and creates
+            <code>~/.coddy/config.yaml</code> from the example when missing. Windows has a PowerShell line and
+            Docker a ready image, pick the tab. Then set a provider key and run <code>coddy</code> for the
+            terminal console, <code>coddy serve</code> for the web UI, or <code>coddy acp</code> for an editor
+            client. Upgrade later with <code>coddy update -y</code>.
+          </p>
         </div>
-        <div class="code-wrap" id="panel-win" role="tabpanel" aria-labelledby="tab-win">
+        <div class="code-wrap" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux">
           <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-win" aria-label="Copy install command">Copy</button>
-            <pre><code id="cmd-win">irm https://coddy.dev/install.ps1 | iex</code></pre>
+            <button type="button" class="install-copy" data-copy-for="cmd-linux" aria-label="Copy install command">Copy</button>
+            <pre><code id="cmd-linux">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
           </div>
-        </div>
-        <div class="code-wrap" id="panel-pkg" role="tabpanel" aria-labelledby="tab-pkg">
+          <p class="hint">
+            Downloads the latest release binary, installs it to your PATH, and creates <code>~/.coddy/config.yaml</code>
+            from the example when missing. Then set a provider key and run <code>coddy</code> for the terminal
+            console, <code>coddy serve</code> for the web UI, or <code>coddy acp</code> for an editor client.
+            Upgrade later with <code>coddy update -y</code>.
+          </p>
+          <p class="hint">Or take the <code>.deb</code> / <code>.rpm</code> published with every release:</p>
           <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-pkg" aria-label="Copy install command">Copy</button>
+            <button type="button" class="install-copy" data-copy-for="cmd-pkg" aria-label="Copy package install commands">Copy</button>
             <pre><code id="cmd-pkg">curl -fsSLO https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.deb
 sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.deb</code></pre>
           </div>
@@ -275,16 +287,46 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
             <code>sudo dnf install ./...rpm</code>. Swap <code>amd64</code> for <code>arm64</code> on 64-bit ARM, or
             pick a file by hand from the
             <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>.
+            The package installs <code>/usr/bin/coddy</code>, <code>man coddy</code> and the bash and zsh completions,
+            nothing else: no service and no system account, Coddy keeps its state in your own <code>~/.coddy</code>.
+            <code>coddy update</code> defers to the package manager and, as root, downloads and installs the newer package.
           </p>
         </div>
-        <div class="code-wrap" id="panel-brew" role="tabpanel" aria-labelledby="tab-brew">
+        <div class="code-wrap" id="panel-mac" role="tabpanel" aria-labelledby="tab-mac">
           <div class="install-code">
-            <button type="button" class="install-copy" data-copy-for="cmd-brew" aria-label="Copy install command">Copy</button>
-            <pre><code id="cmd-brew">brew install --cask coddy</code></pre>
+            <button type="button" class="install-copy" data-copy-for="cmd-mac" aria-label="Copy install command">Copy</button>
+            <pre><code id="cmd-mac">curl -fsSL https://coddy.dev/install.sh | bash</code></pre>
           </div>
           <p class="hint">
-            Until the cask lands in <code>homebrew/cask</code>, install it from the release asset:
-            <code>brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code>.
+            Downloads the latest release binary, installs it to your PATH, and creates <code>~/.coddy/config.yaml</code>
+            from the example when missing. Then set a provider key and run <code>coddy</code> for the terminal
+            console, <code>coddy serve</code> for the web UI, or <code>coddy acp</code> for an editor client.
+            Upgrade later with <code>coddy update -y</code>.
+          </p>
+          <p class="hint">Or with Homebrew, from the cask every release publishes:</p>
+          <div class="install-code">
+            <button type="button" class="install-copy" data-copy-for="cmd-brew" aria-label="Copy Homebrew install command">Copy</button>
+            <pre><code id="cmd-brew">brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code></pre>
+          </div>
+          <p class="hint">
+            The cask installs the same binary plus <code>man coddy</code> and the bash and zsh completions, and
+            <code>coddy update</code> sends a Homebrew install back to <code>brew upgrade --cask coddy</code>.
+            If macOS blocks the first run, clear the quarantine flag:
+            <code>xattr -d com.apple.quarantine "$(which coddy)"</code>. The full path to
+            <code>brew install --cask coddy</code> by name is in
+            <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/homebrew.md" target="_blank" rel="noopener noreferrer">docs/homebrew.md</a>.
+          </p>
+        </div>
+        <div class="code-wrap" id="panel-win" role="tabpanel" aria-labelledby="tab-win">
+          <div class="install-code">
+            <button type="button" class="install-copy" data-copy-for="cmd-win" aria-label="Copy install command">Copy</button>
+            <pre><code id="cmd-win">irm https://coddy.dev/install.ps1 | iex</code></pre>
+          </div>
+          <p class="hint">
+            Run it in PowerShell: downloads the latest release binary, installs it to your PATH, and creates
+            <code>~/.coddy/config.yaml</code> from the example when missing. Then set a provider key and run
+            <code>coddy</code> for the terminal console, <code>coddy serve</code> for the web UI, or
+            <code>coddy acp</code> for an editor client. Upgrade later with <code>coddy update -y</code>.
           </p>
         </div>
         <div class="code-wrap" id="panel-docker" role="tabpanel" aria-labelledby="tab-docker">
@@ -343,26 +385,12 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
             <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">docs/docker.md</a>.
           </p>
         </div>
-        <p class="hint">
-          Downloads the latest release binary, installs to your PATH, and creates
-          <code>~/.coddy/config.yaml</code> from the example when missing. Then set a provider key and run
-          <code>coddy</code> for the terminal console, <code>coddy serve</code> for the web UI, or
-          <code>coddy acp</code> for an editor client. Upgrade later with <code>coddy update -y</code>.
-        </p>
-        <p class="hint">
-          The packages install a binary and its documentation and nothing else: <code>/usr/bin/coddy</code>,
-          <code>man coddy</code>, and bash and zsh completions. No service and no system account - Coddy keeps
-          its state in your own <code>~/.coddy</code>, so what to run stays your decision. Your package manager
-          tracks the files, and <code>coddy update</code> defers to it instead of overwriting them: as root it
-          downloads and installs the newer package, and a Homebrew install is sent back to
-          <code>brew upgrade</code>.
-        </p>
       </div>
       <p class="hint install-alt">
-        Docker: <code>ghcr.io/coddy-project/coddy-agent</code> -
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">compose setup</a>
-        · Other install methods:
+        Other install methods and details:
         <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/install.md" target="_blank" rel="noopener noreferrer">docs/install.md</a>
+        · Docker guide:
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">docs/docker.md</a>
       </p>
     </section>
 
@@ -655,13 +683,11 @@ sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.
       }
 
       var installTabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
-      var installPanels = {
-        unix: document.getElementById("panel-unix"),
-        win: document.getElementById("panel-win"),
-        pkg: document.getElementById("panel-pkg"),
-        brew: document.getElementById("panel-brew"),
-        docker: document.getElementById("panel-docker"),
-      };
+      var installPanels = {};
+      installTabs.forEach(function (t) {
+        var id = t.getAttribute("data-tab");
+        installPanels[id] = document.getElementById("panel-" + id);
+      });
       wireTablist(installTabs, function (btn) {
         var id = btn.getAttribute("data-tab");
         installTabs.forEach(function (t) {
