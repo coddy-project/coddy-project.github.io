@@ -150,7 +150,7 @@
             "name": "How do I install Coddy?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. On Linux you can instead install the deb or rpm published with every release (apt-get install ./coddy_X.Y.Z_linux_amd64.deb, dnf install ./coddy_X.Y.Z_linux_amd64.rpm), and on macOS the Homebrew cask (brew install --cask coddy); both add the man page and shell completions. Docker: docker run -d -p 12345:12345 -v \"$PWD/workspace:/workspace\" -v \"$PWD/coddy_home:/home/user/.coddy\" ghcr.io/coddy-project/coddy-agent:latest opens the web UI on localhost:12345, and the Docker tab also carries a docker-compose.yaml to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. coddy update -y upgrades an existing install."
+              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. On Linux you can instead install the .deb or .rpm published with every release (apt-get install ./coddy_X.Y.Z_linux_amd64.deb, dnf install ./coddy_X.Y.Z_linux_amd64.rpm), and on macOS the Homebrew cask straight from the release (brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb); both register Coddy with your package manager and add the man page and shell completions. Docker: docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -v \"$PWD/workspace:/workspace\" -v \"$PWD/coddy_home:/home/user/.coddy\" ghcr.io/coddy-project/coddy-agent:latest opens the web UI on localhost:12345, and the Docker tab of the install block also carries a docker-compose.yaml to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. coddy update -y upgrades an existing install."
             }
           },
           {
@@ -182,7 +182,7 @@
             "name": "How is Coddy different from other coding agents?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at https://coddy.dev/compare/."
+              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at coddy.dev/compare/."
             }
           }
         ]
@@ -694,7 +694,7 @@
         </div>
         <div class="faq-item">
           <h3>How do I install Coddy?</h3>
-          <p>Linux and macOS: <code>curl -fsSL https://coddy.dev/install.sh | bash</code>. Windows: <code>irm https://coddy.dev/install.ps1 | iex</code>. The script downloads the latest release binary, puts it on your PATH, and creates <code>~/.coddy/config.yaml</code> from the example. On Linux you can instead install the <code>.deb</code> or <code>.rpm</code> published with every release, and on macOS the Homebrew cask (<code>brew install --cask coddy</code>); both register Coddy with your package manager and add the man page and shell completions. Docker images for amd64 and arm64 are published as <code>ghcr.io/coddy-project/coddy-agent</code>, and <code>coddy update -y</code> upgrades an existing install.</p>
+          <p>Linux and macOS: <code>curl -fsSL https://coddy.dev/install.sh | bash</code>. Windows: <code>irm https://coddy.dev/install.ps1 | iex</code>. The script downloads the latest release binary, puts it on your PATH, and creates <code>~/.coddy/config.yaml</code> from the example. On Linux you can instead install the <code>.deb</code> or <code>.rpm</code> published with every release (<code>apt-get install ./coddy_X.Y.Z_linux_amd64.deb</code>, <code>dnf install ./coddy_X.Y.Z_linux_amd64.rpm</code>), and on macOS the Homebrew cask straight from the release (<code>brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code>); both register Coddy with your package manager and add the man page and shell completions. Docker: <code>docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -v "$PWD/workspace:/workspace" -v "$PWD/coddy_home:/home/user/.coddy" ghcr.io/coddy-project/coddy-agent:latest</code> opens the web UI on <code>localhost:12345</code>, and the Docker tab of the install block also carries a <code>docker-compose.yaml</code> to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. <code>coddy update -y</code> upgrades an existing install.</p>
         </div>
         <div class="faq-item">
           <h3>Can Coddy run on-premises with local models?</h3>
@@ -710,7 +710,7 @@
         </div>
         <div class="faq-item">
           <h3>How is Coddy different from other coding agents?</h3>
-          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. See the <a href="/compare/">side-by-side comparison with nineteen other harnesses</a>.</p>
+          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at <a href="/compare/">coddy.dev/compare/</a>.</p>
         </div>
       </div>
     </section>
