@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Coddy Agent - general-purpose agent in one Go binary</title>
-  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary with a terminal console, ACP, embedded web UI, subagents, rules, skills, MCP, Telegram gateway, scheduler, and your own API keys." />
+  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary with a terminal console, ACP for editors, an embedded web UI, a Telegram gateway, a cron scheduler, a swarm relay and remote control, plus rules, skills, subagents, hooks, MCP and your own API keys." />
   <meta name="theme-color" content="#9333ea" />
   <link rel="canonical" href="https://coddy.dev/" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
@@ -13,7 +13,7 @@
   <meta property="og:site_name" content="Coddy Agent" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:title" content="Coddy Agent - general-purpose agent in one Go binary" />
-  <meta property="og:description" content="One static Go binary for software agents: ReAct, subagents, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, Cursor-style rules, Docker-ready, your API keys." />
+  <meta property="og:description" content="One static Go binary for software agents: ReAct, subagents, hooks, terminal console, ACP, web UI, Telegram gateway, scheduler, swarm relay, remote control, memory, Cursor-style rules, Docker-ready, your API keys." />
   <meta property="og:url" content="https://coddy.dev/" />
   <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
   <meta property="og:image:width" content="1280" />
@@ -21,7 +21,7 @@
   <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Coddy Agent - general-purpose agent in one Go binary" />
-  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, subagents, terminal console, ACP, web UI, Telegram gateway, scheduler, memory, on-prem models." />
+  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, subagents, hooks, terminal console, ACP, web UI, Telegram gateway, scheduler, swarm relay, memory, on-prem models." />
   <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
   <link rel="icon" href="assets/coddy-favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
@@ -76,7 +76,7 @@
         "name": "Coddy Agent",
         "alternateName": "Coddy",
         "url": "https://coddy.dev/",
-        "description": "Coddy Agent is an open-source, general-purpose AI agent in one static Go binary: a ReAct loop with filesystem and shell tools, MCP, project rules, skills, subagents, background tasks, a cron scheduler, and long-term memory, driven from a terminal console, an embedded web UI, an OpenAI-compatible HTTP API, the Agent Client Protocol (ACP) for editors, or a Telegram gateway. Works with any OpenAI-compatible provider or Anthropic using your own API keys, including local models, and runs in distroless containers.",
+        "description": "Coddy Agent is an open-source, general-purpose AI agent in one static Go binary: a ReAct loop with filesystem and shell tools, MCP, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, driven from a terminal console, an embedded web UI, an OpenAI-compatible HTTP API, the Agent Client Protocol (ACP) for editors, or a Telegram gateway, with a swarm relay that lists and reaches a fleet of nodes and remote control of a running server. Works with any OpenAI-compatible provider or Anthropic using your own API keys, including local models, and runs in distroless containers.",
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "AI agent",
         "operatingSystem": "Linux, macOS, Windows",
@@ -110,8 +110,10 @@
           "Terminal console TUI, embedded web UI, OpenAI-compatible HTTP API",
           "Agent Client Protocol (ACP) server for Zed, Obsidian, VS Code",
           "Telegram gateway",
-          "MCP servers, Cursor-style rules, skills, AGENTS.md",
+          "MCP servers, Cursor-style rules, skills, hooks, AGENTS.md",
           "Subagents, background tasks, cron scheduler, long-term memory, context compaction",
+          "Swarm relay for a fleet of nodes, remote control of a running server, coddy serve daemon",
+          "Config check and dry run before start, hot reload of config.yaml",
           "Any OpenAI-compatible provider or Anthropic, local models via Ollama, llama.cpp, vLLM",
           "Single static binary, Docker images for amd64 and arm64, distroless and scratch images"
         ],
@@ -132,7 +134,7 @@
             "name": "What is Coddy Agent?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram."
+              "text": "Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram, on one machine or across a swarm of them."
             }
           },
           {
@@ -148,7 +150,7 @@
             "name": "How do I install Coddy?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. On Linux you can instead install the deb or rpm published with every release (apt-get install ./coddy_X.Y.Z_linux_amd64.deb, dnf install ./coddy_X.Y.Z_linux_amd64.rpm), and on macOS the Homebrew cask (brew install --cask coddy); both add the man page and shell completions. Docker: docker run -d -p 12345:12345 -v \"$PWD/workspace:/workspace\" -v \"$PWD/coddy_home:/home/user/.coddy\" ghcr.io/coddy-project/coddy-agent:latest opens the web UI on localhost:12345, and the Docker tab also carries a docker-compose.yaml to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. coddy update -y upgrades an existing install."
+              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. On Linux you can instead install the .deb or .rpm published with every release (apt-get install ./coddy_X.Y.Z_linux_amd64.deb, dnf install ./coddy_X.Y.Z_linux_amd64.rpm), and on macOS the Homebrew cask straight from the release (brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb); both register Coddy with your package manager and add the man page and shell completions. Docker: docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -v \"$PWD/workspace:/workspace\" -v \"$PWD/coddy_home:/home/user/.coddy\" ghcr.io/coddy-project/coddy-agent:latest opens the web UI on localhost:12345, and the Docker tab of the install block also carries a docker-compose.yaml to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. coddy update -y upgrades an existing install."
             }
           },
           {
@@ -169,10 +171,18 @@
           },
           {
             "@type": "Question",
+            "name": "How do I run Coddy on more than one machine?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Run coddy serve on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel. The console, coddy acp, and the web UI can also drive a single remote server with --remote, and coddy serve --daemon keeps a server running in the background with status, stop, and restart."
+            }
+          },
+          {
+            "@type": "Question",
             "name": "How is Coddy different from other coding agents?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at https://coddy.dev/compare/."
+              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at coddy.dev/compare/."
             }
           }
         ]
@@ -226,8 +236,9 @@
       <h1>Run a general-purpose agent<br class="hero-br" /> from one static binary</h1>
       <p class="tagline">
         Coddy is an agent harness: a ReAct loop with filesystem and shell tools, MCP, project rules, skills,
-        subagents, background tasks, and long-term memory.
-        Drive it from a terminal, a browser, your editor over ACP, or Telegram.
+        subagents, hooks, background tasks, and long-term memory.
+        Drive it from a terminal, a browser, your editor over ACP, or Telegram; run it as a service with a
+        cron scheduler, a swarm relay for a fleet of nodes, and remote control from anywhere.
         Built for containers and your own API keys.
       </p>
       <div class="hero-skills" role="list" aria-label="Capabilities">
@@ -235,6 +246,7 @@
         <span class="skill-chip" role="listitem">/console-tui</span>
         <span class="skill-chip" role="listitem">/acp-harness</span>
         <span class="skill-chip" role="listitem">/subagents</span>
+        <span class="skill-chip" role="listitem">/swarm</span>
         <span class="skill-chip" role="listitem">/distroless-ready</span>
         <span class="skill-chip" role="listitem">/on-prem-llms</span>
       </div>
@@ -490,7 +502,7 @@
       <p>
         Ship it as a single binary in <strong>distroless</strong> or <strong>from-scratch</strong> images, or run a
         <strong>fleet of containers</strong> with your orchestrator defining CPU, memory, and mounts - one agent per
-        task, full control of each instance.
+        task, full control of each instance, and one swarm relay that lists and reaches every node.
       </p>
     </section>
 
@@ -504,19 +516,19 @@
             <h4>ReAct loop</h4>
             <p>Reasoning, tool calls, and observations in a loop, with runaway-loop guards on repeated output and repeated tool calls.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent#operating-modes" target="_blank" rel="noopener noreferrer">
-            <h4>Three modes</h4>
-            <p><code>agent</code> runs the full toolset, <code>plan</code> writes plan documents only, <code>ask</code> is read-only research with web search.</p>
-          </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/subagents" target="_blank" rel="noopener noreferrer">
             <h4>Subagents</h4>
             <p><code>spawn_agent</code> delegates a bounded task to a child agent with its own context and session. Markdown definitions that can only narrow the parent's tools.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/hooks" target="_blank" rel="noopener noreferrer">
+            <h4>Hooks</h4>
+            <p>Your own commands at every lifecycle point, in Claude Code's <code>hooks.json</code> shape. A hook can deny, approve or rewrite a tool call before it runs.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/background-tasks" target="_blank" rel="noopener noreferrer">
             <h4>Background tasks</h4>
             <p>Long commands run detached with <code>background: true</code>. A Tasks panel tracks them against the model's own estimate; the agent collects output later.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/config#compaction" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/compaction" target="_blank" rel="noopener noreferrer">
             <h4>Compaction</h4>
             <p><code>/compact</code> plus automatic summarization at a context threshold. The recent turns stay verbatim and the full transcript stays on disk.</p>
           </a>
@@ -532,11 +544,11 @@
         <div class="features">
           <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
             <h4>Console</h4>
-            <p>Bare <code>coddy</code> on a terminal. Streaming transcript, tool boxes, permission modals, <code>coddy -c</code> to resume, <code>coddy -p</code> for one-shot output.</p>
+            <p>Bare <code>coddy</code> on a terminal. Streaming transcript, tool boxes, permission modals, <code>!!</code> for a local shell the model never sees, <code>coddy -c</code> to resume, <code>coddy -p</code> for one-shot output.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
             <h4>Web UI</h4>
-            <p>Embedded SPA at <code>/</code> with the <code>http,ui</code> tags. Chat, sessions, plan documents, Tasks and scheduler drawers, live settings.</p>
+            <p>Embedded SPA at <code>/</code> with the <code>http,ui</code> tags. Chat, sessions, plan documents, Tasks and scheduler drawers, the swarm map, live settings.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/acp-protocol" target="_blank" rel="noopener noreferrer">
             <h4>ACP</h4>
@@ -546,13 +558,43 @@
             <h4>HTTP API</h4>
             <p>OpenAI-compatible gateway on <code>coddy serve</code>. <code>POST /v1/responses</code>, models, Swagger at <code>/docs/</code>.</p>
           </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/gateway" target="_blank" rel="noopener noreferrer">
+            <h4>Telegram gateway</h4>
+            <p>Bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/sessions" target="_blank" rel="noopener noreferrer">
+            <h4>Sessions</h4>
+            <p>Bundles on disk under <code>$CODDY_HOME</code>, resumed from any surface. Edit a message to branch the conversation, <code>/export</code> to Markdown, HTML or JSON.</p>
+          </a>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Operate it</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/serve" target="_blank" rel="noopener noreferrer">
+            <h4>coddy serve</h4>
+            <p>One process for every subsystem <code>config.yaml</code> enables. <code>--daemon</code> keeps it in the background with <code>status</code>, <code>stop</code> and <code>restart</code>, and an edited config reaches it without a restart.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/swarm" target="_blank" rel="noopener noreferrer">
+            <h4>Swarm</h4>
+            <p>A relay lists and reaches many nodes, mounts their sessions into one list and routes across rings. Nodes that can only dial out join through a reverse tunnel.</p>
+          </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/remote" target="_blank" rel="noopener noreferrer">
             <h4>Remote control</h4>
             <p>Point the console or <code>coddy acp</code> at a running server with <code>--remote</code>, or switch the web UI between local and remote from the composer.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/gateway" target="_blank" rel="noopener noreferrer">
-            <h4>Telegram gateway</h4>
-            <p>Bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.</p>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/scheduler" target="_blank" rel="noopener noreferrer">
+            <h4>Scheduler</h4>
+            <p>Cron jobs with a UI drawer and agent tools, so recurring work runs without a session open.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
+            <h4>Config check and dry run</h4>
+            <p><code>coddy -t</code> validates <code>config.yaml</code> against the embedded schema with <code>file:line:col</code> and a fix line. <code>--dry-run</code> probes paths, providers, models, ports, MCP servers and remotes before anything starts.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">
+            <h4>Docker and distroless</h4>
+            <p>Published images on <code>ghcr.io</code> for amd64 and arm64, or drop the static binary into a scratch image with a read-only rootfs.</p>
           </a>
         </div>
       </div>
@@ -562,7 +604,7 @@
         <div class="features">
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/rules" target="_blank" rel="noopener noreferrer">
             <h4>Rules</h4>
-            <p>Auto-discovers <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>, and nested <code>AGENTS.md</code> under the session cwd.</p>
+            <p>Auto-discovers <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.agents/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>, and nested <code>AGENTS.md</code> under the session cwd.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/skills" target="_blank" rel="noopener noreferrer">
             <h4>Skills</h4>
@@ -570,25 +612,25 @@
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/mcp" target="_blank" rel="noopener noreferrer">
             <h4>MCP servers</h4>
-            <p>Connect MCP servers from config or per session. Their tool definitions merge into the agent and plan loops.</p>
+            <p>Connect MCP servers over stdio, streamable HTTP and SSE, from config, <code>mcp.json</code> files or the editor. Their tool definitions merge into the agent and plan loops.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/mcp#workspace-trust-for-project-local-servers" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/modes" target="_blank" rel="noopener noreferrer">
+            <h4>Three modes</h4>
+            <p><code>agent</code> runs the full toolset, <code>plan</code> writes plan documents only, <code>ask</code> is read-only research with web search.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/security" target="_blank" rel="noopener noreferrer">
             <h4>Permissions and trust</h4>
-            <p>Edits and commands ask before they run, and a grant can widen to a whole program. Project-local MCP servers and subagent files need an explicit approval first.</p>
+            <p>Edits and commands ask before they run, and a grant can widen to a whole program. Project-local MCP servers, hooks and subagent files need an explicit approval first.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/config#agent-self-configuration" target="_blank" rel="noopener noreferrer">
             <h4>Self-configuration</h4>
             <p>The agent edits its own YAML through staged <code>config_set</code> commands. Nothing lands until a commit you approve, which validates and hot-reloads.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
-            <h4>Multimodal</h4>
-            <p>Attach images and files in the composer when the model supports it. Assets are saved to the session directory and injected into the agent context.</p>
-          </a>
         </div>
       </div>
 
       <div class="feature-group">
-        <h3 class="feature-group-title">Models and operations</h3>
+        <h3 class="feature-group-title">Models, tools and appearance</h3>
         <div class="features">
           <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
             <h4>Any provider</h4>
@@ -598,17 +640,17 @@
             <h4>Reasoning levels</h4>
             <p>A composer dropdown picks the effort for reasoning models, mapped to OpenAI <code>reasoning_effort</code> or Anthropic thinking budgets.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/scheduler" target="_blank" rel="noopener noreferrer">
-            <h4>Scheduler</h4>
-            <p>Cron jobs with a UI drawer and agent tools, so recurring work runs without a session open.</p>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
+            <h4>Multimodal</h4>
+            <p>Attach images and files in the composer when the model supports it. Assets are saved to the session directory and injected into the agent context.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
+            <h4>Usage and limits</h4>
+            <p>The quota behind the current model in the console footer and the web UI, for providers that publish one. A turn that hits a limit can wait for the reset and resume by itself.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration#ssh-remote-execution" target="_blank" rel="noopener noreferrer">
             <h4>SSH commands</h4>
             <p><code>ssh_run_command</code> reaches remote hosts over pure-Go SSH, authenticating from your SSH agent or <code>~/.ssh</code> keys.</p>
-          </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">
-            <h4>Docker and distroless</h4>
-            <p>Published images on <code>ghcr.io</code> for amd64 and arm64, or drop the static binary into a scratch image with a read-only rootfs.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
             <h4>Themes and language</h4>
@@ -644,7 +686,7 @@
       <div class="faq-list">
         <div class="faq-item">
           <h3>What is Coddy Agent?</h3>
-          <p>Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram.</p>
+          <p>Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram, on one machine or across a swarm of them.</p>
         </div>
         <div class="faq-item">
           <h3>Which LLM providers and models does Coddy work with?</h3>
@@ -652,7 +694,7 @@
         </div>
         <div class="faq-item">
           <h3>How do I install Coddy?</h3>
-          <p>Linux and macOS: <code>curl -fsSL https://coddy.dev/install.sh | bash</code>. Windows: <code>irm https://coddy.dev/install.ps1 | iex</code>. The script downloads the latest release binary, puts it on your PATH, and creates <code>~/.coddy/config.yaml</code> from the example. On Linux you can instead install the <code>.deb</code> or <code>.rpm</code> published with every release, and on macOS the Homebrew cask (<code>brew install --cask coddy</code>); both register Coddy with your package manager and add the man page and shell completions. Docker images for amd64 and arm64 are published as <code>ghcr.io/coddy-project/coddy-agent</code>, and <code>coddy update -y</code> upgrades an existing install.</p>
+          <p>Linux and macOS: <code>curl -fsSL https://coddy.dev/install.sh | bash</code>. Windows: <code>irm https://coddy.dev/install.ps1 | iex</code>. The script downloads the latest release binary, puts it on your PATH, and creates <code>~/.coddy/config.yaml</code> from the example. On Linux you can instead install the <code>.deb</code> or <code>.rpm</code> published with every release (<code>apt-get install ./coddy_X.Y.Z_linux_amd64.deb</code>, <code>dnf install ./coddy_X.Y.Z_linux_amd64.rpm</code>), and on macOS the Homebrew cask straight from the release (<code>brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code>); both register Coddy with your package manager and add the man page and shell completions. Docker: <code>docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -v "$PWD/workspace:/workspace" -v "$PWD/coddy_home:/home/user/.coddy" ghcr.io/coddy-project/coddy-agent:latest</code> opens the web UI on <code>localhost:12345</code>, and the Docker tab of the install block also carries a <code>docker-compose.yaml</code> to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. <code>coddy update -y</code> upgrades an existing install.</p>
         </div>
         <div class="faq-item">
           <h3>Can Coddy run on-premises with local models?</h3>
@@ -663,8 +705,12 @@
           <p><code>coddy acp</code> speaks the Agent Client Protocol over stdio, so Zed, Obsidian, VS Code, or your own script get sessions, modes, permissions, streaming updates, and skills as slash commands. <code>coddy serve</code> runs everything else in one process - the OpenAI-compatible REST API with the embedded web UI, the Telegram gateway, the swarm relay, the cron scheduler - and starts whichever of them <code>config.yaml</code> enables. They share one set of sessions, so a conversation started in a chat is live in the web UI and can be continued in either.</p>
         </div>
         <div class="faq-item">
+          <h3>How do I run Coddy on more than one machine?</h3>
+          <p>Run <code>coddy serve</code> on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel. The console, <code>coddy acp</code>, and the web UI can also drive a single remote server with <code>--remote</code>, and <code>coddy serve --daemon</code> keeps a server running in the background with <code>status</code>, <code>stop</code>, and <code>restart</code>.</p>
+        </div>
+        <div class="faq-item">
           <h3>How is Coddy different from other coding agents?</h3>
-          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. See the <a href="/compare/">side-by-side comparison with nineteen other harnesses</a>.</p>
+          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at <a href="/compare/">coddy.dev/compare/</a>.</p>
         </div>
       </div>
     </section>
