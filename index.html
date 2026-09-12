@@ -313,7 +313,7 @@
               <button type="button" class="method-tab" data-method="mac-brew" role="tab" aria-selected="false">Homebrew</button>
             </div>
             <a class="install-view method active" data-method="mac-script" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.sh" target="_blank" rel="noopener noreferrer">View install script <span aria-hidden="true">&#8599;</span></a>
-            <a class="install-view method" data-method="mac-brew" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/homebrew.md" target="_blank" rel="noopener noreferrer">About the cask <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">About the cask <span aria-hidden="true">&#8599;</span></a>
           </div>
           <p class="install-note method active" data-method="mac-script">
             Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code> from the example when it is missing.
@@ -380,7 +380,7 @@
               <button type="button" class="method-tab active" data-method="docker-run" role="tab" aria-selected="true">docker run</button>
               <button type="button" class="method-tab" data-method="docker-compose" role="tab" aria-selected="false">Compose</button>
             </div>
-            <a class="install-view method active" data-method="docker-run" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">Docker guide <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method active" data-method="docker-run" href="https://coddy.dev/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">Docker guide <span aria-hidden="true">&#8599;</span></a>
             <a class="install-view method" data-method="docker-compose" href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.yml" target="_blank" rel="noopener noreferrer">Compose file in the repo <span aria-hidden="true">&#8599;</span></a>
           </div>
           <p class="install-note method active" data-method="docker-run">
@@ -407,9 +407,9 @@
       </div>
       <p class="hint install-alt">
         Other install methods and details:
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/install.md" target="_blank" rel="noopener noreferrer">docs/install.md</a>
+        <a href="https://coddy.dev/docs/getting-started/install" target="_blank" rel="noopener noreferrer">docs/install.md</a>
         · Homebrew by name is still on its way, see
-        <a href="https://github.com/coddy-project/coddy-agent/blob/main/docs/homebrew.md" target="_blank" rel="noopener noreferrer">docs/homebrew.md</a>
+        <a href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">docs/homebrew.md</a>
       </p>
     </section>
 
@@ -500,7 +500,7 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Agent core</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/react-agent.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/contributing/react-agent" target="_blank" rel="noopener noreferrer">
             <h4>ReAct loop</h4>
             <p>Reasoning, tool calls, and observations in a loop, with runaway-loop guards on repeated output and repeated tool calls.</p>
           </a>
@@ -508,19 +508,19 @@
             <h4>Three modes</h4>
             <p><code>agent</code> runs the full toolset, <code>plan</code> writes plan documents only, <code>ask</code> is read-only research with web search.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/subagents.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/subagents" target="_blank" rel="noopener noreferrer">
             <h4>Subagents</h4>
             <p><code>spawn_agent</code> delegates a bounded task to a child agent with its own context and session. Markdown definitions that can only narrow the parent's tools.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/background-tasks.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/background-tasks" target="_blank" rel="noopener noreferrer">
             <h4>Background tasks</h4>
             <p>Long commands run detached with <code>background: true</code>. A Tasks panel tracks them against the model's own estimate; the agent collects output later.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#compaction" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/config#compaction" target="_blank" rel="noopener noreferrer">
             <h4>Compaction</h4>
             <p><code>/compact</code> plus automatic summarization at a context threshold. The recent turns stay verbatim and the full transcript stays on disk.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/external/memory/README.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/memory" target="_blank" rel="noopener noreferrer">
             <h4>Long-term memory</h4>
             <p>Optional memory copilot that recalls across sessions, with per-session memory routes on the HTTP surface.</p>
           </a>
@@ -530,27 +530,27 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Where you run it</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/cli.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
             <h4>Console</h4>
             <p>Bare <code>coddy</code> on a terminal. Streaming transcript, tool boxes, permission modals, <code>coddy -c</code> to resume, <code>coddy -p</code> for one-shot output.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
             <h4>Web UI</h4>
             <p>Embedded SPA at <code>/</code> with the <code>http,ui</code> tags. Chat, sessions, plan documents, Tasks and scheduler drawers, live settings.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/acp-protocol.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/acp-protocol" target="_blank" rel="noopener noreferrer">
             <h4>ACP</h4>
             <p><code>coddy acp</code> over stdio. Sessions, modes, permissions, and streaming updates for Zed, Obsidian, VS Code, or your own script.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/http-api.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/http-api" target="_blank" rel="noopener noreferrer">
             <h4>HTTP API</h4>
             <p>OpenAI-compatible gateway on <code>coddy serve</code>. <code>POST /v1/responses</code>, models, Swagger at <code>/docs/</code>.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/remote-control.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/remote" target="_blank" rel="noopener noreferrer">
             <h4>Remote control</h4>
             <p>Point the console or <code>coddy acp</code> at a running server with <code>--remote</code>, or switch the web UI between local and remote from the composer.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/gateway.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/gateway" target="_blank" rel="noopener noreferrer">
             <h4>Telegram gateway</h4>
             <p>Bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.</p>
           </a>
@@ -560,27 +560,27 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Project context and control</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/rules.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/rules" target="_blank" rel="noopener noreferrer">
             <h4>Rules</h4>
             <p>Auto-discovers <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>, and nested <code>AGENTS.md</code> under the session cwd.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/skills.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/skills" target="_blank" rel="noopener noreferrer">
             <h4>Skills</h4>
             <p>Slash commands from <code>SKILL.md</code> packs in <code>skills.dirs</code>. Install from registries with <code>npx skills</code> or from Settings → Skills.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/mcp-integration.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/mcp" target="_blank" rel="noopener noreferrer">
             <h4>MCP servers</h4>
             <p>Connect MCP servers from config or per session. Their tool definitions merge into the agent and plan loops.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/mcp-integration.md#workspace-trust-for-project-local-servers" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/mcp#workspace-trust-for-project-local-servers" target="_blank" rel="noopener noreferrer">
             <h4>Permissions and trust</h4>
             <p>Edits and commands ask before they run, and a grant can widen to a whole program. Project-local MCP servers and subagent files need an explicit approval first.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config-reference.md#agent-self-configuration" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/config#agent-self-configuration" target="_blank" rel="noopener noreferrer">
             <h4>Self-configuration</h4>
             <p>The agent edits its own YAML through staged <code>config_set</code> commands. Nothing lands until a commit you approve, which validates and hot-reloads.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
             <h4>Multimodal</h4>
             <p>Attach images and files in the composer when the model supports it. Assets are saved to the session directory and injected into the agent context.</p>
           </a>
@@ -590,27 +590,27 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Models and operations</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
             <h4>Any provider</h4>
             <p>OpenAI, Anthropic, Ollama, NeuralDeep, any OpenAI-compatible API, plus ChatGPT sign-in through the Codex backend. Your keys, your endpoints.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md#per-session-reasoning-level" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#per-session-reasoning-level" target="_blank" rel="noopener noreferrer">
             <h4>Reasoning levels</h4>
             <p>A composer dropdown picks the effort for reasoning models, mapped to OpenAI <code>reasoning_effort</code> or Anthropic thinking budgets.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/scheduler.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/scheduler" target="_blank" rel="noopener noreferrer">
             <h4>Scheduler</h4>
             <p>Cron jobs with a UI drawer and agent tools, so recurring work runs without a session open.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/config.md#ssh-remote-execution" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration#ssh-remote-execution" target="_blank" rel="noopener noreferrer">
             <h4>SSH commands</h4>
             <p><code>ssh_run_command</code> reaches remote hosts over pure-Go SSH, authenticating from your SSH agent or <code>~/.ssh</code> keys.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/docker.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">
             <h4>Docker and distroless</h4>
             <p>Published images on <code>ghcr.io</code> for amd64 and arm64, or drop the static binary into a scratch image with a read-only rootfs.</p>
           </a>
-          <a class="glass feature feature-link" href="https://github.com/coddy-project/coddy-agent/blob/main/docs/ui.md" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
             <h4>Themes and language</h4>
             <p>Seven web UI themes and an English or Russian interface, switched in Settings → Appearance without touching the config.</p>
           </a>

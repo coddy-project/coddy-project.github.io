@@ -1,58 +1,90 @@
 # Coddy Agent
 
-> Coddy Agent is an open-source (MIT) general-purpose AI agent that ships as one static Go binary: a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, background tasks, a cron scheduler and long-term memory, driven from a terminal console, an embedded web UI, an OpenAI-compatible HTTP API, the Agent Client Protocol (ACP) for editors such as Zed, or a Telegram gateway.
+> Coddy is a general-purpose agent in one static Go binary: a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler and long-term memory, driven from a terminal console, an embedded web UI with an OpenAI-compatible HTTP API, editors over the Agent Client Protocol, or a Telegram bot. Every surface shares the same sessions under `~/.coddy`.
 
-Key facts:
+Every page below is the Markdown kept in the repository, published here unchanged, so it always matches the code on the main branch; the same address without .md is the page for people. llms-full.txt next to this file holds the same pages concatenated. Source: https://github.com/coddy-project/coddy-agent
 
-- Website: https://coddy.dev/ (this page). Source code and documentation: https://github.com/coddy-project/coddy-agent
-- Install on Linux or macOS: `curl -fsSL https://coddy.dev/install.sh | bash`. Install on Windows: `irm https://coddy.dev/install.ps1 | iex`. On Linux, every release also publishes `.deb` and `.rpm` packages for amd64 and arm64 (`sudo apt-get install ./coddy_X.Y.Z_linux_amd64.deb`, `sudo dnf install ./coddy_X.Y.Z_linux_amd64.rpm`), and on macOS a Homebrew cask (`brew install --cask coddy`); both add the man page and shell completions and install nothing but the binary and its docs. Docker: `docker run -d -p 12345:12345 -v "$PWD/workspace:/workspace" -v "$PWD/coddy_home:/home/user/.coddy" ghcr.io/coddy-project/coddy-agent:latest`, or the compose file on the site's Docker tab; images are multi-arch (amd64, arm64) and published to the GitHub Container Registry, not Docker Hub. Upgrade in place with `coddy update -y`; on a deb or rpm install run it as root and it installs the newer package instead, and on a Homebrew install it points at `brew upgrade --cask coddy`.
-- Commands: `coddy` opens the terminal console, `coddy serve` runs every subsystem enabled in `config.yaml` in one process (the web UI and REST API under `httpserver.enable`, the Telegram bot under `gateways.telegram.enable`, the swarm relay under `swarm.enable`, the cron scheduler under `scheduler.enable`), `coddy acp` runs the ACP server for editors, `coddy -p "..."` prints a one-shot answer. Subsystems started by one `coddy serve` share a single set of sessions, so a Telegram conversation is live in the web UI and can be continued in either.
-- Models: any OpenAI-compatible API or Anthropic with your own keys and endpoints, including local servers such as Ollama, llama.cpp and vLLM, plus NeuralDeep and ChatGPT sign-in through the Codex backend. Model entries live in `~/.coddy/config.yaml`.
-- Runs in distroless and from-scratch containers with a read-only root filesystem; no runtime dependencies. Written in Go 1.25.
-- Reads Cursor-style rules (`.cursor/rules`, `.coddy/rules`, `.claude/rules`, `.codex/rules`), `AGENTS.md`, and `SKILL.md` skill packs from the project.
-- How Coddy compares with other agent harnesses (Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build, Antigravity CLI, Koda, Drift): https://coddy.dev/compare/ - five tables covering delivery, surfaces, extensibility, context handling and the trust model, including where Coddy loses.
-- The documentation below is the Markdown kept in the repository, so it always matches the current release.
+## Website
 
-## Comparison
+- [Install](https://coddy.dev/#install): one command per platform, the packages and the Docker image.
+- [Compare](https://coddy.dev/compare/): Coddy against other agent harnesses, including where it loses.
+- [config.yaml JSON Schema](https://coddy.dev/config.schema.json): the schema Coddy writes as a modeline into every config it saves.
 
-- [Coddy vs other agent harnesses, 2026](https://coddy.dev/compare/): twenty harnesses side by side in September 2026. Coddy is one of six that ship as a single static binary with no runtime (with Reasonix and Crush in Go, Codex CLI, CodeWhale and Grok Build in Rust), and the only one of those six that also carries a web UI, a cron scheduler, long-term memory and a messenger gateway in the same file. Documented gaps: no kernel-level sandbox (Codex CLI has Landlock, seccomp and Seatbelt), no LSP or DAP (OMP and OpenCode have them), no hash-anchored edit format, no workspace checkpoints, no fan-out of subagents across git worktrees.
+## Getting started
 
-## Docs
+- [Quickstart](https://coddy.dev/docs/getting-started/quickstart.md): From a fresh install to the first answer in five minutes, on the console, in the browser and from an editor. (docs/getting-started/quickstart.md)
+- [Install](https://coddy.dev/docs/getting-started/install.md): One-line installers, release archives, Linux .deb and .rpm packages, Homebrew, Windows paths, manual placement. (docs/getting-started/install.md)
+- [Configuration](https://coddy.dev/docs/getting-started/configuration.md): Where config.yaml lives, how to check it with -t and --dry-run, providers and models, SSH remote execution, the .env file. (docs/getting-started/configuration.md)
+- [Update](https://coddy.dev/docs/getting-started/update.md): coddy update, release assets, installations owned by a package manager, the report of what changed. (docs/getting-started/update.md)
+- [Docker](https://coddy.dev/docs/getting-started/docker.md): The GHCR image, docker compose, volumes and environment, the bundled UI on port 12345. (docs/getting-started/docker.md)
+- [Homebrew](https://coddy.dev/docs/getting-started/homebrew.md): The cask against the formula, which Homebrew repository takes what, the homebrew/core submission. (docs/getting-started/homebrew.md)
+- [Troubleshooting](https://coddy.dev/docs/getting-started/troubleshooting.md): What to check when the binary is not on PATH, the config does not load, a provider rejects the key, a port is busy or a surface is missing from the build. (docs/getting-started/troubleshooting.md)
+- [Changelog](https://coddy.dev/docs/getting-started/changelog.md): Release notes of every published version, generated from GitHub Releases. (docs/getting-started/changelog.md)
 
-- [README](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/README.md): overview, quick start, operating modes (agent, plan, ask), build tags and the full feature list.
-- [Install](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/install.md): installer scripts, release binaries per platform, Docker, and first-run configuration.
-- [Configuration](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/config.md): providers and models, permissions, MCP, skills, memory, SSH remote execution, and agent self-configuration.
-- [config.yaml field reference](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/config-reference.md): every YAML field with defaults, including compaction and reasoning levels.
-- [config.yaml JSON Schema](https://coddy.dev/config.schema.json): draft-07 schema for `~/.coddy/config.yaml`. Editors that speak the YAML language server validate and autocomplete the file once it carries the header `# yaml-language-server: $schema=https://coddy.dev/config.schema.json`, which Coddy writes into every config it saves.
-- [Terminal console](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/cli.md): the interactive TUI, one-shot mode, resuming sessions, remote mode against a running server.
-- [Web UI](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ui.md): embedded single-page app served by `coddy serve`, sessions, plan documents, attachments, themes and languages.
-- [HTTP API](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/http-api.md): OpenAI-compatible endpoints (`/v1/responses`, `/v1/chat/completions`, `/v1/models`) and the `/coddy` REST surface.
-- [ACP protocol](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/acp-protocol.md): how `coddy acp` implements the Agent Client Protocol for Zed, Obsidian, VS Code and custom clients.
-- [Telegram gateway](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/gateway.md): bot setup, per-user sessions, group isolation modes, admin ACL, proxies.
-- [Update](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/update.md): `coddy update`, release channels and rollback.
+## Surfaces
 
-## Agent features
+- [Console (TUI)](https://coddy.dev/docs/surfaces/console.md): Bare coddy in a terminal, the layout, keys, slash commands, the local shell, print mode and remote mode. (docs/surfaces/console.md)
+- [Web UI](https://coddy.dev/docs/surfaces/web-ui.md): The embedded single-page app served by coddy serve, with sessions, the composer, modes and models, attachments, settings, themes and languages. (docs/surfaces/web-ui.md)
+- [Editors (ACP)](https://coddy.dev/docs/surfaces/editors.md): Zed, VS Code, Obsidian and scripts as ACP clients of coddy acp, and what they share with the other surfaces. (docs/surfaces/editors.md)
+- [Telegram gateway](https://coddy.dev/docs/surfaces/gateway.md): The Telegram bot adapter, setup, access levels, session isolation, rich messages, the same chat live in the browser, writing a new adapter. (docs/surfaces/gateway.md)
 
-- [Rules](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/rules.md): discovery of Cursor, Coddy, Claude and Codex rule directories and nested `AGENTS.md`.
-- [Skills](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/skills.md): `SKILL.md` packs as slash commands, `skills.dirs`, installing from registries.
-- [Subagents](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/subagents.md): `spawn_agent`, Markdown subagent definitions, trust receipts, tool narrowing.
-- [MCP integration](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/mcp-integration.md): connecting MCP servers from config or per session, workspace trust for project-local servers.
-- [Background tasks](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/background-tasks.md): detached shell commands, the Tasks panel, adoption of long-running foreground commands.
-- [Scheduler](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/scheduler.md): cron jobs with a UI drawer and agent tools.
-- [Long-term memory](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/external/memory/README.md): the optional memory copilot and its HTTP routes.
-- [Custom tools](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/custom-tools.md): adding your own tools to the agent.
-- [Remote control](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/remote-control.md): pointing the console, ACP or the web UI at a remote `coddy serve` server.
+## Operate
 
-## Operations
+- [coddy serve and the daemon](https://coddy.dev/docs/operate/serve.md): One process for every enabled subsystem, --daemon with status, stop and restart, how a configuration change reaches a running process. (docs/operate/serve.md)
+- [Remote mode](https://coddy.dev/docs/operate/remote.md): Driving a remote coddy serve from the console, ACP or the web UI with --remote, tokens, CORS and the environment chip. (docs/operate/remote.md)
+- [Swarm](https://coddy.dev/docs/operate/swarm.md): Relays and nodes, mounts, the aggregated session list, rings and routes, the reverse tunnel. (docs/operate/swarm.md)
+- [Scheduler](https://coddy.dev/docs/operate/scheduler.md): Cron job files, UTC firing rules, run sessions, the scheduler tools and REST. (docs/operate/scheduler.md)
+- [Security and trust](https://coddy.dev/docs/operate/security.md): What the agent may execute and how to bound it, permission modes, project trust for MCP servers, hooks and subagents, tokens and CORS, what is not sandboxed. (docs/operate/security.md)
 
-- [Docker](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/docker.md): published images, compose examples, distroless and scratch deployments.
-- [Building from source](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/build.md): `make build` and the `http`, `ui`, `cli`, `scheduler`, `memory`, `gateway` build tags.
-- [Releases](https://github.com/coddy-project/coddy-agent/releases): release notes and binaries for Linux, macOS and Windows.
-- [License](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/LICENSE): MIT.
+## Features
 
-## Optional
+- [Operating modes](https://coddy.dev/docs/features/modes.md): agent, plan and ask, which tools each mode allows and how to switch on every surface. (docs/features/modes.md)
+- [Sessions](https://coddy.dev/docs/features/sessions.md): Session bundles on disk, resuming, branches from an edited message, todo lists, the sessions CLI. (docs/features/sessions.md)
+- [Rules](https://coddy.dev/docs/features/rules.md): Project rules from the .coddy, .agents, .cursor, .claude and .codex folders, nested AGENTS.md, dialects by extension, activation. (docs/features/rules.md)
+- [Skills](https://coddy.dev/docs/features/skills.md): SKILL.md packs as slash commands, skills.dirs, the registries and the plugin command. (docs/features/skills.md)
+- [Subagents](https://coddy.dev/docs/features/subagents.md): spawn_agent, definition files, the built-ins, project trust receipts, capability narrowing, child sessions. (docs/features/subagents.md)
+- [Hooks](https://coddy.dev/docs/features/hooks.md): Lifecycle hooks in Claude Code's hooks.json shape, events, matchers, the stdin payload, exit codes and JSON answers, project trust. (docs/features/hooks.md)
+- [MCP servers](https://coddy.dev/docs/features/mcp.md): Connecting MCP servers over stdio, streamable HTTP and SSE, mcp.json files, workspace trust, enable switches, the management API. (docs/features/mcp.md)
+- [Background tasks](https://coddy.dev/docs/features/background-tasks.md): Detached commands, the task pool, timeouts, adoption of long foreground commands, program-wide permission grants. (docs/features/background-tasks.md)
+- [Context compaction](https://coddy.dev/docs/features/compaction.md): /compact and automatic summarisation at a threshold, the kept recent turns, result eviction with keep_result. (docs/features/compaction.md)
+- [Long-term memory](https://coddy.dev/docs/features/memory.md): The memory copilot, what it recalls and saves, the storage layout, configuration and cost. (docs/features/memory.md)
+- [Session export](https://coddy.dev/docs/features/session-export.md): /export and coddy sessions export, formats, path rules, trimming options, the JSON document. (docs/features/session-export.md)
 
-- [Architecture](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/architecture.md): packages, session manager, persistence, transport layers.
-- [ReAct agent design](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/react-agent.md): the reasoning and tool loop, runaway guards.
-- [Codex hooks](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/codex-hooks.md), [OpenCode hooks](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/opencode-hooks.md), [ZCode hooks](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/zcode-hooks.md): delivering the same project rules to other coding agents.
-- [Install script (Linux, macOS)](https://coddy.dev/install.sh) and [install script (Windows)](https://coddy.dev/install.ps1): the exact scripts behind the one-line install commands.
+## Reference
+
+- [CLI reference](https://coddy.dev/docs/reference/cli.md): Every command, verb and flag of the coddy binary, generated from --help. (docs/reference/cli.md)
+- [config.yaml reference](https://coddy.dev/docs/reference/config.md): Every field of config.yaml with its type, default and description, generated from the schema, plus the self-configuration tools. (docs/reference/config.md)
+- [Environment variables](https://coddy.dev/docs/reference/environment-variables.md): Every variable the binary reads, what it overrides and where it is documented. (docs/reference/environment-variables.md)
+- [Slash commands](https://coddy.dev/docs/reference/slash-commands.md): The built-in commands on each surface and how skills become commands. (docs/reference/slash-commands.md)
+- [Keyboard](https://coddy.dev/docs/reference/keyboard.md): The keys of the console TUI and of the web UI composer. (docs/reference/keyboard.md)
+- [Tools](https://coddy.dev/docs/reference/tools.md): The built-in tools the model can call, their arguments, permissions and the modes that expose them. (docs/reference/tools.md)
+- [HTTP API](https://coddy.dev/docs/reference/http-api.md): The OpenAI-compatible endpoints and the /coddy REST surface, authentication, sessions and headers, the OpenAPI document. (docs/reference/http-api.md)
+- [ACP protocol](https://coddy.dev/docs/reference/acp-protocol.md): How coddy acp implements the Agent Client Protocol, methods, notifications, permission and question requests. (docs/reference/acp-protocol.md)
+
+## Recipes
+
+- [Recipes](https://coddy.dev/docs/recipes.md): Coddy in CI, a Telegram bot for a team, a project set up for agents, a remote server driven from a laptop, a skill of your own. (docs/recipes.md)
+
+## Contributing
+
+- [Contributing guide](https://coddy.dev/docs/CONTRIBUTING.md): The development environment, the branch and pull request flow, what every change must carry. (CONTRIBUTING.md)
+- [Writing documentation](https://coddy.dev/docs/contributing/documentation.md): Page types, the navigation map, screenshots and videos, the assets index, generated references and the checks that guard them. (docs/contributing/documentation.md)
+- [Architecture](https://coddy.dev/docs/contributing/architecture.md): System design and component overview, package boundaries, session modes, the directory structure. (docs/contributing/architecture.md)
+- [Build from source](https://coddy.dev/docs/contributing/build.md): Prerequisites, make build, TAGS against go build -tags, the release binaries and the distribution packages. (docs/contributing/build.md)
+- [Custom tools](https://coddy.dev/docs/contributing/custom-tools.md): Adding a built-in tool to the registry, its schema and permission wiring, with a complete example. (docs/contributing/custom-tools.md)
+- [ReAct agent](https://coddy.dev/docs/contributing/react-agent.md): The loop design, the system prompt structure, the tool-calling contract and mode-specific behaviour. (docs/contributing/react-agent.md)
+- [Web UI design](https://coddy.dev/docs/DESIGN.md): Tokens, layout and component contracts of the embedded SPA. (DESIGN.md)
+- [Codex hooks](https://coddy.dev/docs/contributing/codex-hooks.md): How the Cursor rules reach a Codex CLI session working on this repository. (docs/contributing/codex-hooks.md)
+- [OpenCode hooks](https://coddy.dev/docs/contributing/opencode-hooks.md): Deterministic delivery of the Cursor rules to OpenCode sessions working on this repository. (docs/contributing/opencode-hooks.md)
+- [ZCode hooks](https://coddy.dev/docs/contributing/zcode-hooks.md): Deterministic delivery of the Cursor rules to ZCode sessions working on this repository. (docs/contributing/zcode-hooks.md)
+- [Syntax highlighting audit](https://coddy.dev/docs/contributing/syntax-highlighting-audit.md): The NeuralDeep audit of code highlighting across the seven themes, its fixtures and how to re-run it. (docs/contributing/syntax-highlighting-audit.md)
+- [Agent notes](https://coddy.dev/docs/AGENTS.md): The repository map and contributor notes for coding agents. (AGENTS.md)
+
+## Design records
+
+- [Console TUI plan](https://coddy.dev/docs/plans/cli-tui.md): The design of the pi-style console. (docs/plans/cli-tui.md)
+- [File viewer plan](https://coddy.dev/docs/plans/file-viewer.md): The design of the file viewer in the web UI. (docs/plans/file-viewer.md)
+- [Hooks plan](https://coddy.dev/docs/plans/hooks.md): The design of lifecycle hooks and project trust. (docs/plans/hooks.md)
+- [NeuralDeep usage plan](https://coddy.dev/docs/plans/neuraldeep-usage.md): The design of the provider usage panel and the limit wait. (docs/plans/neuraldeep-usage.md)
+- [Subagents plan](https://coddy.dev/docs/plans/subagents.md): The design of subagent definitions, trust and child sessions. (docs/plans/subagents.md)
+- [Remote control design](https://coddy.dev/docs/plans/remote-control.md): The remote control and local/remote operation design, phases and resolved questions. (docs/plans/remote-control.md)
