@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Coddy vs other agent harnesses - 2026 comparison</title>
-  <meta name="description" content="Coddy compared with 17 other AI agent harnesses in September 2026: Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build. Five tables on delivery, surfaces, extensibility, context and security." />
+  <meta name="description" content="Coddy compared with 19 other AI agent harnesses in September 2026: Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build, Antigravity CLI, Koda and Drift. Five tables on delivery, surfaces, extensibility, context and security." />
   <meta name="theme-color" content="#9333ea" />
   <link rel="canonical" href="https://coddy.dev/compare/" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
@@ -13,7 +13,7 @@
   <meta property="og:site_name" content="Coddy Agent" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:title" content="Coddy vs other agent harnesses - 2026 comparison" />
-  <meta property="og:description" content="Eighteen agent harnesses side by side: delivery, surfaces, extensibility, context handling and the trust model. Where Coddy wins and where it lags." />
+  <meta property="og:description" content="Twenty agent harnesses side by side: delivery, surfaces, extensibility, context handling and the trust model. Where Coddy wins and where it lags." />
   <meta property="og:url" content="https://coddy.dev/compare/" />
   <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
   <meta property="og:image:width" content="1280" />
@@ -21,7 +21,7 @@
   <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Coddy vs other agent harnesses - 2026 comparison" />
-  <meta name="twitter:description" content="Eighteen agent harnesses side by side: delivery, surfaces, extensibility, context handling and the trust model." />
+  <meta name="twitter:description" content="Twenty agent harnesses side by side: delivery, surfaces, extensibility, context handling and the trust model." />
   <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
   <link rel="icon" href="/assets/coddy-favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
@@ -37,10 +37,10 @@
         "@type": "Article",
         "@id": "https://coddy.dev/compare/#article",
         "headline": "Coddy vs other agent harnesses - 2026 comparison",
-        "description": "Coddy Agent compared with seventeen other AI agent harnesses in September 2026 across delivery, surfaces, extensibility, context handling, autonomy and the trust model.",
+        "description": "Coddy Agent compared with nineteen other AI agent harnesses in September 2026 across delivery, surfaces, extensibility, context handling, autonomy and the trust model.",
         "inLanguage": "en",
         "datePublished": "2026-09-07",
-        "dateModified": "2026-09-07",
+        "dateModified": "2026-09-12",
         "isPartOf": { "@id": "https://coddy.dev/#website" },
         "mainEntityOfPage": { "@id": "https://coddy.dev/compare/#webpage" },
         "about": { "@id": "https://coddy.dev/#software" },
@@ -68,7 +68,7 @@
         "@type": "ItemList",
         "@id": "https://coddy.dev/compare/#harnesses",
         "name": "Agent harnesses compared",
-        "numberOfItems": 18,
+        "numberOfItems": 20,
         "itemListOrder": "https://schema.org/ItemListUnordered",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Coddy" },
@@ -88,7 +88,9 @@
           { "@type": "ListItem", "position": 15, "name": "Reasonix" },
           { "@type": "ListItem", "position": 16, "name": "CodeWhale" },
           { "@type": "ListItem", "position": 17, "name": "Grok Build" },
-          { "@type": "ListItem", "position": 18, "name": "Antigravity CLI" }
+          { "@type": "ListItem", "position": 18, "name": "Antigravity CLI" },
+          { "@type": "ListItem", "position": 19, "name": "Koda (Kodacode)" },
+          { "@type": "ListItem", "position": 20, "name": "Drift (NeuralDeep)" }
         ]
       },
       {
@@ -100,7 +102,7 @@
             "name": "Which agent harnesses ship as a single binary with no runtime?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Six of the eighteen harnesses compared here: Coddy, Reasonix and Crush in Go, and Codex CLI, CodeWhale and Grok Build in Rust. The rest need Node.js or Python on the host. Of those six, only Coddy also carries a web UI, a cron scheduler, long-term memory and a messenger gateway inside the same file, switched on with Go build tags."
+              "text": "Six of the twenty harnesses compared here: Coddy, Reasonix and Crush in Go, and Codex CLI, CodeWhale and Grok Build in Rust. The rest need Node.js or Python on the host, or run as a hosted service. Of those six, only Coddy also carries a web UI, a cron scheduler, long-term memory and a messenger gateway inside the same file, switched on with Go build tags."
             }
           },
           {
@@ -124,7 +126,7 @@
             "name": "Which coding agents support the Agent Client Protocol?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "More than 25 agents speak ACP as of 2026. Among the harnesses compared here, Coddy, OpenCode, Goose, Reasonix, Grok Build and OMP run it natively, while Claude Code and Codex CLI are hosted through adapters. Coddy implements the agent side with coddy acp over stdio, exposing sessions, modes, permissions, streaming updates and skills as slash commands."
+              "text": "More than 25 agents speak ACP as of 2026. Among the harnesses compared here, Coddy, OpenCode, Goose, Reasonix, Grok Build, OMP and Koda CLI run it natively, while Claude Code and Codex CLI are hosted through adapters. Coddy implements the agent side with coddy acp over stdio, exposing sessions, modes, permissions, streaming updates and skills as slash commands."
             }
           }
         ]
@@ -181,13 +183,14 @@
     <section class="page-hero">
       <h1>Coddy vs the 2026 agent harnesses</h1>
       <p class="tagline">
-        Eighteen harnesses side by side. What they are written in, where you can talk to them, how you extend them,
+        Twenty harnesses side by side. What they are written in, where you can talk to them, how you extend them,
         what they do to a long session, and what stops them from running something you did not ask for.
-        Coddy is one row among seventeen others, including the places where it loses.
+        Coddy is one row among nineteen others, including the places where it loses.
       </p>
       <p class="page-meta">
         Compiled September 2026. Coddy read straight from its own source at v1.0.8; every other project from its
-        repository, docs and current reviews. <a href="#sources">Sources at the bottom.</a>
+        repository, docs and current reviews. The Koda and Drift rows were added on 12 September 2026.
+        <a href="#sources">Sources at the bottom.</a>
       </p>
     </section>
 
@@ -280,6 +283,14 @@
           parallelism and tracker integrations.
         </p>
         <p>
+          Two rows from the Russian market joined the tables on 12 September, one on each side of that split.
+          <strong>Koda</strong> is a closed subscription product from the former GigaCode team: an IDE plugin forked
+          from Continue, a CLI forked from Gemini CLI that its own desktop app drives over ACP, and a Telegram remote
+          for both. <strong>Drift</strong> is the personal agent NeuralDeep bundles with its hub subscription: a hosted
+          service with a Telegram bot, a web app and an OpenAI-compatible API, every user in a Docker container of
+          their own, and an open-source release announced for this year.
+        </p>
+        <p>
           Two events shaped the year. Google switched Gemini CLI off for individual accounts on 18 June and moved
           everyone to the closed, Go-based Antigravity CLI, breaking CI pipelines on the way and cutting the free
           tier from a thousand requests a day to roughly twenty. And in March the Claude Code sources leaked, which
@@ -293,7 +304,7 @@
     <section id="tables">
       <h2>The tables</h2>
       <p class="cmp-caption">
-        Five views over the same eighteen harnesses. Cells read "no data" where a project does not document the
+        Five views over the same twenty harnesses. Cells read "no data" where a project does not document the
         answer; guessing would be worse than an honest gap. Tables scroll sideways on narrow screens.
       </p>
       <div class="cmp-block">
@@ -454,6 +465,22 @@
                 <td>Go</td>
                 <td>proprietary</td>
                 <td>binary</td>
+                <td>no public repo</td>
+              </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td>Koda, ex-GigaCode team</td>
+                <td>TypeScript</td>
+                <td>proprietary, on Apache-2.0 forks of Gemini CLI and Continue</td>
+                <td>npm CLI, VS Code and JetBrains plugins, desktop installers</td>
+                <td>no public repo</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>NeuralDeep, V. Kovalskii</td>
+                <td>Python</td>
+                <td>proprietary SaaS, open-sourcing announced</td>
+                <td>hosted, bundled with a NeuralDeep subscription, nothing to install</td>
                 <td>no public repo</td>
               </tr>
             </tbody>
@@ -658,6 +685,26 @@
                 <td>yes</td>
                 <td>cloud</td>
               </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td>TUI, Gemini CLI lineage</td>
+                <td><code>koda --acp</code>, plus native VS Code and JetBrains plugins</td>
+                <td>no, the API is closed</td>
+                <td>Koda Desktop, beta, drives the CLI over ACP</td>
+                <td>Telegram remote for the CLI and the plugin</td>
+                <td><code>koda -p</code></td>
+                <td>Telegram remote only</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>no</td>
+                <td>no</td>
+                <td>web app plus an OpenAI-compatible API</td>
+                <td>no</td>
+                <td>Telegram bot mirrored with the web, Bitrix24</td>
+                <td>API, webhook-triggered hosted agents</td>
+                <td>hosted, everything is remote</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -840,6 +887,24 @@
                 <td>no data</td>
                 <td>no data</td>
                 <td>no data</td>
+              </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td>yes, in the CLI, the plugin and the desktop</td>
+                <td><code>SKILL.md</code> in <code>~/.koda/skills</code> and <code>.koda/skills</code>, KodaSkills catalog</td>
+                <td>no</td>
+                <td>no</td>
+                <td><code>KODA.md</code> or <code>AGENTS.md</code>, <code>.kodarules</code>, rules in <code>config.yaml</code></td>
+                <td>CLI extensions: MCP servers, context files, commands</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>Google Workspace built in, remote HTTP and SSE servers per API request</td>
+                <td><code>SKILL.md</code>, Anthropic document skills preinstalled, skills.sh, inline skills over the API</td>
+                <td>no</td>
+                <td>no</td>
+                <td>custom instructions and per-chat projects, nothing from a repository</td>
+                <td>no-code hosted agents on timer and webhook triggers</td>
               </tr>
             </tbody>
           </table>
@@ -1024,6 +1089,24 @@
                 <td>no data</td>
                 <td>no data</td>
               </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td><code>/compress</code> in the CLI, auto at 75% and <code>/summarize</code> in the plugin</td>
+                <td>no</td>
+                <td><code>/memory</code> into <code>KODA.md</code></td>
+                <td>desktop scheduled tasks, 1 minute to 7 days</td>
+                <td>scheduled runs only</td>
+                <td>shadow git repository with <code>/restore</code>, opt-in</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>auto, semantic summary of the middle of the history</td>
+                <td>no</td>
+                <td><code>MEMORY.md</code> per user, editable over the API, recall over past chats</td>
+                <td>cron and one-off tasks, proactive runs</td>
+                <td>runs survive a dropped connection</td>
+                <td>per-file versions, ten deep</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -1169,6 +1252,20 @@
                 <td>no data</td>
                 <td>no data</td>
               </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td>Docker, Podman or Seatbelt, opt-in</td>
+                <td>default, auto-edit, yolo and plan modes; allow or deny once or for the task</td>
+                <td>folder trust, off by default</td>
+                <td>no subagents</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>Docker container per user, isolated volume and network</td>
+                <td>blocked command patterns, no per-action approval</td>
+                <td>n/a, nothing loads from a checkout</td>
+                <td>no subagents</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -1187,13 +1284,15 @@
           <ul>
             <li>
               <b>Density per binary</b>
-              Six of the eighteen ship as one static file with no runtime. Only Coddy also carries the web UI, the
+              Six of the twenty ship as one static file with no runtime. Only Coddy also carries the web UI, the
               scheduler, long-term memory and a messenger gateway inside that same file, switched on with build tags.
             </li>
             <li>
               <b>Breadth of surfaces over shared state</b>
-              Reasonix matches the four-surface layout, but trades the messenger gateway for a QQ channel. Gateway
-              assistants have more channels and weaker coding, and no ACP.
+              Reasonix matches the four-surface layout, but trades the messenger gateway for a QQ channel. Koda
+              reaches a terminal, editors, a desktop app and Telegram too, but its plugin and its CLI are two
+              different forks with separate sessions. Gateway assistants have more channels and weaker coding, and
+              no ACP.
             </li>
             <li>
               <b>Self-configuration</b>
@@ -1204,7 +1303,7 @@
               <b>Trust for files that arrive with a checkout</b>
               MCP servers, subagent definitions and hook files all pass one receipt mechanism bound to the workspace,
               the file and its digest. Rewrite the declaration and Coddy asks again. Claude Code gates by name,
-              Codex by folder.
+              Codex by folder, and Koda inherits Gemini CLI's folder trust with the feature switched off.
             </li>
             <li>
               <b>Compatibility instead of a private format</b>
@@ -1226,7 +1325,8 @@
               <b>No kernel-level sandbox</b>
               Protection comes from the permission gate, the modes, and a container with a read-only rootfs. Codex
               CLI enforces Landlock, seccomp and Seatbelt in the process itself, which matters more than any dialog
-              when the code is not yours.
+              when the code is not yours. Koda keeps Gemini CLI's optional Docker, Podman or Seatbelt sandbox, and
+              Drift runs every user in a container of their own on its hosted side.
             </li>
             <li>
               <b>No LSP, no DAP</b>
@@ -1241,8 +1341,9 @@
             </li>
             <li>
               <b>No workspace checkpoints</b>
-              Reasonix snapshots every turn, CodeWhale snapshots the workspace, Grok Build isolates runs in worktrees.
-              Coddy rolls back configuration and branches sessions, but not files.
+              Reasonix snapshots every turn, CodeWhale snapshots the workspace, Grok Build isolates runs in worktrees,
+              Koda keeps Gemini CLI's shadow git repository behind <code>/restore</code>. Coddy rolls back
+              configuration and branches sessions, but not files.
             </li>
             <li>
               <b>No fan-out mode</b>
@@ -1275,6 +1376,11 @@
           repository is safer under Codex CLI and its sandbox. For a personal assistant that lives in messengers,
           OpenClaw or Hermes are built for exactly that.
         </p>
+        <p>
+          A stack paid in roubles and reachable without a VPN is a separate question. Koda covers the IDE and the
+          terminal on a subscription with its own models; Drift is a personal agent in Telegram with a sandbox, a
+          scheduler and a memory, hosted for you and never pointed at your repository.
+        </p>
       </div>
     </section>
 
@@ -1302,7 +1408,11 @@
           and the <code>features/</code> specifications. The full binary was built and the whole test matrix was run
           before publishing these claims.
         </p>
-        <p>Every other project comes from its own repository, its documentation, and reviews current in September 2026.</p>
+        <p>
+          Every other project comes from its own repository, its documentation, and reviews current in September
+          2026. Koda was read from its public documentation and the npm package of its CLI, Drift from NeuralDeep's
+          documentation and announcements; neither has a public repository.
+        </p>
       </div>
       <ul class="src-list">
         <li><a href="https://thenewstack.io/openclaw-hermes-agent-harness/" target="_blank" rel="noopener noreferrer">The New Stack, OpenClaw and Hermes on what an agent is</a></li>
@@ -1320,6 +1430,12 @@
         <li><a href="https://zed.dev/acp" target="_blank" rel="noopener noreferrer">Zed, the ACP agent registry</a></li>
         <li><a href="https://deepwiki.com/block/goose/4.1.5-scheduler-and-recurring-tasks" target="_blank" rel="noopener noreferrer">Goose, recipes and the scheduler</a></li>
         <li><a href="https://devthrottle.com/coding-agents/amp" target="_blank" rel="noopener noreferrer">Amp by Sourcegraph, review</a></li>
+        <li><a href="https://docs.kodacode.ru/" target="_blank" rel="noopener noreferrer">Koda documentation: CLI, IDE plugin and desktop app</a></li>
+        <li><a href="https://docs.kodacode.ru/basics/legal/foss.html" target="_blank" rel="noopener noreferrer">Koda open-source notices, naming Gemini CLI and Continue</a></li>
+        <li><a href="https://www.npmjs.com/package/@kodadev/koda-cli" target="_blank" rel="noopener noreferrer">Koda CLI on npm</a> and <a href="https://github.com/XCode-NLP/KodaSkills" target="_blank" rel="noopener noreferrer">KodaSkills, its skill catalog</a></li>
+        <li><a href="https://neuraldeep.ru/docs" target="_blank" rel="noopener noreferrer">NeuralDeep documentation, including Drift and its API</a></li>
+        <li><a href="https://drift.neuraldeep.ru/" target="_blank" rel="noopener noreferrer">Drift</a> and <a href="https://t.me/neuraldeep/2131" target="_blank" rel="noopener noreferrer">its announcement, May 2026</a></li>
+        <li><a href="https://neuraldeep.ru/russian-agents" target="_blank" rel="noopener noreferrer">NeuralDeep on Russian coding agents, Koda and Coddy among them</a></li>
       </ul>
       <p class="cmp-note">
         Spotted something wrong or out of date about your project?

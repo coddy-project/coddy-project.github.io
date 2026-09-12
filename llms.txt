@@ -10,12 +10,12 @@ Key facts:
 - Models: any OpenAI-compatible API or Anthropic with your own keys and endpoints, including local servers such as Ollama, llama.cpp and vLLM, plus NeuralDeep and ChatGPT sign-in through the Codex backend. Model entries live in `~/.coddy/config.yaml`.
 - Runs in distroless and from-scratch containers with a read-only root filesystem; no runtime dependencies. Written in Go 1.25.
 - Reads Cursor-style rules (`.cursor/rules`, `.coddy/rules`, `.claude/rules`, `.codex/rules`), `AGENTS.md`, and `SKILL.md` skill packs from the project.
-- How Coddy compares with other agent harnesses (Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build, Antigravity CLI): https://coddy.dev/compare/ - five tables covering delivery, surfaces, extensibility, context handling and the trust model, including where Coddy loses.
+- How Coddy compares with other agent harnesses (Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build, Antigravity CLI, Koda, Drift): https://coddy.dev/compare/ - five tables covering delivery, surfaces, extensibility, context handling and the trust model, including where Coddy loses.
 - The documentation below is the Markdown kept in the repository, so it always matches the current release.
 
 ## Comparison
 
-- [Coddy vs other agent harnesses, 2026](https://coddy.dev/compare/): eighteen harnesses side by side in September 2026. Coddy is one of six that ship as a single static binary with no runtime (with Reasonix and Crush in Go, Codex CLI, CodeWhale and Grok Build in Rust), and the only one of those six that also carries a web UI, a cron scheduler, long-term memory and a messenger gateway in the same file. Documented gaps: no kernel-level sandbox (Codex CLI has Landlock, seccomp and Seatbelt), no LSP or DAP (OMP and OpenCode have them), no hash-anchored edit format, no workspace checkpoints, no fan-out of subagents across git worktrees.
+- [Coddy vs other agent harnesses, 2026](https://coddy.dev/compare/): twenty harnesses side by side in September 2026. Coddy is one of six that ship as a single static binary with no runtime (with Reasonix and Crush in Go, Codex CLI, CodeWhale and Grok Build in Rust), and the only one of those six that also carries a web UI, a cron scheduler, long-term memory and a messenger gateway in the same file. Documented gaps: no kernel-level sandbox (Codex CLI has Landlock, seccomp and Seatbelt), no LSP or DAP (OMP and OpenCode have them), no hash-anchored edit format, no workspace checkpoints, no fan-out of subagents across git worktrees.
 
 ## Docs
 
