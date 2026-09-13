@@ -821,6 +821,29 @@ The tool requires user permission (same as `run_command`) and returns combined s
 
 The **`httpserver`** key (`config.HTTPServerConfig` in `internal/config/http.go`) is ignored unless you use a binary built with **`-tags http`**. It sets default **`host`** and **`port`** when **`coddy serve`** is still at the built-in flag defaults (`0.0.0.0` and `12345`). See **`docs/reference/http-api.md`**.
 
+### Web UI sign-in (`httpserver.login`)
+
+Off by default. It closes the browser surface of a server that is on a network, so transcripts, tool output and the configuration editor are not readable by whoever finds the port. Write the account with the command rather than by hand:
+
+```bash
+coddy serve set-password --user pasha
+```
+
+```yaml
+httpserver:
+  host: 0.0.0.0
+  auth_token: "${CODDY_HTTP_TOKEN}"   # unchanged: the credential API clients present
+  login:
+    enable: true                       # omit to follow the credentials; false wins over everything
+    user: "pasha"
+    password_hash: "$$argon2id$$v=19$$..."   # argon2id, written by the command above
+    session_ttl_hours: 720                   # 0 = the browser drops the cookie on close (the server still expires its record after 30 days)
+```
+
+A hash written into this file by hand needs every `$` doubled (`$$argon2id$$v=19$$...`), because a `$NAME` is expanded as an environment reference when the file loads. The command does that for you; `coddy -t` names the problem when it finds a hash that no longer parses. A `${VAR}` reference in `user` or `password_hash` works like every other value here, which also means a save from the settings screen writes the expanded value back into the file - keep a credential out of the document entirely with `CODDY_HTTP_USER` / `CODDY_HTTP_PASSWORD` instead.
+
+The account can also come from the environment alone - `CODDY_HTTP_USER` and `CODDY_HTTP_PASSWORD`, see the `.env` section below - which is the route for a container or a systemd unit. The form is for browsers; `coddy --remote`, `coddy acp --remote`, a swarm relay and every script still present the bearer token. Full behaviour: [HTTP API](../reference/http-api.md#web-ui-sign-in-optional), [Remote mode](../operate/remote.md#the-sign-in-form).
+
 ## Scheduler (optional build)
 
 ### MCP project trust
@@ -909,7 +932,12 @@ If **`$CODDY_HOME/.env`** exists, it is read at startup **before** `config.yaml`
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 TELEGRAM_BOT_TOKEN=8992982910:AAF...
+CODDY_HTTP_TOKEN=a-long-random-token       # bearer credential for API clients
+CODDY_HTTP_USER=pasha                      # web UI sign-in account...
+CODDY_HTTP_PASSWORD=correct-horse-battery-staple   # ...enables the form on its own
 ```
+
+`CODDY_HTTP_USER` and `CODDY_HTTP_PASSWORD` are the one pair that is not referenced from `config.yaml` at all: the password is hashed as the server starts, the file never sees either value, and a save from the settings screen cannot write them into it. They win over an account in the file, and `httpserver.login.enable: false` switches the form off with them still set.
 
 Then in `config.yaml` reference them as usual:
 
@@ -3868,6 +3896,25 @@ https://github.com/user-attachments/assets/55e9e66f-8a8d-47be-af75-596b8b00fafa
 - The **Settings form itself is not reloaded** by the event. It holds the operator's unsaved edits, and refetching under them would discard work; the **Reload** control in the form is the deliberate way to pick up an outside change.
 - Automated checks: **`serverEvents.test.ts`** (the event reaches the callback, and is harmless without one), **`features/config_reload_broadcast.feature`** with **`external/httpserver/bdd_config_reload_test.go`** (the announcement reaches every open client, and the model list read on it already carries the new model), and **`external/httpserver/events_http_test.go`** (the frame shape, the guard against announcing a swap that did not happen, and the slash-command list being fresh at the moment of the announcement).
 
+## Sign-in (`httpserver.login`)
+
+Off unless the server has an account, and a server without one renders exactly as it always did.
+
+![The sign-in screen of the web UI: a card with user and password fields on the dark theme](../assets/webui-sign-in-dark-1280.png)
+
+*The sign-in screen an anonymous browser gets when `httpserver.login` is configured.*
+
+- **What decides:** **`AuthGate`** (**`external/ui/src/ui/auth/AuthGate.tsx`**, wrapping **`<App/>`** in **`main.tsx`**) calls **`GET /coddy/auth/me`** once on boot. **`login_required`** without **`authenticated`** renders **`SignInScreen`** instead of the app; anything else renders the app. While the answer is outstanding it renders a bare **`.auth-boot`** ground rather than the app, so the transcript is never shown and then yanked away.
+- **A server that cannot answer** - a network error, or a **404** from a `coddy serve` built before this existed - is read as "no sign-in here", so an older server keeps working with a newer page.
+- **The screen** (**`SignInScreen.tsx`**, **`.auth-screen`** / **`.auth-shell`** / **`.auth-card`**) is the whole page, not a dialog over a blurred transcript: there is nothing behind it to look at. The wordmark sits above the card, centred and outside it; the card holds the title, user, password, one error line (**`role="alert"`**), and a submit button disabled until both fields are filled, with no explanatory line under the title. Every string is a dictionary key (**`auth.signIn.*`**), and the card uses theme tokens only, so all seven themes and both languages carry it.
+- **The wordmark** is the rectangular logo (**`src/assets/coddy-logo-wordmark.svg`**, and **`-light.svg`** on the light theme), inlined into the bundle rather than fetched, so the screen paints in one request. Its alt text is localized (**`auth.signIn.logoAlt`**).
+- **After a successful sign-in** the page reloads: every list, stream and cached response on it was fetched by a browser with no session.
+- **A session that ends while the page is open** - expired, rotated, signed out in another tab - brings the screen back: the local-origin **`fetch`** shim reports a **401** from any **`/v1/*`** or **`/coddy/*`** call (the **`/coddy/auth/*`** routes excepted) and the gate re-reads the state.
+- **Signing out** is the last entry of the nav rail (**`data-testid="nav-sign-out"`**), shown only while a form is configured and this browser has passed it; its tooltip names the account. It posts **`/coddy/auth/logout`** and reloads **only when the server actually dropped the session** - the cookie is HttpOnly, so a page that cleared its own state after a refusal would be signed straight back in by the reload and the button would look broken rather than refused.
+- **Remote environments are not gated here.** A remote is reached cross-origin with the bearer token from the environment selector, and a cookie of this origin would not travel with those calls; **`AuthGate`** passes straight through in remote mode.
+
+Server behaviour, the cookie and the CSRF rule: [HTTP API](../reference/http-api.md#web-ui-sign-in-optional). Visual contract: [DESIGN.md](../../DESIGN.md).
+
 ## Environment (local / remote server)
 
 - **Workspace-row chip:** an environment selector sits in the composer workspace-context row above the input, next to the folder / branch / worktree chips (**`EnvironmentChip.tsx`**, rendered inside **`.composer-context-row`**, styled as a **`.workspace-chip--env`**, **`data-testid="composer-env-btn"`**), Claude-Code style — **not** in Settings. The chip shows **`Local`** or the remote's name. It opens a portal menu (**`data-testid="composer-env-menu"`**, mode-menu family; bottom sheet on mobile) with an **Environment** section (**Local**) and a **Remote** section (configured remotes + **`+ Add remote…`**).
@@ -4038,6 +4085,25 @@ Session delete UX
 - If the deleted session is **not** the one currently shown in the main chat, remove it from the list (and refresh from the server) and **keep the History drawer open**. Do not change the URL or clear the transcript for the session that stayed on screen.
 - If the deleted session **is** the one currently shown, navigate to **new chat** (empty start screen, session hash cleared), **close** the History drawer, and clear composer-related state as for a normal home transition.
 - For a short interval after the user confirms delete, **ignore** shell **backdrop** pointer-driven close so a stray event from the native confirm does not dismiss History or alter the route.
+- Deleting more than one conversation at a time, and reading what each one cost, is **Settings -> Sessions** (below). History stays the place to *open* a session.
+
+## Settings: session management
+
+![The session management table with the open conversation protected](../assets/sessions-management-table-dark-1280.png)
+
+*The header tick took the page; the conversation that is open keeps its row, marked open and out of reach of the one delete button*
+
+**Settings -> Sessions** (**`#/settings/sessions_manager`**, **`SessionsManager.tsx`**, pure helpers in **`sessions/sessionManagerRows.ts`**) is the stored history as a table rather than a list to scroll. It is a client-side tab like Appearance: it reads and removes session bundles over **`/coddy/sessions`** and edits no config key, so it renders before the config schema has loaded. Its id is **`sessions_manager`** because **`sessions`** is already a config key - the storage directory, which stays in the **System** tab.
+
+- **Rows** come from **`GET /coddy/sessions?include_stats=true`**, 50 at a time with a **Load more** button. Each one shows the title with its **workspace** underneath, the **model** the session overrode (**`default`** when it never did, meaning whatever **`agent.model`** was at the time), the **message count**, the **total tokens** (input and output in the cell tooltip), and **created** / **updated** dates (the exact instant in the tooltip). A bundle stored before Coddy recorded a creation stamp shows **—** rather than a date invented from a later save.
+- **Search** is the same **`q`** filter the History drawer uses - title or first user message, case insensitive - debounced as you type.
+- **Deleting is one action**: a single trash icon beside the search field, at every width, which removes the **ticked** rows (**`POST /coddy/sessions/bulk-delete`** with their ids) behind the shared confirmation dialog. What it does is its **tooltip** and its accessible name, not a label on its face; the only text drawn on it is the **selection count** badge, which a tooltip cannot show at a glance. The scope of a delete is therefore always what the operator can see ticked - there is no second button that reaches further than the ticks.
+- **Emptying the page** is the header checkbox plus that one button. With more rows than a page holds, **Load more** first; the summary line under the table says how many are listed and how many are ticked.
+- The **conversation you have open is protected**: its row is highlighted and marked **open**, its tick box and its row trash are disabled with a tooltip saying why, and the header checkbox passes over it. The table cannot take the chat out from under you; close it or switch to another conversation first, then delete it from **History**.
+- The **selection follows what the table shows**: the header checkbox ticks and unticks the rendered rows, and a search that hides a ticked row takes its tick with it (clearing the search brings the row back unticked). A destructive action never reaches a row that is off screen, and a tick cannot reappear later because it survived out of sight.
+- A session that could not be removed - a turn of its tree was still running - is **reported** under the toolbar with its reason, and its row stays. The others are still gone: the request answers with **`deleted`** and **`failed`** separately.
+- The list **re-reads after every delete**; nothing is reloaded. If the conversation on screen behind the panel was one of the deleted ones, the chat resets to a new one and Settings stays open on this tab.
+- The table is the one horizontally scrollable element of the tab, so a narrow shell scrolls the columns instead of the page.
 
 ## Chat transport
 
@@ -5627,6 +5693,8 @@ The same `remotes` list is what a server offers in its web UI's environment menu
 
 On the server, authentication is off until a token is set. `httpserver.auth_token` in `config.yaml` (with `${ENV}` expansion), `--auth-token` on `coddy serve`, or the `CODDY_HTTP_TOKEN` variable turn it on; then every `/v1/*` and `/coddy/*` route requires `Authorization: Bearer <token>` and answers `401` otherwise. The SPA shell and its static assets stay public so a browser can load the page and ask for the token; `/docs` and `/openapi.*` are protected unless `httpserver.public_docs: true`. `GET /coddy/config` never returns the token (it reports `auth_configured` only), and a token given by flag or environment survives a `PUT /coddy/config` hot reload without being written to the file. A server bound off loopback without a token logs a warning at startup unless `httpserver.allow_insecure: true`.
 
+A token is what an API client presents. A browser has no field to type one into, which is why a token alone leaves the web UI showing `Unauthorized (401)`; the sign-in form below is the browser's half of the same gate.
+
 On the client, the token comes from `--remote-token` or, when the flag is absent, from `CODDY_REMOTE_TOKEN`. It is deliberately never read from `config.yaml`, which is why `httpserver.remotes` has no token field. The web UI takes the token in its **+ Add remote...** form and keeps it in the browser only (`localStorage`, per remote).
 
 `coddy serve` has no TLS of its own, so a token sent to a non-loopback `http://` address travels in clear; the console and `coddy acp` print a warning when that is about to happen. Put a TLS-terminating reverse proxy in front of the server, or reach it through an SSH tunnel, which keeps the address on loopback:
@@ -5635,6 +5703,35 @@ On the client, the token comes from `--remote-token` or, when the flag is absent
 ssh -N -L 12345:127.0.0.1:12345 nas02   # in one terminal
 coddy --remote 127.0.0.1:12345          # in another
 ```
+
+## The sign-in form
+
+A `coddy serve` on a network is readable by everyone who finds the port: transcripts, tool output, the workspace browser, the configuration editor. `httpserver.login` closes it with one operator account, and the form is what a browser signs in at. It is off by default; a configuration that does not mention it behaves exactly as before.
+
+```bash
+coddy serve set-password --user pasha
+```
+
+The command asks for the password twice, writes an argon2id hash into `config.yaml` in place (comments and key order survive) and switches the form on. From then on an anonymous browser gets a sign-in screen instead of the app, and nothing under `/v1/*` or `/coddy/*` is readable until it passes. The page itself and its static assets stay public, so the screen can load; `/docs` follows `public_docs` as before.
+
+For a container or a systemd unit, the account can live in the environment instead, as `CODDY_HTTP_USER` and `CODDY_HTTP_PASSWORD` (typically in `$CODDY_HOME/.env`). They enable the form on their own, they win over an account in the file, and they are never written into it. An explicit `login.enable: false` switches the form off with the variables still set.
+
+```yaml
+httpserver:
+  host: 0.0.0.0
+  auth_token: "${CODDY_HTTP_TOKEN}"   # for coddy --remote, coddy acp --remote, a relay, scripts
+  login:
+    enable: true
+    user: "pasha"
+    password_hash: "$$argon2id$$v=19$$..."
+    session_ttl_hours: 720            # 0 = until the browser closes
+```
+
+**The two credentials are not interchangeable.** The form is for browsers; everything that is not a browser - `coddy --remote`, `coddy acp --remote`, a swarm relay mounting this node, the Python harnesses, Swagger's **Authorize** - still presents a bearer token. Closing a server with a password alone and no `auth_token` is what breaks those, and `coddy serve` says so in its log at startup. Set both when anything but a browser talks to the server.
+
+Signing in sets an `HttpOnly`, `SameSite=Strict` cookie that opens the same routes a token opens, streams included. Signing out (the entry at the bottom of the nav rail) drops the session on the server, so a copy of the cookie taken elsewhere stops working too. Sessions live in memory: saving settings from the page keeps them, restarting the process ends them, and rotating the password ends every session it opened. Full behaviour, including the CSRF rule for cookie-authenticated writes and the throttle on wrong passwords, is in [HTTP API](../reference/http-api.md#web-ui-sign-in-optional).
+
+`coddy serve` still has no TLS of its own, so a password typed into a non-loopback `http://` page travels in clear exactly as a token does. Put a TLS-terminating reverse proxy in front of it, or reach it through the SSH tunnel above.
 
 ## CORS for the web UI
 
@@ -6240,12 +6337,15 @@ A session that finds a held hooks file records a notice, so you learn that hooks
 `coddy serve` binds `127.0.0.1:12345` unless `httpserver.host` or `-H` says otherwise, and it has **no login by default**: with the API reachable, anyone on the network holds every route, the config editor (`PUT /coddy/config`) and the workspace files included. Expose the port only on a network you trust, or:
 
 - set a bearer token - `httpserver.auth_token` (`${ENV}` expanded), `--auth-token`, or `CODDY_HTTP_TOKEN`; every `/v1/*` and `/coddy/*` route then answers `401` without `Authorization: Bearer`, the SPA shell stays public, and `/docs` and `/openapi.*` are protected unless `httpserver.public_docs: true`;
+- close the browser surface with an account - `coddy serve set-password`, or `CODDY_HTTP_USER` / `CODDY_HTTP_PASSWORD` in `$CODDY_HOME/.env`; a browser then signs in at a form and carries an `HttpOnly` cookie, which gates the same routes the token gates. A token is for API clients and the form is for browsers: set **both** when anything other than a browser talks to the server, because a password alone leaves `coddy --remote`, `coddy acp --remote`, a swarm relay and every script without a credential;
 - put a TLS-terminating reverse proxy in front, since the server speaks plain HTTP;
 - enable CORS (`httpserver.cors.enable`, `allowed_origins`) only for the origins that need it; `"*"` still requires the token but lets any page try;
 - prefer the header over `?access_token=`, which only the two SSE routes accept and which reaches proxy access logs;
 - leave `httpserver.allow_insecure` unset: it silences the warning about a non-loopback bind without a token, and nothing else.
 
-The Docker image binds `0.0.0.0` inside the container, so the mapped port is reachable from wherever the host is; treat it like any admin API. Reference: [HTTP API](../reference/http-api.md#authentication-optional), [Remote mode](remote.md).
+The sign-in form stores an argon2id hash, never a plaintext password, and `GET /coddy/config` reports only that an account exists and where it came from. Wrong passwords are answered in constant time and progressively more slowly per source address, counted before they are judged so a burst pays the wait too, with loopback exempt so the machine cannot lock itself out - and behind a reverse proxy, where every request arrives from loopback, the forwarded client address is what the throttle counts. The session cookie is `HttpOnly` and `SameSite=Strict`, so no script reads it and no request another site caused carries it; on top of that a cookie-authenticated request that changes state is refused unless it came from this origin (`Sec-Fetch-Site` or `Origin`), while bearer requests are not subject to that check. Sessions are held in memory only, so restarting the process ends them, and rotating the password ends every session it opened.
+
+The Docker image binds `0.0.0.0` inside the container, so the mapped port is reachable from wherever the host is; treat it like any admin API. Reference: [HTTP API](../reference/http-api.md#authentication-optional), [Web UI sign-in](../reference/http-api.md#web-ui-sign-in-optional), [Remote mode](remote.md).
 
 ## The Telegram gateway
 
@@ -6266,6 +6366,7 @@ A `PreToolUse` hook runs before the permission prompt on every matching call, wh
 ## Before exposing a server
 
 - a bearer token is set and reaches the process by environment or flag, not as a literal in the file;
+- the browser surface has an account (`coddy serve set-password`, or `CODDY_HTTP_USER` / `CODDY_HTTP_PASSWORD`), so a page that finds the port is asked who it is;
 - TLS terminates in front of the server, or clients come in over a tunnel;
 - `httpserver.cors.allowed_origins` names only the origins that need it;
 - `mcp.project_trust`, `hooks.project_trust` and `subagents.project_trust` are `ask` or `deny` for checkouts you do not control;
@@ -8460,6 +8561,9 @@ Usage:
   coddy serve -d | --daemon (the same, in the background under a dispatcher
         that starts it again if it dies)
   coddy serve status | stop | restart [--home DIR]
+  coddy serve set-password [--user NAME] [--config PATH] [--home DIR] (write the web
+        UI sign-in account into config.yaml; the password is read from the
+        terminal, or from stdin when it is a pipe)
   coddy sessions list [flags]
   coddy sessions export <id> [--format md|html|json|jsonl] [--out PATH] [--no-tools] [--no-thinking]
   coddy skills list
@@ -9015,6 +9119,12 @@ OpenAI-compatible HTTP API defaults (used only by binaries built with -tags http
 | `httpserver.host` | string | 127.0.0.1 | Bind address for the HTTP API. Empty means 127.0.0.1; set 0.0.0.0 to accept connections from other machines. |
 | `httpserver.port` | integer | 0 | Default listen port when coddy serve does not pass -P/--port. 0 falls back to 12345. |
 | `httpserver.auth_token` | string | "" | Optional bearer credential for the HTTP API. Empty means no authentication (historical default). Use a "${ENV}" reference to keep the secret out of the file; never echoed back by GET /coddy/config. Prefer --auth-token / CODDY_HTTP_TOKEN to keep it out of config.yaml entirely. See https://coddy.dev/docs/operate/remote. |
+| `httpserver.login` | object |  | Optional password sign-in for the browser, so a server on a network is not readable by everyone who finds the port. Off unless an account exists here or in CODDY_HTTP_USER / CODDY_HTTP_PASSWORD. API clients keep using auth_token. See https://coddy.dev/docs/operate/remote. |
+| `httpserver.login.enable` | boolean or null |  | Turn the sign-in form on or off explicitly. Omitted follows the credentials: an account here or in the environment enables it. false keeps the form off with the variables still set. |
+| `httpserver.login.mode` | string, one of `password` | password | How a browser authenticates. Only "password" is implemented; the key exists so a trusted-proxy mode can be added without moving your configuration. |
+| `httpserver.login.user` | string | "" | Account name for the sign-in form. Supports "${ENV}" references, e.g. "${CODDY_HTTP_USER}". |
+| `httpserver.login.password_hash` | string | "" | argon2id hash of the password in PHC form ("$argon2id$v=19$m=...$..."), written by `coddy serve set-password`. Never echoed back by GET /coddy/config, and a save from the settings screen preserves it. Put a plaintext password in CODDY_HTTP_PASSWORD instead of here. |
+| `httpserver.login.session_ttl_hours` | integer | 0 | How long a browser stays signed in. 0 means the cookie is dropped when the browser closes; the server still expires the session itself after 30 days, because a record it keeps forever is not a session. |
 | `httpserver.public_docs` | boolean | false | When auth is enabled, keep /docs and /openapi.* reachable without a token. |
 | `httpserver.allow_insecure` | boolean | false | Silence the startup warning about a non-loopback bind without authentication. |
 | `httpserver.cors` | object |  | Cross-origin access so a browser UI on another origin can call this API (e.g. the bundled UI pointed at a remote server). Bearer auth still applies. |
@@ -9387,6 +9497,8 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | Variable | Read by | Meaning | Documented in |
 |---|---|---|---|
 | `CODDY_HTTP_TOKEN` | `cmd/coddy/serve.go` | The bearer token `coddy serve` requires on `/v1/*` and `/coddy/*` when `--auth-token` is absent; `httpserver.auth_token` comes after both. A token from the flag or the environment survives a hot reload without being written to the file. | [Remote mode](../operate/remote.md#the-token), [HTTP API](../reference/http-api.md#authentication-optional) |
+| `CODDY_HTTP_USER` | `external/httpserver/serve.go` | The account name of the web UI sign-in form. With `CODDY_HTTP_PASSWORD` it enables the form on its own, the way `CODDY_HTTP_TOKEN` enables the bearer gate, and wins over `httpserver.login.user` in the file. An explicit `httpserver.login.enable: false` still switches the form off. | [Remote mode](../operate/remote.md#the-sign-in-form), [HTTP API](../reference/http-api.md#web-ui-sign-in-optional) |
+| `CODDY_HTTP_PASSWORD` | `external/httpserver/serve.go` | The password behind `CODDY_HTTP_USER`, in plaintext. It is hashed with argon2id as the server starts and never written into `config.yaml`, which is why `$CODDY_HOME/.env` is its natural home. There is no flag for it: a password on a command line is visible in `ps`. | [Remote mode](../operate/remote.md#the-sign-in-form), [HTTP API](../reference/http-api.md#web-ui-sign-in-optional) |
 | `CODDY_REMOTE_TOKEN` | `internal/remote/resolve.go` | The token the console and `coddy acp` send with `--remote` when `--remote-token` is absent. Never read from `config.yaml`. | [Remote mode](../operate/remote.md#the-token) |
 | `CODDY_SWARM_TOKEN` | `external/swarm/serve.go`, read in `cmd/coddy/serve.go` | The bearer token clients present to the relay when `--swarm-auth-token` is absent; `swarm.auth_token` comes after both. | [Swarm](../operate/swarm.md#security), [config.yaml reference](../reference/config.md#related-environment-variables) |
 | `CODDY_SWARM_PAIRING_TOKEN` | `external/swarm/serve.go`, read in `cmd/coddy/serve.go` | The credential a node presents to register when `--swarm-pairing-token` is absent; appended to `swarm.pairing_tokens` on every reload. | [Swarm](../operate/swarm.md#security), [config.yaml reference](../reference/config.md#related-environment-variables) |
@@ -9770,8 +9882,13 @@ Specs are regenerated on each request so they stay aligned with handlers.
 
 ## Authentication (optional)
 
-Authentication is **off by default** (historical behavior). Set a bearer token to protect the
-API when exposing it beyond loopback:
+Authentication is **off by default** (historical behavior). There are two credentials, and either
+one closes the same gate:
+
+- a **bearer token** for API clients (`coddy --remote`, `coddy acp --remote`, a swarm relay, scripts);
+- a **password sign-in form** for browsers, described under [Web UI sign-in](#web-ui-sign-in-optional) below.
+
+Set a bearer token to protect the API when exposing it beyond loopback:
 
 - `httpserver.auth_token` in `config.yaml` (supports `${ENV}`), or
 - `--auth-token <token>` on `coddy serve`, or
@@ -9788,6 +9905,95 @@ network. Binding a non-loopback address without a token logs a startup warning u
 `httpserver.allow_insecure: true`.
 
 Without a token the surface is unauthenticated; run behind appropriate network controls.
+
+### Web UI sign-in (optional)
+
+A bearer token protects the API but gives a browser no way in: the SPA shows `Unauthorized (401)`
+and has no field to type a token into. The sign-in form is the browser's credential for the same
+gate. It is **off by default**, and a configuration that does not mention it behaves exactly as
+before.
+
+```yaml
+httpserver:
+  host: 0.0.0.0
+  auth_token: "${CODDY_HTTP_TOKEN}"   # unchanged: for API clients
+  login:
+    enable: true
+    user: "pasha"
+    password_hash: "$$argon2id$$v=19$$..."   # written by `coddy serve set-password`
+    session_ttl_hours: 720                   # 0 = until the browser closes
+```
+
+Write the account with the command rather than by hand:
+
+```bash
+coddy serve set-password --user pasha
+```
+
+It asks for the password twice (once, without a prompt, when standard input is a pipe), stores an
+argon2id hash and switches the form on, editing `config.yaml` in place so comments and key order
+survive. A hash typed in by hand needs every `$` doubled - `$$argon2id$$v=19$$...` - because this
+file expands `$NAME` as an environment reference when it loads; `coddy -t` says so when it finds a
+hash that no longer parses.
+
+The account can also live entirely in the environment, which is the route for a container or a
+systemd unit: `CODDY_HTTP_USER` and `CODDY_HTTP_PASSWORD` (plaintext, hashed as the server starts,
+never written to the file) enable the form on their own, the way `CODDY_HTTP_TOKEN` enables the
+bearer gate without `auth_token`. `$CODDY_HOME/.env` is their natural home. When both the file and
+the environment carry an account the environment wins, and an explicit `login.enable: false` in the
+file switches the form off with the variables still set. There is no `--login-password` flag: a
+password on a command line is visible in `ps`.
+
+Three routes serve the form, and all three are reachable without a credential, because they are the
+way through the gate:
+
+| Route | What it does |
+|---|---|
+| **`GET /coddy/auth/me`** | `login_required`, `auth_required`, `authenticated`, and `user` / `expires_at` for a signed-in browser. The SPA calls it on boot to choose between the sign-in screen and the app. |
+| **`POST /coddy/auth/login`** | `{user, password}`. On success sets an `HttpOnly`, `SameSite=Strict` `coddy_session_<host digest>` cookie (`Secure` when the request arrived over TLS or through a proxy sending `X-Forwarded-Proto: https`), living for `session_ttl_hours`; with `0` the browser drops it on close and the server expires its own record after 30 days. The name carries a digest of the host the request was addressed to, because cookies are not scoped by port: without it two Coddy servers on one machine - a relay and the node behind it, say - would sign each other out at every login. |
+| **`POST /coddy/auth/logout`** | Drops the session on the server and expires the cookie. Idempotent. |
+
+Once signed in, the cookie opens every `/v1/*` and `/coddy/*` route, the SSE streams included - a
+same-origin `EventSource` sends cookies, so no `?access_token=` is needed. The cookie is
+`SameSite=Strict`, which costs nothing here (the page itself is public and every call the loaded
+page makes is same-origin) and means the browser never attaches it to a request another site caused.
+On top of that, cookie-authenticated requests that **change state** are refused with `403` unless
+`Sec-Fetch-Site` says `same-origin` (or `none`) or `Origin` matches the request host - so a script
+driving this API with a cookie has to send an `Origin` header, or, better, present a bearer token.
+Bearer requests are never subject to that check, which is what keeps `coddy --remote`, an editor and
+a relay working unchanged.
+
+A wrong password and an unknown user get the same `401` and the same body, compared in constant
+time. Repeated failures from one address are answered progressively more slowly, doubling from
+250 ms to a cap of five seconds and forgotten after fifteen quiet minutes; the attempt is counted
+before it is judged, so a burst arriving together pays the growing wait rather than each member
+reading a clean slate. Loopback is never throttled, so the machine cannot lock itself out of its own
+agent - and because that exemption would otherwise cover the whole internet behind a reverse proxy,
+a request that arrives *from* loopback is counted against the address in `X-Forwarded-For` (or
+`X-Real-IP`) when one is present. A request that arrives from anywhere else is counted by where it
+actually came from, headers ignored. Sessions live in memory: a
+configuration reload (saving settings from the page, for instance) keeps them, and restarting the
+process ends them. Rotating the password or renaming the account ends every session it opened, on
+the next request, with nothing to invalidate by hand. The store is bounded at 512 live sessions,
+oldest first.
+
+`GET /coddy/config` never returns `password_hash`; it reports `httpserver.login_configured` and
+`httpserver.login_source` (`config` or `env`), and a save from the settings screen preserves the
+hash the way it preserves `auth_token`. The neighbouring `auth_configured` means what it says - a
+bearer token is set - so a server closed with a password and no token reports
+`auth_configured: false` next to `login_configured: true`; ask `GET /coddy/auth/me` when the
+question is "does this server want a credential at all". The document keeps describing the file, so an account that
+came from the environment is never written into `config.yaml` by a save.
+
+The sign-in form is for this origin. The environment selector still reaches a **remote** server with
+a bearer token, because a cookie of this origin does not travel cross-origin.
+
+One note on `${VAR}` references. `login.user` and `login.password_hash` take them like every other
+value in `config.yaml`, and like every other value they are expanded when the file loads - so a save
+from the settings screen writes the **expanded** value back, turning `user: "${CODDY_HTTP_USER}"`
+into `user: pasha`. That is how this file has always treated `${VAR}`; if the point is to keep the
+credential out of the document entirely, use `CODDY_HTTP_USER` and `CODDY_HTTP_PASSWORD`, which
+never enter it.
 
 ### Cross-origin access and the remote UI
 
@@ -9840,7 +10046,7 @@ header where the client can set one, since a query token reaches proxy access lo
 | POST | `/v1/chat/completions` | **`stream`**, **`messages`** (last **`user`**), optional **`stream_options.include_usage`**. With **`stream: true`** the body is the strict OpenAI **`chat.completion.chunk`** stream described under [Two stream dialects](#two-stream-dialects). **`409`** when another **agent**, **plan**, or **ask** turn already holds the session turn lock (exclusive per persisted bundle), and **`409`** when **`X-Coddy-Session-ID`** names a child session spawned by **`spawn_agent`** (**`sub_`** ids): those transcripts are read-only for every model kind, and the error names the parent session to prompt instead. |
 | POST | **`/v1/responses`** | **`model`**, **`input`**, optional **`stream`**, optional **`attachments`** ( **`path`** workspace-relative under session cwd, **`agent`** / **`plan`** / **`ask`** only; file bodies are hydrated as text - a file stored in another detected encoding, such as Windows-1251, is converted to UTF-8; server rejects traversal, oversized, non-text (binary or undetectable encoding), and folder **`path`**; optional **`source.startLine`** / **`source.endLine`** narrow a file to a 1-based inclusive line range that the model sees as **`lines="N-M"`**, and a range the file cannot honour is a **`400`**), optional **`inline_files`** (array of **`{name, data_url}`**; **`data_url`** is a `data:<mime>;base64,...` URI; works for all modes — direct YAML model and **`agent`** / **`plan`** / **`ask`**). For **`agent`** / **`plan`** / **`ask`**: each file is saved to the session **`assets/`** directory (`~/.coddy/sessions/<id>/assets/`) with **`0o444`** (read-only) permissions; the model receives a `<coddy_session_assets>` annotation in the user message so it can `read` or `cp` the files without re-transmitting their bytes over the API. For direct YAML model: each entry becomes an image content part on the user message so multimodal models receive the file inline. **`input`** remains the full composer text including **`@path`** echoes. Keeps history between turns when using headers. **`409`** when another **agent**, **plan**, or **ask** turn already holds the session turn lock, for streaming and non-streaming calls alike, and **`409`** when **`X-Coddy-Session-ID`** names a child session spawned by **`spawn_agent`** (**`sub_`** ids): those transcripts are read-only for every model kind, and the error names the parent session to prompt instead. Every **agent** / **plan** / **ask** turn is published to the session's composer relay whatever **`stream`** is set to, so other clients can watch it over **`GET /coddy/sessions/{id}/composer-stream`**; with **`stream: false`** the response body is unchanged. A **`stream: false`** turn is cancelled when its HTTP request is dropped, a streamed one keeps running. A streamed response that has produced no frame for 15s sends an SSE comment keepalive, so a turn on a YAML model with **`stream: false`** - silent on the wire until the whole answer is generated - is not dropped by an idle-timeout proxy. Note the two unrelated meanings of **`stream`**: this request field selects the response shape for the client, while **`models[].stream`** in **config.yaml** selects the transport coddy uses to reach the LLM. |
 | GET | `/v1/responses/{id}` | Session metadata snapshot. |
-| GET | **`/coddy/sessions`** | Pagination via **`limit`/`cursor`** (cursor is numeric offset token). Optional **`cwd`** keeps only the sessions of that workspace, matched as a folder (cleaned, symlinks resolved, case-insensitive on Windows and macOS) rather than as the stored string; a parent or a child folder does not match. Optional **`q`** substring filter (**case-insensitive**) over **`session.json` title OR the **first persisted `user`** message **`content`** in `messages.json` order (`system`, `assistant`, `tool`, etc. before that first `user` are ignored). **`q` is not full-text search** over the transcript. Pagination applies **after** filtering. Rows sort by **`session.json` `updatedAt`** (newest first), then **`id`** for stable ties; **`updatedAt`** moves forward on persistence (new turns, title pin, etc.), not when the server only loads a bundle to serve **GET** requests. **`include_scheduler=true`** includes session bundles created for **scheduler runs** (they set **`schedulerRun`** in **`session.json`** and are **omitted** from the default composer list). **`include_subagents=true`** includes child sessions spawned by **`spawn_agent`** (**`sub_`** ids with **`subagentRun`** in **`session.json`**, hidden by default); each such row carries **`subagent`** **`{parentSessionId, name, taskId}`** read from its bundle, and the default listing opens no child bundle. **`include_activity=true`** adds **`turnActive`**, **`activitySeq`**, **`readActivitySeq`**, and **`unreadComplete`** to each row for multi-tab UI. |
+| GET | **`/coddy/sessions`** | Pagination via **`limit`/`cursor`** (cursor is numeric offset token). Optional **`cwd`** keeps only the sessions of that workspace, matched as a folder (cleaned, symlinks resolved, case-insensitive on Windows and macOS) rather than as the stored string; a parent or a child folder does not match. Optional **`q`** substring filter (**case-insensitive**) over **`session.json` title OR the **first persisted `user`** message **`content`** in `messages.json` order (`system`, `assistant`, `tool`, etc. before that first `user` are ignored). **`q` is not full-text search** over the transcript. Pagination applies **after** filtering. Rows sort by **`session.json` `updatedAt`** (newest first), then **`id`** for stable ties; **`updatedAt`** moves forward on persistence (new turns, title pin, etc.), not when the server only loads a bundle to serve **GET** requests. **`include_scheduler=true`** includes session bundles created for **scheduler runs** (they set **`schedulerRun`** in **`session.json`** and are **omitted** from the default composer list). **`include_subagents=true`** includes child sessions spawned by **`spawn_agent`** (**`sub_`** ids with **`subagentRun`** in **`session.json`**, hidden by default); each such row carries **`subagent`** **`{parentSessionId, name, taskId}`** read from its bundle, and the default listing opens no child bundle. **`include_activity=true`** adds **`turnActive`**, **`activitySeq`**, **`readActivitySeq`**, and **`unreadComplete`** to each row for multi-tab UI. **`include_stats=true`** adds what the session management table renders: **`messageCount`** (persisted transcript rows of every role), **`tokenUsage`** **`{inputTokens, outputTokens, totalTokens}`** read from the bundle's **`stats.json`** (zeroes for a session that never completed a model call), **`createdAt`** and **`model`**. **`createdAt`** is **omitted** for a bundle stored before the field existed - when a session was started is not recoverable and is not invented - and **`model`** is **omitted** for a session that never overrode **`agent.model`**, so a client shows those as unknown instead of as a value. |
 | POST | **`/coddy/describe`** | JSON **`{"text"}`** to get a short description phrase. |
 | POST | **`/coddy/enhance-prompt`** | JSON **`{"text"}`** — rewrites the user's draft into a clearer, more specific prompt through one direct LLM completion without tools. The draft is source text only: it is never answered or executed. Optional **`X-Coddy-Session-ID`** selects that session's effective model; otherwise the endpoint falls back to **`agent.model`**, then the first configured **`models[]`** row. JSON **`{"object":"coddy.enhance_prompt","text"}`**; **`400`** for a blank draft, **`502`** for an LLM failure, and **`503`** when no model is available. The composer replaces the draft with the result and **Ctrl+Z**/**⌘Z** restores the original. |
 | GET | **`/coddy/slash-commands`** | Paginated slash commands derived from configured skills (**`page`**, **`page_size`** required). Optional **`prefix`** filters by **`name`** (case-insensitive). Optional **`X-Coddy-Session-ID`** resolves **`${CWD}`** expansion for **`skills.dirs`** like other session-scoped lookups. JSON **`items[].name`** and **`items[].description`**, **`total`**, **`has_more`**. Built-in commands (**`/compact`**, **`/export`**, **`/plugin`**) are not listed here; they are served separately by **`/coddy/commands`**, advertised to editors via the ACP available-commands update, and run deterministically when sent as a prompt (e.g. **`POST /v1/responses`** with **`input:"/plugin marketplace list"`**). |
@@ -9912,6 +10118,7 @@ header where the client can set one, since a query token reaches proxy access lo
 | POST | **`/coddy/sessions/{id}/cancel`** | Best-effort cancel of an in-flight ReAct turn or streamed direct completion (**ACP `session/cancel`**). For persisted bundles, also writes a cross-process cancel marker so another **`coddy`** process holding the turn can stop cooperatively. When the LLM had already streamed assistant tokens, the agent **persists** that partial **`assistant`** row before ending the turn (**`StopReasonCancelled`**). Optional **`X-Coddy-Session-ID`** must match **`{id}`** when present. **`404`** when no live or persisted bundle exists under that **`id`** (session store required for cold loads). |
 | POST | **`/coddy/sessions/{id}/compact`** | Compacts (summarizes) session history into one summary row inserted into the transcript; later LLM prompts replay only the summary plus the kept tail, while **`GET .../messages`** keeps every original row. This is a **manual** trigger, so it **forces** compaction: it folds whatever exists even when the conversation is shorter than the keep-recent boundary (**`compaction.keep_recent_turns`**, default **2** user turns), reducing the kept tail as needed. Equivalent to the built-in **`/compact`** prompt command (which additionally accepts trailing summarizer instructions, e.g. **`/compact focus on file paths`**). Optional body **`{"instructions":"..."}`**. **`200`** **`{"compacted":true,"summary","compacted_messages","kept_messages","model"}`**; **`200`** **`{"compacted":false,"reason":"nothing_to_compact"}`** only when there is no prior conversation to fold; **`400`** when **`compaction.enable`** is **false** or the body is malformed; **`404`** unknown session; **`409`** while another agent turn holds the composer lock, and **`409`** for a child session spawned by **`spawn_agent`** (read-only transcript). |
 | DELETE | **`/coddy/sessions/{id}`** | Removes the session tree: the session plus every child session spawned by **`spawn_agent`** (found by **`parentSessionId`**, nested descendants included). The task representing each child run is stopped and awaited first, root to leaf, then every remaining background task of every node, and only then are the bundles removed deepest first (the requested session last), so nothing writes into a removed directory. Each bundle goes entirely (including `tool_calls/`, `stats.json`, and task logs) together with its in-memory MCP clients. Deleting a child session directly removes that child and its own descendants and stops its task in the parent's tasks drawer. A deleted branch is also retracted from the **`branches.json`** of the session it forked from, and a branch point left with a single thread is dropped, so the branch navigator never points at a bundle that is gone. An active turn of any node is cancelled and awaited before anything is removed, and a turn that arrives during the deletion is refused. **`200`** **`{"object":"coddy.session_deleted","id"}`**, also for an id with no bundle on disk; **`400`** for a malformed id, **`409`** when a cancelled turn is still running after the settle timeout or when descendants kept appearing while the tree was being marked (nothing was removed in either case, retry once the tree is quiet), **`500`** when the directory cannot be removed. |
+| POST | **`/coddy/sessions/bulk-delete`** | Removes several session trees in one request, each with the semantics of **`DELETE /coddy/sessions/{id}`** (branch references retracted, background tasks and subagent children stopped, bundles removed deepest first). Body is either **`{"ids":[...]}`** (scope **`ids`**, the default) or **`{"scope":"all"}`** with an optional **`"except":[...]`** list of ids to keep. **`all`** is resolved **server side** against the default session listing (scheduler runs excluded, subagent children going with their parents), so it means the whole stored history rather than the page the client has loaded - which is what makes "delete everything but the conversation I am in" expressible at all. An **`except`** entry is a promise that the session survives, so it is checked **before anything is removed**: a malformed id, or one with no bundle on disk, is a **`400`** and nothing is deleted - a misspelt exception would otherwise turn *keep this one* into *delete everything*. Sparing a session spares its **ancestors** too, because the delete takes a whole tree: excepting a **`sub_`** child keeps the parent it hangs from (the listing names the parent, not the child). One id that cannot be removed does not abandon the rest: **`200`** **`{"object":"coddy.sessions_bulk_deleted","requested","deleted":[...],"failed":[{"id","error"}]}`** lists both, so a table drops the rows that went and keeps the others with their reason; a **`failed`** entry carries the retryable conflict verbatim and a generic **`delete failed`** for anything else, which is logged rather than returned. A duplicate id is deleted once (**`requested`** counts what was attempted), and an id with no bundle on disk counts as deleted, as the single-session route also answers **`200`** for it. **`400`** for a malformed body, an empty **`ids`** list, an unknown **`scope`**, an invalid session id, **`ids`** sent together with scope **`all`**, **`except`** sent beside an **`ids`** list, or an **`except`** entry that names no stored session. The bundled UI sends **`ids`** only - its session table deletes exactly the rows an operator ticked, and the conversation on screen is not one of them; **`scope: "all"`** is there for a client that wants the whole stored history without paging through it. |
 | POST | **`/coddy/sessions/{id}/branches`** | Forks the session at one user message. Body **`{"userMessageIndex":N}`** (0-based over **`user`** rows). The new bundle receives every message **before** that user message, so resending an edited version of it produces a sibling conversation instead of overwriting the old one. Before forking, workspace turn diffs recorded **after** that point are **reversed** in the session cwd, so the files match the state the branch starts from. **`200`** **`{"object":"coddy.branch_created","newSessionId","branchIndex","totalBranches","fileRollbackNote"}`**; **`fileRollbackNote`** is human-readable (which turns were reversed, or why none were). **`400`** for a malformed id or a negative index, **`404`** for an unknown session, **`409`** for a subagent child session (`sub_…`), whose transcript is read-only and cannot be forked; branch its parent instead. |
 | GET | **`/coddy/sessions/{id}/branches`** | Branch points visible from this session, from **`branches.json`** in the session bundle. **`{"object":"coddy.branches","sessionId","branchPoints":[{userMessageIndex,currentIndex,total,sessions:[{sessionId,branchIndex,preview,lastUpdatedAt}],own}]}`**. **`own`** is **`true`** for a branch point this session introduced and **`false`** for the sibling view inherited from its parent. Sessions whose bundle no longer exists are skipped and **`currentIndex`** is derived from the surviving list, so a branch file written before deletion started pruning heals itself on read; a branch point with fewer than two surviving threads is not reported at all. The bundled UI renders each entry as a **`‹ n/m ›`** navigator under that user message. |
 | GET/PUT | **`/coddy/sessions/{id}/plan`** | Read or overwrite todo **`entries`** (ACP shape). |
@@ -13358,7 +13565,7 @@ The right insights rail is removed for the current milestone.
 
 ### Settings drawer (tabbed master–detail)
 
-The **Settings** drawer (**`#/settings`**, **`Settings.tsx`**) is **tabbed**, not one long sheet. Tabs are derived from the live config JSON Schema (**`deriveSettingsSections`** over **`/coddy/config/schema`**): each top-level property is a tab (label from its **`title`**), the rarely edited tail (**`scheduler`**, **`prompts`**, **`instructions`**, **`logger`**, **`sessions`**, **`gateways`**) folds into a single **System** tab, and a client-side **Appearance** tab is placed **first** (the default tab). There is no separate Appearance/Skills flyout or **`settings-dock-cluster`** side panel — both are tabs now.
+The **Settings** drawer (**`#/settings`**, **`Settings.tsx`**) is **tabbed**, not one long sheet. Tabs are derived from the live config JSON Schema (**`deriveSettingsSections`** over **`/coddy/config/schema`**): each top-level property is a tab (label from its **`title`**), the rarely edited tail (**`scheduler`**, **`prompts`**, **`instructions`**, **`logger`**, **`sessions`**, **`gateways`**) folds into a single **System** tab, and two client-side tabs are placed **first** - **Appearance** (the default tab) and **Sessions** (**`sessions_manager`**, the session management table below). Both render before the schema has loaded, because neither edits the settings document. There is no separate Appearance/Skills flyout or **`settings-dock-cluster`** side panel — both are tabs now.
 
 - **Saving**: there is **no per-section save button**. The drawer footer keeps only **Reload** (**`data-testid="settings-reload"`**) and **Save all** (**`data-testid="settings-save"`**, PUTs the whole config after `/coddy/config/validate`). **Appearance** is client-side only and never touches the config PUT.
 - **Layout**: on **`min-width: 1200px`** the drawer is wider (**`min(960px, …)`**) with a vertical section rail on the left (**`.settings-nav`**) and the content panel on the right (**`.settings-tabs-layout`** is `display:flex; row`). On **`max-width: 1199px`** (same breakpoint as the rest of the shell, via **`isMobileShell`** / **`shellBreakpoint.ts`**) the nav is a **2-wide tile grid** master–detail (**`SettingsTileGrid`**, **`.settings-tile-grid`**): each tile (**`data-testid="settings-tile-<id>"`**) shows the section **title** on top and a short 3–5 word **description** below (**`SECTION_DESCRIPTIONS`** in **`settingsSections.ts`**) styled after the Scheduler job rows. The description clamps to two lines with an ellipsis (**`-webkit-line-clamp: 2`**) and the full text shows in a native **`title`** tooltip on hover. Tapping a tile opens that section with a **← Back to sections** control (**`.settings-mobile-back`**); the desktop rail (**`SettingsNav`**) is unchanged.
@@ -13383,6 +13590,17 @@ The **Settings** drawer (**`#/settings`**, **`Settings.tsx`**) is **tabbed**, no
   - **Alignment contract**: the label's vertical centre matches the switch's centre (**within 1px**) and the label starts **8px** after the switch. The description lives in the **label column** (**`grid-column: 2`**), so its left edge equals the label's left edge at every viewport and never depends on the switch width or a hand-tuned indent. The checkbox-era **`padding-left: 28px`** rule (**`.settings-field-desc-below-checkbox`**) is gone and must not come back: an indent expressed as padding drifts the moment the control changes size, which is exactly how the description ended up under the switch instead of under its label.
   - **Naming**: the visible label names the control through **`aria-labelledby`**; pass **`ariaLabel`** only when the visible text is state copy (**Enabled** / **Disabled**, as on Skills auto-discovery). **`Switch`** enforces the precedence itself: with **`ariaLabel`** set it emits no **`aria-labelledby`**, so a direct caller cannot invert it. The former **`.settings-row-inline`** helper is deleted with its last consumers: used without **`.settings-row`** it fell back to inline flow (no gap, label baseline on the switch's bottom edge), which is how this bug happened, and there is no inline-flex variant to reach for.
   - **Coverage**: **`SwitchField.test.tsx`** pins the DOM (one grid container, label click toggles, explicit **`ariaLabel`** wins) and, since jsdom does no layout, the exact source rules: **`grid-template-columns: auto minmax(0, 1fr)`**, **`column-gap: 8px`**, **`row-gap: 4px`**, **`align-items: center`**, the child-selector description rule with **`grid-column: 2`** and **`margin: 0`**, and the absence of both legacy classes. **`SchemaForm.switch.test.tsx`** and **`SkillsSection.autoDiscovery.test.tsx`** pin the two call sites. The live check measures **`getBoundingClientRect()`** of switch, label, and description on **1280px** and **390px** (see **`docs/surfaces/web-ui.md`**, **Settings: boolean switch fields**). Reference captures: **`docs/assets/settings-switch-field-models-rows-1280.png`** (wide), **`docs/assets/settings-switch-field-models-390.png`** (phone), **`docs/assets/settings-switch-field-skills-rows-1280.png`** (state-copy label).
+- **Sessions** tab (**`SessionsManager.tsx`**, section kind **`sessions`**, id **`sessions_manager`** because **`sessions`** is already the config key for the storage directory and stays in **System**) is the stored history as a **table**, API-driven over **`/coddy/sessions`** and outside **Save all**. Reference capture: **`docs/assets/sessions-management-table-dark-1280.png`**.
+  - **Toolbar** (**`.sessions-manager-toolbar`**, **`flex-wrap: nowrap`**): a search field (the same **`q`** filter History uses, debounced **250 ms**) taking the leftover width, and **one** icon action to its right at **every** width - **Delete selected (N)** (**`.settings-btn-danger.settings-btn-icon.sessions-manager-action`**, 40px square, **`data-testid="sessions-manager-delete-selected"`**, disabled with nothing ticked), behind the shared **`useConfirm`** dialog with **`variant: "danger"`**. Deliberately **one** button: the scope of a delete is what the operator can see ticked, never a label they have to read carefully, and the row and header ticks are how a wider scope is chosen. The narrow shell keeps the same single row - the field shrinks (**`flex: 1 1 auto; min-width: 0`**), it does not wrap the action onto a line of its own.
+  - **Icon language**: the trash can (**`IconTrash`**, inline SVG in **`SessionsManager.tsx`**) with a **check** inside its body is the toolbar action; the plain can is the per-row delete. The action's words are its **`title`** and its **`aria-label`**, never a label on the button. The one thing drawn on it is the **selection count** (**`.sessions-manager-action-count`**, **`…-selected-count`**, absolute at the top-right corner, **`var(--coddy-on-accent-fg)`** on **`var(--accent)`** - not **`--coddy-blend-base`**, which is transparent in the dark themes), because a tooltip cannot show it at a glance; with nothing ticked the badge is absent rather than a zero.
+  - **The open conversation is protected.** The row whose id matches **`activeSessionId`** carries **`is-active-session`** and an **open** badge on its second line, its tick box and its row trash are **disabled** with **`sessions.manage.protectedRow`** as both **`title`** and accessible name, and **`selectableRows`** (everything else) is what the header checkbox, the selection pruning and the request body are computed from. The table can therefore never delete the chat behind the panel; History remains the place to do that, with its own goHome handling. A client-only draft protects no row, because no row is its own.
+  - **Table** (**`.sessions-manager-table`** inside **`.sessions-manager-tablewrap`**): tick column, **Conversation** (title on the first line, then a muted second line, **`.sessions-manager-sub`**, carrying the workspace basename with the full path in its title and, for the protected row, the **open** badge - both are context for the title and neither earns a column in a drawer), **Model** (**`default`** when the session never overrode **`agent.model`**), **Msgs**, **Tokens** (compact **`1.5k`** / **`2.4M`**, the input/output split in the cell title), **Created**, **Updated** (short date, exact instant in the cell title, **—** when the bundle predates the stamp) and the row trash. Header cells are **`position: sticky; top: 0`**. Numeric columns are right-aligned with **`font-variant-numeric: tabular-nums`**.
+  - **Wrapping contract**: the table sets **`white-space: nowrap`** and **`.sessions-manager-tablewrap`** is the **only** horizontally scrollable element of the tab (**`overflow-x: auto`**), so a narrow shell scrolls the columns and never the page. Long title, model and workspace values are capped in **`ch`** with an ellipsis and keep their full text in a **`title`**.
+  - **Header checkbox** (**`…-select-all`**) covers the **rendered** rows only and shows **`indeterminate`** for a partial selection (**`toggleAllRows`** in **`sessions/sessionManagerRows.ts`**; keep the selection and formatting helpers there, do **not** inline them).
+  - **The selection is a subset of what the table renders.** An effect over **`rows`** drops the tick of any row that is no longer listed, so a search that narrows the table takes its ticks with it and clearing the search brings the rows back **unticked**. A destructive action must never reach a row that is off screen, and a tick must never reappear later because it survived out of sight - the badge, the request body and what the operator can see are then the same three things.
+  - **Scope**: the SPA sends only **`{ids}`** - exactly the ticked rows. The endpoint also accepts **`{scope:"all", except}`** for API clients that want the whole stored history without paging; that shape refuses an **`except`** naming no stored session and spares the **ancestors** of what it keeps (see **`docs/reference/http-api.md`**), but no button in the table reaches for it.
+  - **The refresh after a delete reads the search on screen**, not the one captured when the confirmation opened (**`loadRef`**): a debounce that lands while the dialog is up would otherwise be overwritten by the older query, leaving the field showing one search and the rows another.
+  - **Partial failure** is the normal answer when one session is mid-turn: the response lists **`deleted`** and **`failed`** separately, the failed rows stay, and the reason is reported in **`.settings-error`** (**`…-error`**) **after** the list re-reads, never before - the refresh clears the error slot.
 - Object sections render their sub-schema fields directly (the tab already names the section); custom model editors are injected via the **`SchemaForm`** **`fieldOverride`** hook, not by forking the generic renderer.
 
 ### Session identifier in URL
@@ -13966,6 +14184,49 @@ is the screen: there is no list of nodes under it, because everything the list d
 The relay serves this SPA from its own address when built with **`-tags "swarm ui"`**
 (**`external/swarm/spa_ui.go`**), so a relay is something you open in a browser rather than a
 service you reach through some other node's UI.
+
+### Sign-in screen (`httpserver.login`)
+
+Rendered by **`AuthGate`** (**`ui/auth/AuthGate.tsx`**, wrapping **`<App/>`** in **`main.tsx`**) in place of
+the entire application when **`GET /coddy/auth/me`** answers **`login_required`** without
+**`authenticated`**. Only on the local origin: a remote environment authenticates with the bearer
+token of the environment selector and is never gated here.
+
+- **The whole page, not an overlay.** **`.auth-screen`** is a full-viewport grid centred on
+  **`.auth-card`** over the plain **`--bg`** ground. There is no blurred transcript behind it,
+  because an anonymous browser has nothing to be shown.
+- **Boot.** While the one **`/coddy/auth/me`** round trip is outstanding the gate renders
+  **`.auth-boot`** — a bare **`--bg`** ground, no spinner and no application chrome. Rendering the
+  app and then replacing it with a form reads as a glitch; a spinner for 20 ms reads as a slow page.
+- **The column** (**`.auth-shell`**, **`min(380px, 100%)`**) holds two things with a **22px** gap:
+  the wordmark, then the card. The logo stands **above** the card and outside it, because it names
+  the product while the card asks for one thing.
+- **The card** (**`.auth-card`**, the column's full width) uses the glass panel tokens
+  (**`--coddy-glass-panel-bg`** / **`-border`** / **`-backdrop`** / **`-shadow`** / **`-radius`**),
+  **28px** padding and a **14px** column gap: **`h1`** title, the two fields, the error line, the
+  submit button. Nothing explains the screen in prose - a form with two fields under a title that
+  says Sign in needs no caption.
+- **The wordmark** (**`.auth-logo`**, **`min(240px, 72%)`** of the column, centred) is the
+  rectangular logo with the product name in it, not a text line:
+  **`src/assets/coddy-logo-wordmark.svg`** on the six dark themes and **`-light.svg`** on
+  **`light`** (**`LIGHT_THEMES`**). **`aspect-ratio: 188 / 56`** holds its height, so nothing below
+  it moves while the image decodes. Both files are under Vite's inline limit, so they travel inside
+  the bundle and the one screen a browser sees before it has any credential paints without a second
+  request. Its **`alt`** is a dictionary key (**`auth.signIn.logoAlt`**), because the name in the
+  image is what a screen reader must hear.
+- **Fields** are ordinary **`label`**-wrapped inputs (**`.auth-field`** / **`.auth-label`** /
+  **`.auth-input`**) with **`autocomplete="username"`** and **`"current-password"`** so a password
+  manager fills them. Focus draws the accent ring (**`--accent`** at 55% border, 25% glow), never a
+  browser default outline. The user field takes focus on mount.
+- **The error line** (**`.auth-error`**, **`role="alert"`**) replaces nothing else: the card grows by
+  one line. A refused sign-in clears the password field and leaves the user name alone.
+- **Submit** (**`.auth-submit`**) is accent-filled, disabled while either field is empty and while a
+  request is in flight, and swaps its label for the working one meanwhile.
+- **Colour comes from tokens only**, so all seven themes carry the screen, and every string is a
+  dictionary key (**`auth.signIn.*`**), so both languages do.
+- **Signing out** is the last entry of the nav rail (**`data-testid="nav-sign-out"`**), below
+  Settings, rendered only while a form is configured and this browser has passed it. Narrow rail:
+  icon plus a tooltip naming the account (**`Sign out (pasha)`**); wide rail: icon plus label.
 
 ## States
 
