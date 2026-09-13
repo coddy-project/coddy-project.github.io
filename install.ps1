@@ -73,13 +73,40 @@ try {
     Remove-Item -Recurse -Force -Path $tmp -ErrorAction SilentlyContinue
 }
 
+# Write the example config as Windows text. The file in the repository ends its lines
+# with a bare line feed, which Notepad before Windows 10 1809 shows as a single endless
+# line - the first thing an operator does with this file is open it in an editor, so it
+# arrives with CRLF endings and without a byte order mark, the shape every editor here
+# writes and every YAML tool reads.
+function Write-WindowsText([string]$Path, [string]$Text) {
+    $normalized = ($Text -replace "`r`n", "`n") -replace "`n", "`r`n"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($Path, $normalized, $utf8NoBom)
+}
+
 $config = Join-Path $CoddyHome "config.yaml"
 if (-not (Test-Path $config)) {
     $exampleUrl = "https://raw.githubusercontent.com/$Repo/$tag/config.example.yaml"
     Write-Info "fetching $exampleUrl"
-    Invoke-WebRequest -Uri $exampleUrl -OutFile $config -UseBasicParsing
+    $exampleFile = Join-Path $env:TEMP ("coddy-config-" + [guid]::NewGuid().ToString() + ".yaml")
+    try {
+        Invoke-WebRequest -Uri $exampleUrl -OutFile $exampleFile -UseBasicParsing
+        Write-WindowsText $config ([System.IO.File]::ReadAllText($exampleFile))
+    } finally {
+        Remove-Item -Force -Path $exampleFile -ErrorAction SilentlyContinue
+    }
     Write-Info "created $config from release example"
 } else {
+    # A config saved as "Unicode" rather than UTF-8 is not a file Coddy can read, and
+    # the parser cannot say so in words that help. Say it here instead.
+    try {
+        $head = [System.IO.File]::ReadAllBytes($config) | Select-Object -First 2
+        if ($head.Count -eq 2 -and (($head[0] -eq 0xFF -and $head[1] -eq 0xFE) -or ($head[0] -eq 0xFE -and $head[1] -eq 0xFF))) {
+            Write-Info "warning: $config is UTF-16 text; re-save it as UTF-8 or coddy will refuse to read it"
+        }
+    } catch {
+        # Unreadable for any other reason is not this script's business.
+    }
     Write-Info "kept existing $config"
 }
 
