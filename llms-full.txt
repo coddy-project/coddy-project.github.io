@@ -989,6 +989,12 @@ corrupting the secret. The Settings UI does this automatically for the `proxy` f
 **not** support `${VAR}` references; for a literal `$` in `api_key` (which does support `${VAR}`),
 write `$$` by hand.
 
+**A save keeps the references.** The loaded configuration holds what a reference resolved to, so the
+Settings UI works with the secret itself. When it saves, a value written as `${VAR}` in the file is
+written back as `${VAR}` as long as it still resolves to the value being saved; only a value you
+changed on the screen replaces the reference. A key kept in the environment or in `~/.coddy/.env`
+therefore never lands in `config.yaml` because of an unrelated save.
+
 Two placeholders are not environment variables:
 
 - **`${CODDY_HOME}`** - the resolved `CODDY_HOME` directory, substituted when the file is read.
@@ -6543,6 +6549,8 @@ What the gate does not cover:
 - `websearch` and `webfetch` ask nobody;
 - the console's `!!` prefix runs a command with no gate at all, by design: only a submitted editor line can reach it, never model output ([Console](../surfaces/console.md)).
 
+An HTTP request the model shapes itself (`http_request`) prompts under `ask` and `accept_edits` with the request as it would go out - the address, the headers, the body, the local files it uploads, a proxy, an unchecked certificate, the file it saves. Its "always" choices name an address or a whole origin, and they approve what that request carried along with the destination, so an approved origin never approves an upload of a file nobody saw. `tools.http_request.allowlist` names destinations that never ask. The tool refuses no address - localhost, private networks and the cloud metadata address included - so under `bypass` it reaches whatever the host can ([HTTP requests](../features/http-requests.md#permissions)).
+
 A config commit (`config_commit`) is gated harder than a write: it prompts in `ask` and `accept_edits`, because it can start MCP processes and change the policy itself; only `bypass` skips it.
 
 Surfaces without a person answering resolve prompts on their own. Print mode (`coddy -p`) allows under `bypass` and rejects otherwise. The Telegram gateway approves every prompt so the bot can work unattended (a narrowed subagent whose own mode is not `bypass` is rejected instead). A turn woken by a finished background task on `coddy serve` runs through a non-interactive sender: a gated call inside it is denied unless the server's mode is `bypass`.
@@ -6576,7 +6584,7 @@ A session that finds a held hooks file records a notice, so you learn that hooks
 - **Provider keys.** `providers[].api_key` is a literal, a `${ENV}` reference expanded when the file loads, or empty, in which case `NAME_API_KEY` (the provider name upper-cased, hyphens to underscores) is read at call time. `api_key_command` runs a credential helper through the host shell, bounded to 30 seconds, and uses its stdout when `api_key` is empty; the order is literal, then helper, then the environment variable. Keep `config.yaml` free of literal keys and reference the environment.
 - **The `.env` file.** `$CODDY_HOME/.env` is read before `config.yaml` is parsed, one `KEY=VALUE` per line (`export`, quotes and comments accepted); a variable already set in the process environment is never overridden. A literal dollar sign in a value is written as `$$`. See [Configuration](../getting-started/configuration.md).
 - **Provider logins.** `coddy providers login codex` and `coddy providers login neuraldeep` (and the sign-in buttons in the web UI) store the issued credentials under `$CODDY_HOME/providers/<name>/` - `codex-auth.json`, `neuraldeep-auth.json` - in a directory created `0700` with the file at `0600`. `coddy providers list` shows which source each request actually uses and `coddy providers logout <name>` revokes and forgets a login.
-- **Redaction.** `GET /coddy/config` never returns `httpserver.auth_token`; `coddy -t` and `--dry-run` never echo a value under a secret-shaped key (`api_key`, `auth_token`, `pairing_tokens`) and mask the Telegram token in errors; the config-commit prompt lists the staged commands with secrets redacted; the swarm proxy replaces the caller's `Authorization` header rather than forwarding it.
+- **Redaction.** `GET /coddy/config` never returns `httpserver.auth_token`; a save from the Settings UI writes a `${VAR}` reference back as a reference rather than as the secret it resolved to; `coddy -t` and `--dry-run` never echo a value under a secret-shaped key (`api_key` and any `*_api_key` such as `tools.websearch.brave_api_key`, `auth_token`, `pairing_tokens`) and mask the Telegram token in errors; the config-commit prompt lists the staged commands with secrets redacted; the swarm proxy replaces the caller's `Authorization` header rather than forwarding it.
 - **Tokens on the wire.** `--remote-token` and `CODDY_REMOTE_TOKEN` are never read from `config.yaml`, and a token about to travel over plain `http://` to a non-loopback host produces a warning. The web UI keeps remote tokens in the browser only.
 - **Transcripts on disk.** Every session bundle under `$CODDY_HOME/sessions/<id>/` holds the full conversation in `messages.json`, tool output included, and the files attached to it under `assets/` (written read-only, `0444`). Whoever can read the home directory can read every conversation; `sessions.dir` moves the store, and `/export` writes a copy into the workspace on request.
 
@@ -7763,7 +7771,7 @@ Claude Code's rules apply:
 - a value made only of letters, digits, `_`, `-`, spaces, `,` and `|` is an exact name or a list of exact names: `run_command`, `edit|write`, `Edit, Write`;
 - anything else is an unanchored regular expression (Go syntax): `^run_.*`, `mcp__filesystem__.*`. An invalid expression never matches.
 
-Tool events compare the matcher with the tool name. Coddy's own names are the ones the model sees (`run_command`, `read`, `write`, `edit`, `apply_patch`, `glob`, `grep`, `webfetch`, `websearch`, `spawn_agent`, `question`, ...). MCP tools are `server__tool` and also match the `mcp__server__tool` spelling. The names Claude Code and Codex use are accepted as aliases, so `Bash` matches `run_command`, `Edit` and `Write` match `edit`, `write` and `apply_patch`, `Read` matches `read`, `Task` and `Agent` match `spawn_agent`, `WebFetch` and `WebSearch` match `webfetch` and `websearch`. Argument names are not translated: `tool_input` carries Coddy's fields (`command` for `run_command`; `path` and `content` for `write`; `path`, `pattern` and friends for the filesystem tools), so a script ported from Claude Code that reads `tool_input.file_path` must read `tool_input.path`.
+Tool events compare the matcher with the tool name. Coddy's own names are the ones the model sees (`run_command`, `read`, `write`, `edit`, `apply_patch`, `glob`, `grep`, `webfetch`, `websearch`, `http_request`, `spawn_agent`, `question`, ...). MCP tools are `server__tool` and also match the `mcp__server__tool` spelling. The names Claude Code and Codex use are accepted as aliases, so `Bash` matches `run_command`, `Edit` and `Write` match `edit`, `write` and `apply_patch`, `Read` matches `read`, `Task` and `Agent` match `spawn_agent`, `WebFetch` and `WebSearch` match `webfetch` and `websearch`. Argument names are not translated: `tool_input` carries Coddy's fields (`command` for `run_command`; `path` and `content` for `write`; `path`, `pattern` and friends for the filesystem tools), so a script ported from Claude Code that reads `tool_input.file_path` must read `tool_input.path`.
 
 ## Events
 
@@ -8395,7 +8403,7 @@ When **every** engine is blocked the call fails rather than returning an empty l
 
 | Engine | Key needed | Notes |
 |--------|-----------|-------|
-| `brave` | no (optional) | Default and first in the merge order. Reads the public result page; with `brave_api_key` it uses the official Search API instead, which has no parser to break. |
+| `brave` | no (optional) | Default and first in the merge order. Reads the public result page; with an API key (`brave_api_key` or `BRAVE_API_KEY`) it uses the official Search API instead, which has no parser to break. |
 | `bing` | no | Default, second. Serves an unrelated result set to a client it dislikes, which the relevance gate below catches. |
 | `searxng` | no, but needs `searxng_url` | Your own instance, asked over its JSON API. The durable choice: not rate-limited against its owner, never served a decoy. |
 | `ddg` | no | Not asked by default. From a server, both its endpoints answer every query with an HTTP 202 anti-bot page, which arrives as `blocked`; where DuckDuckGo still serves you, a query it has nothing for arrives as `empty`. |
@@ -8425,10 +8433,20 @@ tools:
     snippet_chars: 320            # per-result description cap
     cache_ttl_seconds: 300        # reuse an engine answer for this long; negative = off
     searxng_url: ""               # e.g. http://localhost:8080
-    brave_api_key: ""             # official Brave Search API
+    brave_api_key: ""             # official Brave Search API; or BRAVE_API_KEY
 ```
 
 An engine name the loader does not know is a configuration error rather than a silently skipped backend, and `searxng` without `searxng_url` is refused the same way - `coddy -t` reports both with the line they are on.
+
+### The Brave Search API key
+
+The key does not have to live in `config.yaml`. When `brave_api_key` is empty, the engine reads the `BRAVE_API_KEY` environment variable, so the key can come from the shell, the container or `~/.coddy/.env`:
+
+```bash
+echo 'BRAVE_API_KEY=BSA...' >> ~/.coddy/.env
+```
+
+A key in the file wins over the variable, and `brave_api_key: ${BRAVE_API_KEY}` works as any other reference does. Neither way leaks the key: `config_get` and `coddy -t` print it as `<redacted>`, and a save from the Settings UI writes a `${BRAVE_API_KEY}` reference back as a reference and an empty field back as empty, never the key the environment supplied. The variable is read when a turn builds its tool settings; a key added to `.env` of a running `coddy serve` takes effect after a restart, since `.env` is read at startup.
 
 ### Your own SearXNG
 
@@ -8464,13 +8482,213 @@ Failures are remembered far more briefly, and the two kinds differently. A chall
 
 ## Reading a page
 
-`websearch` returns snippets, and a snippet is not an answer. `webfetch` takes one URL and returns the article as Markdown through readability extraction, refusing private networks and localhost - see [Tools](../reference/tools.md).
+`websearch` returns snippets, and a snippet is not an answer. `webfetch` takes one URL and returns the article as Markdown through readability extraction, refusing private networks and localhost, and checks every redirect against the same rules before following it - see [Tools](../reference/tools.md). It sends its request through the client of [`http_request`](http-requests.md), the tool for calling an API or anything else that is not reading a page.
 
 ## Related
 
 [Tools](../reference/tools.md) - every built-in tool and its arguments;
 [Configuration](../getting-started/configuration.md) - where `config.yaml` lives and how to check it;
-[Operating modes](modes.md) - `websearch` and `webfetch` are offered in every mode, including the read-only `ask`.
+[Operating modes](modes.md) - `websearch` and `webfetch` are offered in every mode, including the read-only `ask`;
+[HTTP requests](http-requests.md) - `http_request`, the agent's curl, and the client `webfetch` is built on.
+
+
+# Features / HTTP requests
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/http-requests.md
+
+# HTTP requests
+
+The `http_request` tool is the agent's curl. The model chooses the method, the query parameters and every header, sends a body of any kind or a workspace file, and reads the answer the way `curl -i` prints it. It is what the agent uses to call an API, to check the dev server it has just started on localhost, and to upload or download a file.
+
+`webfetch` stays the tool for reading an article: it takes one public URL and returns the main text as Markdown. The two share one HTTP client - `webfetch` is `http_request` with a narrower contract, described [below](#webfetch-on-the-same-client).
+
+Because a request the model shapes itself can change things somewhere else and can carry anything the agent has read, it goes through the permission gate: under `ask` the operator sees where the request goes and what it carries before anything is sent.
+
+## A request and its answer
+
+```json
+{
+  "method": "PATCH",
+  "url": "https://api.example.com/items/7?verbose=1",
+  "query": { "tag": ["red", "blue"] },
+  "headers": { "Authorization": "Bearer ${TOKEN}", "X-Trace": "abc-123" },
+  "json": { "name": "lamp" }
+}
+```
+
+The request goes to `https://api.example.com/items/7?verbose=1&tag=red&tag=blue` with the JSON body `{"name":"lamp"}` and `Content-Type: application/json`. The answer:
+
+```text
+HTTP/2.0 200 OK
+Content-Type: application/json
+Date: Wed, 16 Sep 2026 12:00:00 GMT
+
+{"id":7,"name":"lamp"}
+```
+
+![A finished http_request call in the web UI transcript](../assets/http-requests/http-request-answer-dark-1280.png)
+
+*The call and its answer in the transcript: the arguments, then the status line, the headers and the body.*
+
+A 4xx or 5xx status is an answer like any other, not a failed call: the model reads the status line and decides what to do. The call fails only when no answer arrived - the address did not resolve, the connection was refused, the certificate did not verify, the timeout ran out - when the body could not be saved to `output_file`, or when the arguments were refused before anything was sent.
+
+## Arguments
+
+| Argument | Meaning |
+|----------|---------|
+| `url` | Required. An absolute `http://` or `https://` URL; query parameters may be written in it. |
+| `method` | Any method token, sent upper-cased: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS` or a custom one. Default `GET`, or `POST` when a body is given. |
+| `query` | Query parameters appended to those already in `url`. A value is a string, a number, a boolean, or an array of those for a repeated name. |
+| `headers` | Request headers by name. See [Headers](#headers). |
+| `body` | Raw request body, sent as is. |
+| `body_base64` | Binary request body, base64-encoded; `Content-Type: application/octet-stream` unless set. |
+| `body_file` | A local file sent as the whole body; `Content-Type` follows its extension unless set. |
+| `json` | Any JSON value, sent compacted with `Content-Type: application/json`. A string that itself holds a JSON object or array is sent as that document. |
+| `form` | Fields sent as an `application/x-www-form-urlencoded` body; values as in `query`. |
+| `form_data` | `multipart/form-data` parts in order: each has a `name` and either a `value` or a local `file`, with optional `filename` and `content_type`. |
+| `output_file` | Save the response body to this path instead of returning it. |
+| `follow_redirects` | Follow redirects that stay on the origin. Default `false`. See [Redirects](#redirects). |
+| `proxy` | A proxy for this request, or `direct`. See [Proxy and certificates](#proxy-and-certificates). |
+| `verify_tls` | `false` accepts any server certificate, like `curl -k`. Default `true`. |
+| `timeout_seconds` | Bound on the whole exchange, reading the body included. Default 30, at most 600. |
+| `permission_rationale` | Text shown at the top of the permission prompt. |
+
+A request carries at most one payload: `body`, `body_base64`, `body_file`, `json`, `form` or `form_data`. Two of them are refused with an error naming both. Paths in `body_file`, `form_data[].file` and `output_file` are resolved against the session's working directory, and a file that does not exist fails the call before anything is sent.
+
+A multipart body is laid out before it is sent, with the files as parts of known size, so the request carries an exact `Content-Length` - servers that refuse a chunked upload accept it - and the file contents are streamed rather than read into memory.
+
+## Headers
+
+A header named in `headers` replaces whatever the tool would have sent under that name, `User-Agent`, `Content-Type` and `Host` included. An empty value removes a header the tool would otherwise send: `"User-Agent": ""` sends none, and `"Content-Type": ""` leaves a JSON body without one.
+
+Three headers are checked rather than passed through:
+
+- `Content-Length` must equal the size of the body - leave it out and it is computed;
+- `Transfer-Encoding` accepts only `chunked`, which sends the body without a length;
+- `Host` cannot be removed, only replaced.
+
+The tool sends no `Accept-Encoding` of its own. When a request asks for `gzip` or `deflate` itself, the body is decoded for reading and saved to `output_file` as it arrived.
+
+## The answer
+
+The status line comes first, then the response headers in name order, a blank line and the body. Notes about what the body did not show follow at the end in brackets.
+
+A body is shown as text when it is text: decoded from the charset its `Content-Type` declares (`windows-1251` arrives readable), or as UTF-8 when it is valid UTF-8 with no NUL bytes. Anything else is described instead of dumped:
+
+```text
+[binary body: 48213 bytes, image/png; pass output_file to save it]
+```
+
+At most 1 MiB of a body is read into the answer, with a note when it was cut, and what reaches the model is cut further by `tools.output_limits.default` - so a large or binary body belongs in `output_file`. A download is written next to its destination and renamed into place when it is complete, so a failed or oversized one (more than 1 GiB) never leaves a partial file under that name; the answer says `[body: saved 48213 bytes to /path/logo.png]`.
+
+## Redirects
+
+A redirect is not followed unless the call passes `follow_redirects: true`. The 3xx answer comes back with its `Location`, and the model decides whether to go there.
+
+With `follow_redirects: true`, a redirect is followed only while it stays on the origin of the request - the same scheme, host and port - or upgrades `http` to `https` on the same host. A redirect to another origin is held: the answer is that redirect, with a note naming the address it pointed to, and reaching it takes a new call that goes through the permission gate on its own. An approval of one service is therefore never carried to another by the service itself. A `307` or `308` sends the body again, files included.
+
+## Proxy and certificates
+
+Without `proxy`, a request uses the proxies the environment of the Coddy process names (`HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`), as curl does; a request to `localhost` or a loopback address is never proxied. `proxy` overrides that for one request:
+
+- `http://host:port`, `https://host:port`, `socks5://host:port` or `socks5h://host:port` sends the request through that proxy, and credentials in the URL (`http://user:pass@host:3128`) are used to authenticate to it; `socks5h` resolves the destination's name through the proxy;
+- `direct` ignores the environment's proxies and connects straight to the destination.
+
+`verify_tls: false` accepts any server certificate - a self-signed dev server, an internal service behind a private CA. The prompt says so in capitals.
+
+## Permissions
+
+`http_request` is gated like `run_command`: whether it asks depends on `tools.permission_mode`, on `tools.http_request.allowlist` and on what was approved earlier in the session.
+
+| Mode | What asks |
+|------|-----------|
+| `bypass` | Nothing. |
+| `accept_edits` | A request whose destination is not allowlisted or approved, or that carries something the destination's approval does not cover. |
+| `ask` | The same, and also a request whose `output_file` was not approved: saving a response is a file write. |
+
+The prompt shows the request as it would go out, not its JSON arguments:
+
+```text
+Upload the quarterly report
+
+POST https://api.example.com/upload?v=2
+Headers:
+  Authorization: Bearer abc
+  Content-Type: multipart/form-data; boundary=<generated>
+  User-Agent: coddy-agent/1.0 (+https://github.com/EvilFreelancer/coddy-agent)
+Body: multipart form, 20611 bytes
+  doc: the file /home/me/project/report.pdf (20480 bytes)
+  note = Q3
+Proxy: http://10.0.0.2:3128
+Saves the response body to /home/me/project/out/receipt.json
+
+An always answer also approves the files it uploads, the proxy and the file it saves for requests to https://api.example.com.
+```
+
+![The permission card of an http_request upload in the web UI](../assets/http-requests/http-request-permission-dark-1280.png)
+
+*The web UI card: the request as it would go out, the uploaded file, and one button per grant it can leave behind.*
+
+Arguments the tool would refuse still ask, with the reason the call will fail at the end of the prompt.
+
+### What an answer approves
+
+The dialog offers four choices:
+
+- **Allow** - this request, once;
+- **Always allow `https://api.example.com/upload`** - every later request to this address for the rest of the session, whatever its method and query (not offered when the address is the origin's root);
+- **Always allow `https://api.example.com`** - every later request to anything on this origin;
+- **Reject**.
+
+Approving a destination does not approve what a later request to it carries, because those were never shown. An "always" answer records the destination together with what this request carried, and a later request is let through only when everything it carries was recorded too:
+
+- a local file (`body_file`, a `form_data` file part) - approved for this origin; the same file sent to another origin, or another file sent here, asks again;
+- a proxy - approved for this origin; another proxy asks again;
+- an unchecked certificate (`verify_tls: false`) - approved for this origin;
+- the `output_file` path - approved as that path, the way an "Allow always" on a file write is.
+
+The grants live in the session bundle (`permission_grants.json`) and survive a restart of the session; a new session starts with none.
+
+### The allowlist
+
+`tools.http_request.allowlist` names destinations that never ask:
+
+```yaml
+tools:
+  http_request:
+    allowlist:
+      - api.github.com               # a host, any scheme and port
+      - "*.internal.example.com"     # its subdomains, not the domain itself
+      - localhost:8080               # a host and a port
+      - http://127.0.0.1:3000        # an origin
+      - https://api.example.com/v1/  # an address prefix
+```
+
+An entry with a path covers that address and everything under it: `https://api.example.com/v1` covers `/v1` and `/v1/items` but not `/v10`, and `https://api.example.com/v1/` covers only what is under `/v1/`. `"*"` allows every destination. An entry that cannot match - an unsupported scheme, credentials, a query, a path without a scheme, a wildcard anywhere but the leftmost labels - is a configuration error, reported by `coddy -t` with its index.
+
+An allowlisted destination also covers the files a request to it uploads and an unchecked certificate: the entry is the operator's own statement of trust in that service. It does not cover a proxy, which is a destination of its own and needs an entry of its own, nor `output_file` under `ask`, which follows the write policy.
+
+### Private addresses
+
+Unlike `webfetch`, `http_request` does not refuse localhost or private networks: reaching the service the agent is building is one of the reasons the tool exists. The permission gate is what stands between the model and those addresses, so under `bypass`, or with `"*"` in the allowlist, the model can reach anything the host can - the cloud metadata address `169.254.169.254` included, the same as `run_command` running `curl` could. Keep `bypass` for trusted environments, and allowlist the services an unattended run needs by name.
+
+## webfetch on the same client
+
+`webfetch` builds the same request `http_request` would for a plain `GET` of its URL and sends it through the same client, with a narrower policy:
+
+- the address is checked against the SSRF guard - no localhost, `.local` names, private, link-local or metadata addresses, no credentials in the URL - and so is every redirect before it is followed;
+- every redirect is followed, up to ten;
+- the transport asks for gzip and decodes it;
+- a non-2xx status is an error, the page is capped at 4 MiB and the answer is run through readability into Markdown.
+
+It needs no permission because none of that can be steered by the model beyond the URL.
+
+## Related
+
+[Tools](../reference/tools.md) - every built-in tool, its arguments and its permission class;
+[Security and trust](../operate/security.md#permission-modes-and-prompts) - permission modes and what each of them asks about;
+[Web search](web-search.md) - `websearch`, and `webfetch` for reading a page;
+[config.yaml reference](../reference/config.md) - `tools.http_request.allowlist` and `tools.output_limits`.
 
 
 # Features / Message queue
@@ -9523,7 +9741,7 @@ Every field is optional unless marked **required**; an empty `config.yaml` (or n
 
 Agent sessions expose a typed configuration tool family with staged, uci-like semantics:
 
-- `config_get` reads a dotted path from the active YAML file. Secret-shaped fields (including `api_key_command`), MCP environment values, and HTTP header values are returned as `<redacted>`.
+- `config_get` reads a dotted path from the active YAML file. Secret-shaped fields (including `api_key_command` and any key ending in `_api_key`, such as `tools.websearch.brave_api_key`), MCP environment values, and HTTP header values are returned as `<redacted>`.
 - `config_set` **stages** UCI-style commands (`set`, `add_list`, `del_list`, `delete`) without touching the file. Unknown schema paths and commands that would make the config invalid are rejected at staging time. Echoed command lists mask secret-shaped values as `<redacted>`; the staged store keeps the original values.
 - `config_changes` lists the staged commands that a commit would apply (secrets redacted).
 - `config_commit` applies the staged batch: validates, snapshots the previous file to `config.yaml.prev` (an empty document when the config file did not exist yet, so the first commit stays reversible), writes atomically, and hot-reloads skills, rules, built-in tools, and configured MCP servers. Because a commit can start MCP processes and change the permission policy itself, it prompts for tool permission in both `ask` and `accept_edits` modes - only `tools.permission_mode: bypass` skips the dialog - and the prompt lists the staged commands with secrets redacted. The agent is additionally instructed to ask the user to confirm saving first. If runtime reload fails, the file is restored and the staged commands are kept; if even that restore fails, the staged list stays consumed so a blind retry cannot replay it.
@@ -9702,7 +9920,9 @@ Filesystem and shell policy for built-in tools.
 | `tools.websearch.snippet_chars` | integer | 320 | Maximum characters of one result description. 0 uses the default. |
 | `tools.websearch.cache_ttl_seconds` | integer | 300 | Seconds one engine answer is reused before the engine is asked again, so a repeated search does not repeat the request. 0 uses the default; a negative value turns caching off. |
 | `tools.websearch.searxng_url` | string | "" | Base address of your own SearXNG instance, asked over its JSON API (enable the json format in its settings.yml). A self-hosted aggregator is the durable answer to a scraped engine being turned away; localhost and LAN addresses are allowed on purpose. |
-| `tools.websearch.brave_api_key` | string | "" | Brave Search API subscription token. With it the brave engine uses the official JSON API instead of reading the public result page, which has no parser to break when Brave redeploys. |
+| `tools.websearch.brave_api_key` | string | "" | Brave Search API subscription token. With it the brave engine uses the official JSON API instead of reading the public result page, which has no parser to break when Brave redeploys. Empty reads the BRAVE_API_KEY environment variable (also from ${CODDY_HOME}/.env), so the key need not be stored here. |
+| `tools.http_request` | object |  | Policy of the http_request tool, the agent's curl. Under permission_mode ask or accept_edits a request asks the operator unless its destination is allowed here or was approved in the session; bypass never asks. See https://coddy.dev/docs/features/http-requests. |
+| `tools.http_request.allowlist` | list of strings | [] | Destinations a request reaches without asking: a host (api.github.com), a subdomain wildcard (*.example.com), either with an optional :port, an origin (http://localhost:8080) or an address prefix (https://api.example.com/v1/). "*" allows every destination. An entry also covers the files a request uploads and an unchecked certificate; a proxy needs an entry of its own, and a file the response is saved to follows the write policy. |
 
 ### `subagents`
 
@@ -10162,6 +10382,7 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | `NAME_API_KEY` | `internal/config/providers.go` (`EffectiveAPIKey`) | Fallback key for the provider `name` when `api_key` and `api_key_command` yield nothing. Read when a request is built, not when the file loads. | [Configuration](../getting-started/configuration.md#full-configuration-schema) |
 | `OPENAI_API_KEY` | `internal/config/config.go` | Besides the `NAME_API_KEY` rule for a provider named `openai`: when the file configures no `providers` and no `models` at all, the loader synthesises an `openai` provider with the model `openai/gpt-5.4` from this key. | [Configuration](../getting-started/configuration.md#full-configuration-schema), [Docker](../getting-started/docker.md#docker-compose) |
 | `ANTHROPIC_API_KEY` | `internal/config/config.go` | The same bootstrap for an `anthropic` provider with `anthropic/claude-sonnet-4-6`, tried when `OPENAI_API_KEY` is empty. | [Configuration](../getting-started/configuration.md#full-configuration-schema) |
+| `BRAVE_API_KEY` | `internal/config/tools.go` (`ToolSettings`) | The Brave Search API key when `tools.websearch.brave_api_key` is empty; with a key the `brave` engine uses the official API instead of the public result page. Read when a turn builds its tool settings, so nothing has to be written into `config.yaml`. | [Web search](../features/web-search.md#the-brave-search-api-key) |
 | `TELEGRAM_BOT_TOKEN` | `internal/config/gateway.go` (`EffectiveToken`) | The bot token when `gateways.telegram.token` is empty. | [Telegram gateway](../surfaces/gateway.md#quick-start-telegram) |
 | `CODEX_HOME` | `internal/llm/codex_auth.go` | The Codex CLI state directory whose `auth.json` a `type: codex` provider falls back to when no Coddy-managed login exists. Default `~/.codex`. | [Configuration](../getting-started/configuration.md#config-file-location-and-paths) |
 | `CODDY_CODEX_BASE_URL` | `internal/llm/codex_auth.go` | Overrides the Codex backend endpoint for the whole process; `api_base` is ignored for `type: codex` on purpose, so a configuration file can never redirect an OAuth token. | [Configuration](../getting-started/configuration.md#config-file-location-and-paths) |
@@ -10169,7 +10390,7 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | `CODDY_NEURALDEEP_BASE_URL` | `internal/llm/neuraldeep_auth.go` | The API base every NeuralDeep request goes to, overriding `api_base`. Meant for stands and tests. | [Console](../surfaces/console.md#testing) |
 | `SSH_AUTH_SOCK` | `internal/tools/ssh/agent.go` | The SSH agent socket `ssh_run_command` tries before key files; unset or unreachable means key files only. | [Configuration](../getting-started/configuration.md#ssh-remote-execution) |
 | `BROWSER`, `NO_BROWSER` | `internal/platform/browser.go` | Whether `coddy providers login` may open a browser, and with what. `BROWSER` names the opener (`none` opts out; a `%` template or a `:` list is ignored and the openers on `PATH` are tried instead); a set `NO_BROWSER` opts out. On Linux `DISPLAY` or `WAYLAND_DISPLAY` must be set, and an SSH session (`SSH_CONNECTION`, `SSH_TTY` or `SSH_CLIENT` set) counts as having no browser on every platform. | [Security and trust](../operate/security.md#secrets) |
-| `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | `internal/netx/dial.go` (Go's `http.ProxyFromEnvironment`) | The proxy for the HTTP transports `internal/netx` builds when the section they serve sets no `proxy` of its own; an explicit `proxy` replaces them. | [Swarm](../operate/swarm.md#encryption-and-proxies) |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | `internal/netx/dial.go` (Go's `http.ProxyFromEnvironment`) | The proxy for the HTTP transports `internal/netx` builds when the section they serve sets no `proxy` of its own; an explicit `proxy` replaces them. `http_request` and `webfetch` honour them too, unless a call passes its own `proxy` (or `direct`). | [Swarm](../operate/swarm.md#encryption-and-proxies) |
 
 ## Remote, HTTP and swarm
 
@@ -10416,6 +10637,7 @@ The Permission column uses the classes the gate in `internal/agent/react.go` app
 - `write`: the file-write class - prompts under `ask` unless the path was granted in this session, auto-approved under `accept_edits` and `bypass`;
 - `command`: `run_command` - prompts unless the command is covered by `tools.command_allowlist` or a session grant (including the program-wide grants a prompt can store, see [Background tasks](../features/background-tasks.md#permissions)); `bypass` skips the prompt;
 - `config`: `config_commit` and `config_rollback` - prompts under `ask` and `accept_edits`, since a commit can start MCP processes and change the permission policy itself; only `bypass` skips it;
+- `http`: `http_request` - prompts under `ask` and `accept_edits` unless the destination is in `tools.http_request.allowlist` or was approved in this session and everything the request carries (local files, a proxy, an unchecked certificate, and under `ask` the file it saves) was approved with it; `bypass` skips it ([HTTP requests](../features/http-requests.md#permissions));
 - `always`: tools that set `RequiresPermission` outside those classes - the permission mode does not change them, and only a PreToolUse hook answering `allow` skips the prompt.
 
 ## Files
@@ -10455,9 +10677,12 @@ The `background_*` tools are registered only while `tools.background` is enabled
 | Tool | Purpose | Arguments (short) | Permission | Modes |
 |---|---|---|---|---|
 | `websearch` | Search several engines at once and merge the results, reporting each engine's outcome | `query`, `page`, `max_results`, `site` | none | agent, plan, ask |
-| `webfetch` | Download a public page and return its main text as Markdown; private networks and localhost are refused | `url`, `timeout_seconds`, `max_chars` | none | agent, plan, ask |
+| `webfetch` | Download a public page and return its main text as Markdown; private networks and localhost are refused, every redirect included | `url`, `timeout_seconds`, `max_chars` | none | agent, plan, ask |
+| `http_request` | Send any HTTP or HTTPS request, like curl, and return the status line, headers and body, or save the body to a file ([HTTP requests](../features/http-requests.md)) | `url`, `method`, `query`, `headers`, one of `body` / `body_base64` / `body_file` / `json` / `form` / `form_data`, `output_file`, `follow_redirects`, `proxy`, `verify_tls`, `timeout_seconds`, `permission_rationale` | http | agent |
 
 `websearch` asks the engines named in `tools.websearch.engines` (Brave then Bing by default) and reports each one's outcome next to the results, so an engine that answered a challenge page is named rather than counted as nothing found; a search where every engine was turned away fails instead of returning an empty list. Which engines exist, how the relevance gate discards an unrelated result set, and how to point it at your own SearXNG: [Web search](../features/web-search.md).
+
+`http_request` is the tool for everything else over HTTP: APIs, services on localhost, uploads and downloads. It refuses no address, which is why it is gated; `webfetch` shares its client and differs in the SSRF guard, the fixed `GET` and the Markdown conversion ([HTTP requests](../features/http-requests.md#webfetch-on-the-same-client)).
 
 ## Interaction, skills and subagents
 
@@ -10787,7 +11012,7 @@ header where the client can set one, since a query token reaches proxy access lo
 | GET | **`/coddy/config/reasoning-levels`** | Reasoning levels the **`?model=`** logical id offers when **`models[].reasoning_levels`** is not overridden, for the settings form's **Fetch reasoning levels** button. Detection is model-id based (**`gpt-5*`** and **`gpt-6*`** -> **`minimal,low,medium,high`**; OpenAI **`o`**-series, **`gpt-oss*`**, **`qwen3*`**, Claude extended-thinking -> **`low,medium,high`**). The provider type decides the Codex remap (**`minimal`** becomes **`none`**): optional **`?provider_type=`** carries the type of the provider row as it stands in the (unsaved) form and wins over the saved config, so a provider that is not saved yet, or whose type was just changed, resolves the way it will after Save; without it the provider prefix is looked up in the active config, and an unknown prefix gets the un-remapped list. The id need not exist in **`models[]`**, and a saved override is ignored - the button reports what the id offers, not what is configured. **`200`** **`{"ok":true,"model":...,"levels":[...],"detected":true}`**; a model with no reasoning support is **`{"ok":true,"levels":[],"detected":false}`**, not an error; a malformed id is **`200`** with **`{"ok":false,"error":...}`** so the form can show it inline; a missing **`model`** parameter is **`400`** with the same flat **`{"ok":false,"error":...}`** body the other **`/coddy/config`** routes use. |
 | GET | **`/coddy/config`** | Current process configuration as JSON (same logical fields as **`config.yaml`**, including secrets). Per-session path fields (**`skills.dirs`**, **`subagents.dirs`**, **`hooks.files`**, **`prompts.dir`**, **`mcp_servers[].command`** / **`args`** / **`url`** / **`env`** / **`headers`**) are returned as written in the file, including a **`${CWD}`** placeholder; **`${CODDY_HOME}`** and the process-scoped directories are returned expanded. |
 | POST | **`/coddy/config/validate`** | Body is **`ConfigJSON`**. **`200`** with **`{"ok":true}`** when valid, **`400`** with **`{"ok":false,"error":"..."}`** otherwise. |
-| PUT | **`/coddy/config`** | Body is **`ConfigJSON`**. Validates, writes **`config.yaml`** atomically, reloads in-process config for HTTP handlers and new agent turns. The file is rewritten **over its current content**: comments (including commented-out keys) and the existing key order survive the save, and a file that carries no **`# yaml-language-server: $schema=`** header gets the published one (**`https://coddy.dev/config.schema.json`**) so editors keep validating it; a header pointing somewhere else is left as it is. Changed **`mcp_servers`** are reconnected for active sessions, re-running the workspace trust gate so an unapproved project declaration is not started; a session with a turn in flight is reconnected when that turn ends, not mid-turn; ACP client-provided per-session servers remain connected. **`200`** **`{"ok":true}`**; **`400`** on validation failure; **`500`** if the file was written but reload failed (server restores **`config.yaml.bak`** over the primary path when possible). |
+| PUT | **`/coddy/config`** | Body is **`ConfigJSON`**. Validates, writes **`config.yaml`** atomically, reloads in-process config for HTTP handlers and new agent turns. The file is rewritten **over its current content**: comments (including commented-out keys), the existing key order and every **`${VAR}`** reference whose resolved value was not changed survive the save (so a key kept in the environment is not written into the file), and a file that carries no **`# yaml-language-server: $schema=`** header gets the published one (**`https://coddy.dev/config.schema.json`**) so editors keep validating it; a header pointing somewhere else is left as it is. Changed **`mcp_servers`** are reconnected for active sessions, re-running the workspace trust gate so an unapproved project declaration is not started; a session with a turn in flight is reconnected when that turn ends, not mid-turn; ACP client-provided per-session servers remain connected. **`200`** **`{"ok":true}`**; **`400`** on validation failure; **`500`** if the file was written but reload failed (server restores **`config.yaml.bak`** over the primary path when possible). |
 | GET | **`/coddy/providers/{name}/models`** | Fetches the provider model list. OpenAI, Anthropic, and NeuralDeep use their documented model endpoints (NeuralDeep at the deployment its **`api_base`** selects); Codex uses the fixed official Codex backend with the saved ChatGPT OAuth token. Credentials and **`proxy`** apply server-side. **`200`** **`{"ok":true,"models":[{"id","name"}]}`** on success; **`200`** **`{"ok":false,"error":"...","models":[]}`** when upstream fails; **`404`** for an unknown saved provider. |
 | GET | **`/coddy/providers/{name}/codex-auth`** | Non-secret OAuth status for a Codex provider: **`connected`**, optional **`source`** (`coddy` or `codex_cli`), and optional **`account_id`**. Accepts a valid unsaved provider name so Settings can sign in before saving the row. Never returns tokens. |
 | POST | **`/coddy/providers/{name}/codex-auth/device`** | Starts ChatGPT device authorization and returns **`login_id`**, official **`verification_url`**, **`user_code`**, and **`status:"pending"`**. The saved provider's **`proxy`** applies. The server completes the exchange in the background and stores tokens at **`$CODDY_HOME/providers/<name>/codex-auth.json`** with restrictive file permissions. |
@@ -10814,7 +11039,7 @@ header where the client can set one, since a query token reaches proxy access lo
 | GET | **`/coddy/sessions/{id}/assets/{name}/thumbnail`** | Bounded PNG preview persisted for an uploaded session image. The URL is supplied by **`messages[].files[].preview_url`**. Original asset bytes are not served by this route. |
 | GET | **`/coddy/events`** | **`text/event-stream`** of activity that is not tied to one session: **`event: turn_started`** and **`event: turn_ended`** with **`{object, sessionId, phase, at}`**, for every turn in this server process whichever surface started it; **`event: provider_usage`** with **`{object:"coddy.provider_usage", sessionId, usage}`** whenever the manager built a fresh account-usage snapshot outside a request (a finished turn, a deferred refresh; **`sessionId`** names the turn that caused it, the snapshot itself is account-wide); **`event: message_queue`** with **`{object:"coddy.message_queue", sessionId, messages, version}`** on every change of a session's message queue, whoever made it and whichever client is watching - a session is shared, so what one browser queues onto the running turn appears in the others and in a console attached over **`--remote`** (the same change also travels down that turn's own stream, so ordinary deliveries keep the higher **`version`**; browser restart recovery follows the [snapshot rules](#stop-and-queue-control-snapshots)); and **`event: config_reloaded`** with **`{object:"coddy.config_reloaded", at}`** after every swap of the live configuration - a **`PUT /coddy/config`** save, the agent's **`config_commit`** or **`config_rollback`**, a skill install. The reload event carries nothing but the fact: what moved is already behind **`GET /v1/models`** and **`GET /coddy/slash-commands`**, so a client re-reads whichever of those it renders. It is published only once the new configuration is live, so that re-read cannot catch the outgoing one. On connect it replays one **`turn_started`** per turn already running, then **`event: ready`**; an idle stream sends SSE comment keepalives. Lets a client attach to a turn it did not start, and keep a model picker honest, without polling **`GET /coddy/sessions`**. |
 | GET | **`/coddy/sessions/{id}/composer-stream`** | **`text/event-stream`** relay of the live **agent**/**plan**/**ask** turn (same SSE as **`POST /v1/responses`** with **`stream: true`**). Replays bytes captured so far, then live tail until the turn ends. With **no turn running**, answers at once with **`event: error`** and **`error.code`** **`no_active_stream`** so the client can fall back to **`GET .../messages`**. While a turn runs but has not attached its relay yet, emits the SSE comment **`: composer stream pending`** (about 30s max), then the same error event if none appears. Replayed frames carry an **`id:`** sequence; a reconnecting client sends it back as **`Last-Event-ID`** (or **`?last_event_id=`**) to resume after that frame. If those frames were already trimmed from the buffer, the stream leads with **`event: desync`** (**`{object, lastEventId, resumedAt}`**) so the client reloads **`GET .../messages`** rather than rendering a gap. The bytes of the primary **`POST /v1/responses`** stream are unchanged. |
-| POST | **`/coddy/sessions/{id}/permission`** | Resolves a tool permission prompt while a streamed ReAct turn is blocked. Body **`{"toolCallId","optionId"}`** where **`toolCallId`** matches **`event: permission`** on the composer SSE (**`toolCall.toolCallId`**). **`optionId`** is **`allow`**, **`allow_always`** (remembers this exact command), **`allow_always_program`** (offered for **run_command** only, and only when the command is a single plain invocation; remembers the program, or the program plus its subcommand for multiplexers like **git**), or **`reject`** (or send **`outcome`** **`allow`** / **`cancelled`**). **`204`** when accepted. **`404`** when nothing is waiting. **`409`** for a child session spawned by **`spawn_agent`**: its prompts are relayed to the parent chat, so it never holds one of its own and nothing may resume a turn on it. Optional **`X-Coddy-Session-ID`** must match **`{id}`** when set. |
+| POST | **`/coddy/sessions/{id}/permission`** | Resolves a tool permission prompt while a streamed ReAct turn is blocked. Body **`{"toolCallId","optionId"}`** where **`toolCallId`** matches **`event: permission`** on the composer SSE (**`toolCall.toolCallId`**). **`optionId`** is **`allow`**, **`allow_always`** (remembers this exact command), **`allow_always_program`** (offered for **run_command** only, and only when the command is a single plain invocation; remembers the program, or the program plus its subcommand for multiplexers like **git**), **`allow_always_url`** / **`allow_always_origin`** (offered for **http_request** instead of **`allow_always`**; remember the request's address or its whole origin together with the files, proxy, unchecked certificate and output path it carried), or **`reject`** (or send **`outcome`** **`allow`** / **`cancelled`**). **`204`** when accepted. **`404`** when nothing is waiting. **`409`** for a child session spawned by **`spawn_agent`**: its prompts are relayed to the parent chat, so it never holds one of its own and nothing may resume a turn on it. Optional **`X-Coddy-Session-ID`** must match **`{id}`** when set. |
 | POST | **`/coddy/sessions/{id}/question`** | Answers the interactive **`question`** tool while a streamed ReAct turn is blocked. Body **`{"requestId","answers"}`** where **`answers`** is an array of string arrays (one row per question, entries are option labels or custom text). **`requestId`** must match **`event: question`** on the composer SSE. **`204`** when accepted. **`404`** when nothing is waiting. Optional **`X-Coddy-Session-ID`** must match **`{id}`** when set. |
 | PATCH | **`/coddy/sessions/{id}`** | **`{"title"}`** pins **`session.json.titlePinned`**. **`{"tags":[...]}`** replaces the session's labels **wholesale** rather than merging into them, so an empty array clears them and omitting the field leaves them alone; values are normalized (lower case, inner whitespace as a hyphen, duplicates dropped, at most 8 of at most 32 characters) and the answer carries what was stored. **`{"archived":true}`** puts the session in the archive and stamps **`archivedAt`**; **`false`** takes it back out and drops the stamp. **`{"pinned":true}`** holds the session at the top of every listing and stamps **`pinnedAt`**; **`false`** lets it back into the order. Setting either to the value it already has changes nothing and writes nothing, so the stamp keeps saying when it actually happened. **`{"markActivityRead":true}`** advances **`readActivitySeq`** to the current **`activitySeq`** (clears unread dot in composer UI) **without** changing **`session.json.updatedAt`**, so the session does not jump in the history list. At least one field is required. |
 | POST | **`/coddy/sessions/{id}/workspace`** | Switches the session workspace. **`{"path":dir}`** moves the session **cwd** to an existing folder (skills, project rules, and slash commands are re-derived; new cwd persists in **`session.json`**). **`{"branch":b}`** checks the branch out in place; if the branch is already checked out in another worktree (including the main one) the session cwd jumps there instead. **`{"branch":b,"worktree":true}`** ensures a dedicated worktree (created under **`<repo>/.coddy/worktrees/<branch>/`**, below a folder that carries its own **`.gitignore`**, so the worktrees never show up as untracked in the main checkout) and moves the session cwd into it. Session is created on demand (draft flow). The workspace is chosen **once per session**: as soon as the conversation has messages, any switch yields **`409`**. Responds with the fresh workspace context (same shape as **`GET /coddy/workspace/context`** plus **`id`**). **`400`** for a missing folder or branch switch outside git; **`409`** on git checkout/worktree failures or a locked workspace. **`409`** also for a subagent child session, whose transcript is read-only and whose workspace belongs to its parent's turn. |
@@ -13005,7 +13230,7 @@ The **tool types and registry mechanics** live in **`internal/tooling`** (`Tool`
 composition root (`NewRegistry` wires everything) and exposes the same APIs via type aliases so
 call sites such as **`internal/agent`** keep importing **`tools`** only.
 
-- **`internal/tools/web`** - **`websearch`** (several engines asked in parallel behind the `searchFn` seam, each reporting `ok` / `empty` / `blocked` / `error` so a backend that was turned away is named rather than counted as nothing found; merge deduplicated by normalised URL, relevance gate against decoy result sets) and **`webfetch`** (fetch public `http(s)` pages, readability + Markdown; SSRF guards)
+- **`internal/tools/web`** - **`http_request`** (`http_request.go`: the curl-like tool, `ParseHTTPRequest` is the one validated value the tool sends and the permission gate in **`internal/permission/http.go`** decides on; `client.go`: the shared client - transport per route (proxy, certificate check), redirect policy, per-hop guard), **`websearch`** (several engines asked in parallel behind the `searchFn` seam, each reporting `ok` / `empty` / `blocked` / `error` so a backend that was turned away is named rather than counted as nothing found; merge deduplicated by normalised URL, relevance gate against decoy result sets) and **`webfetch`** (fetch public `http(s)` pages, readability + Markdown; SSRF guards)
 
 Built-in implementations are grouped in subfolders under **`internal/tools/`**:
 
@@ -13645,7 +13870,7 @@ Mode-specific visibility is **not** configured on the `Tool` struct. Instead, `i
 defines a `ToolSet` allowlist:
 
 - **`agent`** mode uses an **empty** `ToolSet`, which means **no filtering** - every tool in the registry is advertised, and MCP tools are appended.
-- **`plan`** mode filters **registry** builtins to a **fixed allowlist** (`read_file`, `list_dir`, `search_files`, `search_web`, `extract_page_content`, `run_command`). Other builtins (writes, todo tools, scheduler, memory, etc.) stay registered for execution consistency but are **hidden** from the LLM. **MCP** tool definitions from connected servers are **still appended** after that filter, same wiring as agent mode.
+- **`plan`** mode filters **registry** builtins to a **fixed allowlist** (`read_file`, `list_dir`, `search_files`, `websearch`, `webfetch`, `run_command`). Other builtins (writes, todo tools, scheduler, memory, etc.) stay registered for execution consistency but are **hidden** from the LLM. **MCP** tool definitions from connected servers are **still appended** after that filter, same wiring as agent mode.
 
 When you add a new built-in that should be plan-safe, append its name to `planToolNames` in `internal/agent/toolsets.go` and extend tests in `internal/agent/toolsets_test.go`.
 
@@ -13659,7 +13884,7 @@ Use `RequiresPermission: true` for:
 - Tools that execute external processes or shell commands
 - Tools that delete or irreversibly modify data outside clearly read-only flows
 
-Network tools may still use `RequiresPermission: false` when the implementation enforces its own guardrails (for example SSRF checks and response size limits on `extract_page_content`).
+Network tools may still use `RequiresPermission: false` when the implementation enforces its own guardrails (for example SSRF checks and response size limits on `webfetch`). A network tool whose request the model shapes freely, like `http_request`, sets `RequiresPermission: true` and gets its own branch in the gate (`permission.HTTPRequestAllowedWithSession`), which decides on the destination and on what the request carries.
 
 Use `RequiresPermission: false` for:
 - Read-only operations
@@ -14138,7 +14363,7 @@ Embedded **`agent.md`** describes agent behavior (quality, shells, todos, git wo
 Representative builtins (excluding MCP-namespaced tools):
 
 - `read_file`, `write_file`, `write_text_file`, `list_dir`, `search_files`
-- `search_web`, `extract_page_content`
+- `websearch`, `webfetch`, `http_request`
 - `run_command`, `apply_diff`
 - Filesystem mutations: **`mkdir`**, **`rm`**, **`rmdir`**, **`touch`**, **`mv`** (subset may require permission paths)
 - Session checklist: **`coddy_todo_plan_read`**, **`coddy_todo_plan_replace`**, **`coddy_todo_plan_archive`**, **`coddy_todo_item_add`**, **`coddy_todo_item_remove`**, **`coddy_todo_item_update`**, **`coddy_todo_item_move`**
@@ -14151,7 +14376,7 @@ Embedded **`plan.md`** keeps the default **registry** surface read-oriented (no 
 Representative builtins exposed to the LLM (registry allowlist):
 
 - `read_file`, `list_dir`, `search_files`
-- `search_web`, `extract_page_content`
+- `websearch`, `webfetch`
 - `run_command`
 
 Plus MCP tools (**`serverName__toolName`**). When ready to ship implementation work, prompts instruct switching the client to **`agent`** mode.
