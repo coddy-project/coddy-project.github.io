@@ -33,7 +33,7 @@ Every page below is the Markdown kept in the repository, read straight from the 
 - [coddy serve and the daemon](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/operate/serve.md): One process for every enabled subsystem, --daemon with status, stop and restart, how a configuration change reaches a running process. (docs/operate/serve.md)
 - [Remote mode](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/operate/remote.md): Driving a remote coddy serve from the console, ACP or the web UI with --remote, tokens, CORS and the environment chip. (docs/operate/remote.md)
 - [Swarm](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/operate/swarm.md): Relays and nodes, mounts, the aggregated session list, rings and routes, the reverse tunnel. (docs/operate/swarm.md)
-- [Scheduler](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/operate/scheduler.md): Cron job files, UTC firing rules, run sessions, the scheduler tools and REST. (docs/operate/scheduler.md)
+- [Scheduler](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/operate/scheduler.md): Cron job files, UTC firing rules, runs as background agent tasks under a job session, the runs panel, the scheduler tools and REST. (docs/operate/scheduler.md)
 - [Security and trust](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/operate/security.md): What the agent may execute and how to bound it, permission modes, project trust for MCP servers, hooks and subagents, tokens and CORS, what is not sandboxed. (docs/operate/security.md)
 
 ## Features
