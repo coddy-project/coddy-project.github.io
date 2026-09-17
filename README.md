@@ -20,7 +20,7 @@ Custom domain: **https://coddy.dev** (`CNAME` → `coddy.dev`).
 | `config.schema.json` | JSON Schema for `~/.coddy/config.yaml`, served at https://coddy.dev/config.schema.json for editors |
 | `robots.txt` | Crawl policy: everything allowed, AI crawlers listed explicitly, sitemap pointer |
 | `sitemap.xml` | Sitemap with image entries for `/` and `/compare/` |
-| `404.html` | Branded not-found page served by GitHub Pages |
+| `404.html` | Branded not-found page served by GitHub Pages. An HTML comment at the top tells coding agents, which fetch `/docs/<path>` without JavaScript and get this page, where the Markdown is: `llms.txt`, `llms-full.txt` and the raw file on `main` |
 | `CNAME` | GitHub Pages custom domain |
 
 Install scripts are maintained **only in this repo**, not in coddy-agent.
