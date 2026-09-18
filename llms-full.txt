@@ -550,7 +550,7 @@ providers:
     api_key: "${OPENAI_API_KEY}"
     # api_base: ""                    # optional override for OpenAI-compatible base URL
     # api_key_command: "my-cli print-token"  # host shell: pwsh/powershell/cmd on Windows; bash/sh elsewhere
-    # proxy: "http://127.0.0.1:8888"   # optional per-provider HTTP(S) or SOCKS5/SOCKS5h proxy
+    # proxy: none                     # route of this row: inherit (default), none, or a proxy URL
     # timeout_ms: 300000               # optional bound on each LLM request incl. streamed read (0 = no client timeout)
 
   - name: "anthropic"
@@ -895,7 +895,8 @@ gateways:
     # Bot token from @BotFather. Never hard-code; always use an env reference.
     token: "${TELEGRAM_BOT_TOKEN}"
 
-    # Optional outbound proxy for Telegram API requests (http, https, socks5, socks5h).
+    # How the bot reaches the Bot API: inherit (the default) follows HTTPS_PROXY,
+    # none connects directly, or a proxy URL (http, https, socks5, socks5h).
     # proxy: "socks5h://127.0.0.1:1080"
 
     # Telegram user IDs with admin privileges.
@@ -935,7 +936,7 @@ gateways:
     #     access: "admins"
 ```
 
-`token` is validated at startup when `enable: true`. `proxy` is optional (empty = direct connection). The other fields apply defaults if omitted: `default_access: "all"`, `default_isolation: "individual"`.
+`token` is validated at startup when `enable: true`. `proxy` is optional and reads like a provider's: empty or `inherit` follows the environment's proxy (`HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`), `none` connects directly, a URL goes through that proxy ([Provider proxy](#provider-proxy)). The other fields apply defaults if omitted: `default_access: "all"`, `default_isolation: "individual"`.
 
 See **[docs/surfaces/gateway.md](../surfaces/gateway.md)** for the full configuration guide, running instructions, and how to add adapters for other messengers.
 
@@ -1017,18 +1018,43 @@ Provider **`type`** values match **`internal/llm.NewProvider`**: **`openai`**, *
 
 YAML split:
 
-- **`providers`**: **`name`** (unique), **`type`**, **`api_key`**, optional **`api_base`** (base URL override for the provider SDK: an OpenAI-compatible endpoint or Ollama host without **`/v1`** for **`type: openai`**, or an Anthropic-compatible gateway/relay for **`type: anthropic`**; for **`type: neuraldeep`** it selects the deployment, **`https://api.neuraldeep.ru/v1`** or **`https://api.neuraldeep.tech/v1`**, and any other value falls back to the first), optional **`proxy`** (per-provider outbound **`http://`**, **`https://`**, **`socks5://`**, or **`socks5h://`** URL; not a global default), optional **`usage_limits_panel`** (boolean, default **`true`**; **`false`** hides the account usage panel of this row on every surface and stops the usage reads behind it, meaningful for **`type: neuraldeep`** today).
+- **`providers`**: **`name`** (unique), **`type`**, **`api_key`**, optional **`api_base`** (base URL override for the provider SDK: an OpenAI-compatible endpoint or Ollama host without **`/v1`** for **`type: openai`**, or an Anthropic-compatible gateway/relay for **`type: anthropic`**; for **`type: neuraldeep`** it selects the deployment, **`https://api.neuraldeep.ru/v1`** or **`https://api.neuraldeep.tech/v1`**, and any other value falls back to the first), optional **`proxy`** (the route of every request of the row: **`inherit`** by default, **`none`** for a direct connection, or an **`http://`**, **`https://`**, **`socks5://`** or **`socks5h://`** proxy URL; see [Provider proxy](#provider-proxy)), optional **`usage_limits_panel`** (boolean, default **`true`**; **`false`** hides the account usage panel of this row on every surface and stops the usage reads behind it, meaningful for **`type: neuraldeep`** today).
 - **`models`**: **`model`** (string **`provider_name/api_model_id`**, session selector and **`agent.model`** value; first segment names **`providers[].name`**, remainder is the API model id), **`max_tokens`**, **`temperature`**, optional **`max_context_tokens`** (the model's context window: what the web UI context ring, the console context percentage and automatic compaction measure against; 0 reads it from the provider's model listing when the provider reports one, else 128000 - see [Context compaction](../features/compaction.md#the-context-window)), optional **`multimodal`** (boolean, default **`false`**; when **`true`** signals that the model accepts image/file inputs — the UI exposes a file attachment button in the composer for this model only), optional **`reasoning_levels`** (string list; overrides the reasoning levels offered for this model — when omitted they are auto-detected from the API model id: **`gpt-5*`** and **`gpt-6*`** → **`minimal,low,medium,high`**, OpenAI **`o`**-series, **`gpt-oss*`**, **`qwen3*`** (qwen3, qwen3.5, qwen3.6, qwen3.8, ...) and Claude extended-thinking models → **`low,medium,high`**; an explicit empty list hides the composer reasoning selector), optional **`reasoning_default`** (the level pre-selected for new chats; must be one of the resolved levels). Reasoning levels map to OpenAI **`reasoning_effort`** and Anthropic extended-thinking **`budget_tokens`**; for **`qwen3*`** models on OpenAI-compatible providers the request also carries **`chat_template_kwargs`** **`{"enable_thinking": true}`** so the chat-template thinking switch stays on. The Codex backend rejects **`max_output_tokens`**, so **`max_tokens`** is not sent for **`codex`** providers; it also rejects the **`minimal`** tier its **`gpt-5*`** and **`gpt-6*`** ids would normally imply, so codex-backed models offer **`none`** in its place (in the composer selector and in **`GET /v1/models`**). Reasoning turns request summaries (**`summary: auto`**) so thinking streams, and encrypted reasoning (**`include: reasoning.encrypted_content`**) so the chain of thought is replayed across tool calls the way the Codex CLI does it. See [config-reference.md](../reference/config.md) for token lifetime and the startup credential report.
+
+### Provider proxy
+
+**`providers[].proxy`** picks the route of every request a provider row makes: its completions, its model list, its account usage and its sign-in.
+
+- No value, or **`inherit`** (the default): the proxy the environment of the Coddy process names. **`HTTPS_PROXY`** covers **`https://`** addresses, **`HTTP_PROXY`** covers **`http://`** ones, **`NO_PROXY`** lists the hosts that go direct, and a loopback address is never proxied. **`ALL_PROXY`** is not read. Coddy has always behaved this way: an empty value never meant a direct connection, whatever older descriptions of the field said.
+- **`none`**: a direct connection. The row ignores those variables, so a provider that is reachable directly keeps working when the machine's proxy is broken, stale or slow - a corporate proxy that inspects TLS, a local forwarder, a variable left over from another setup.
+- A proxy URL (**`http://`**, **`https://`**, **`socks5://`**, **`socks5h://`**): every request of the row goes through that proxy, **`NO_PROXY`** hosts and loopback addresses included. With either SOCKS scheme the proxy resolves host names. Credentials go in the URL (**`http://user:pass@host:3128`**), and a **`$`** in them survives a settings save (see [Environment variable references](#environment-variable-references)).
+
+```yaml
+providers:
+  - name: corp          # needs the machine's proxy: nothing to set
+    type: openai
+    api_key: "${CORP_API_KEY}"
+  - name: local         # reachable directly, HTTPS_PROXY or not
+    type: openai
+    api_base: http://192.168.1.20:8000/v1
+    proxy: none
+  - name: remote        # a proxy of its own, whatever the environment says
+    type: anthropic
+    api_key: "${ANTHROPIC_API_KEY}"
+    proxy: socks5h://127.0.0.1:1080
+```
+
+The setting belongs to its row alone, so rows with different routes live side by side in one file. The Telegram gateway's **`gateways.telegram.proxy`** takes the same values for the bot's own requests ([Telegram gateway](../surfaces/gateway.md#proxy)). It covers the requests the Coddy process sends; the page a sign-in opens in your browser and whatever an **`api_key_command`** does are outside it. A changed value applies to the requests the row starts after it; a sign-in already waiting for the browser finishes on the route it started with. The environment variables are read once per process, so a change to them needs a restart. The keywords are accepted in any case and written back in lower case; anything else that is not a proxy URL is a configuration error that names the accepted values (the **`direct`** of an **`http_request`** call is not one of them). In the web UI the row shows the **Ignore system proxy** switch, which writes **`none`**, above the **Proxy URL** field ([Web UI](../surfaces/web-ui.md#settings-provider-proxy)). When a provider cannot be reached, **`coddy --dry-run`** names the route the request took in its hint - the row's proxy, a direct connection, or the proxy the environment named - with the credentials left out.
 
 ### `openai`
 Standard OpenAI API. Supports the current reasoning families (`gpt-6-astra`, `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`) as well as the older `o`-series and `gpt-4` ids.
 
-Provider needs **`api_key`**. Optional **`proxy`** applies only to this provider row (HTTP, HTTPS, SOCKS5, or SOCKS5h). The **`models[].model`** string must start with this provider **`name`** and a slash, then the OpenAI API model id, for example **`openai/gpt-5.6-terra`**. Also set **`max_tokens`**, and **`temperature`** for the non-reasoning ids.
+Provider needs **`api_key`**. Optional **`proxy`** routes this row's requests ([Provider proxy](#provider-proxy)). The **`models[].model`** string must start with this provider **`name`** and a slash, then the OpenAI API model id, for example **`openai/gpt-5.6-terra`**. Also set **`max_tokens`**, and **`temperature`** for the non-reasoning ids.
 
 ### `anthropic`
 Anthropic API. Supports: `claude-3-5-sonnet-*`, `claude-3-5-haiku-*`, `claude-3-opus-*`
 
-Provider needs **`api_key`**. Optional **`api_base`** overrides the Anthropic API base URL (default **`https://api.anthropic.com`**), for example an Anthropic-compatible gateway or relay. Optional **`proxy`** applies only to this provider row. Use **`models[].model`** like **`anthropic/claude-3-5-sonnet-20241022`**, plus **`max_tokens`**, **`temperature`**.
+Provider needs **`api_key`**. Optional **`api_base`** overrides the Anthropic API base URL (default **`https://api.anthropic.com`**), for example an Anthropic-compatible gateway or relay. Optional **`proxy`** routes this row's requests ([Provider proxy](#provider-proxy)). Use **`models[].model`** like **`anthropic/claude-3-5-sonnet-20241022`**, plus **`max_tokens`**, **`temperature`**.
 
 ### `neuraldeep`
 NeuralDeep API via its OpenAI-compatible endpoint.
@@ -1037,7 +1063,7 @@ Credentials come from either a hub sign-in or a plain key. **`coddy providers lo
 
 While a `neuraldeep` model is active, the console footer, the remote console and the HTTP API show the account's usage (the hub's read-only **`GET /v1/limits`**: session and week windows as percent used with reset times, the wallet in rubles, a hit limit with its reset time), refreshed at session start and after every turn; see **`docs/surfaces/console.md`** (Footer, `/usage`) and **`docs/reference/http-api.md`** (**`GET /coddy/providers/{name}/usage`**). The row's own credential is used, and no dollar figure is ever shown. The panel is on by default; **`usage_limits_panel: false`** on the row (the **Usage limits panel** switch in Settings → LLM Providers) hides it on every surface and stops the **`GET /v1/limits`** reads for that row, for a shared screen or an account that is not yours to watch.
 
-The same API is served from two deployments: **`https://api.neuraldeep.ru/v1`** for Russia and **`https://api.neuraldeep.tech/v1`** for everywhere else. **`api_base`** selects one - leave it empty for the first, and any value that is not one of the two falls back to it (a startup warning says so). The choice travels with the credential: sign-in goes to **`hub.neuraldeep.ru`** or **`hub.neuraldeep.tech`** to match, so pick the endpoint before signing in (**`coddy providers login neuraldeep --api-base https://api.neuraldeep.tech/v1`**, or the endpoint dropdown in Settings). A login with **`--api-base`** also moves an existing provider row to that endpoint (unless **`--no-config`**), so the row and the key agree; in Settings the sign-in follows the dropdown as picked in the form, before Save. A key minted by one hub is not honored by the other; Coddy warns at startup when the stored login and the selected endpoint disagree, and the Settings row shows the same warning live. **`CODDY_NEURALDEEP_BASE_URL`** and **`CODDY_NEURALDEEP_HUB_URL`** still redirect the whole process for stands and tests, and they win over the config. Optional **`proxy`** applies only to this provider row. Use **`models[].model`** like **`neuraldeep/qwen3.6-35b-a3b`**, plus **`max_tokens`**, **`temperature`**.
+The same API is served from two deployments: **`https://api.neuraldeep.ru/v1`** for Russia and **`https://api.neuraldeep.tech/v1`** for everywhere else. **`api_base`** selects one - leave it empty for the first, and any value that is not one of the two falls back to it (a startup warning says so). The choice travels with the credential: sign-in goes to **`hub.neuraldeep.ru`** or **`hub.neuraldeep.tech`** to match, so pick the endpoint before signing in (**`coddy providers login neuraldeep --api-base https://api.neuraldeep.tech/v1`**, or the endpoint dropdown in Settings). A login with **`--api-base`** also moves an existing provider row to that endpoint (unless **`--no-config`**), so the row and the key agree; in Settings the sign-in follows the dropdown as picked in the form, before Save. A key minted by one hub is not honored by the other; Coddy warns at startup when the stored login and the selected endpoint disagree, and the Settings row shows the same warning live. **`CODDY_NEURALDEEP_BASE_URL`** and **`CODDY_NEURALDEEP_HUB_URL`** still redirect the whole process for stands and tests, and they win over the config. Optional **`proxy`** routes this row's requests, the hub sign-in and the usage reads included ([Provider proxy](#provider-proxy)). Use **`models[].model`** like **`neuraldeep/qwen3.6-35b-a3b`**, plus **`max_tokens`**, **`temperature`**.
 
 ### Local OpenAI-compatible servers (Ollama, llama.cpp, LM Studio)
 Use **`type: openai`** and set **`api_base`** to an OpenAI-compatible base URL that already includes **`/v1`**, for example **`http://localhost:11434/v1`** for Ollama.
@@ -1823,6 +1849,16 @@ providers:
     type: openai
     api_base: https://llm.example.com/v1
     proxy: socks5h://127.0.0.1:1080
+```
+
+The opposite case is as common: the machine names a proxy in `HTTPS_PROXY` - a corporate one, a local forwarder, a variable left over from another setup - and that proxy stalls or breaks the handshake while the provider itself is reachable directly. Every row follows that variable unless it says otherwise, so set `proxy: none` on the row that should go direct; the other rows keep the proxy. `coddy --dry-run` names the proxy the environment chose when a provider cannot be reached. More in [Provider proxy](configuration.md#provider-proxy).
+
+```yaml
+providers:
+  - name: local
+    type: openai
+    api_base: http://192.168.1.20:8000/v1
+    proxy: none
 ```
 
 Field reference: [`agent`](../reference/config.md#agent), [`providers`](../reference/config.md#providers).
@@ -4054,6 +4090,18 @@ https://github.com/user-attachments/assets/55e9e66f-8a8d-47be-af75-596b8b00fafa
 - Connected state comes from **`GET /coddy/providers/{name}/neuraldeep-auth`** (masked key only), read for the endpoint currently picked (**`?api_base=`**). When the stored login was issued by the other deployment's hub (**`hub`** differs from **`endpoint_hub`**), a note under the status says requests with it are rejected and asks to sign in again for this endpoint; the note is suppressed while an explicit key shadows the login. A login already in progress keeps polling if the endpoint is changed meanwhile (the key comes from the hub the flow started with), and the status read afterwards flags the mismatch. **Sign Out** best-effort revokes the key on the hub, then deletes the local credential through **`DELETE`**.
 - The key never enters the settings document or browser; it is stored by the server under **`$CODDY_HOME/providers/<name>/neuraldeep-auth.json`**. Tier models are added under **Logical models** (the model picker fetches the provider catalog using this login); the CLI flow (**`coddy providers login neuraldeep`**) appends them to the config automatically.
 
+## Settings: provider proxy
+
+![A provider row set to connect directly, its proxy URL field disabled](../assets/settings-provider-proxy-dark-1280.png)
+
+*A provider row set to connect directly, its proxy URL field disabled*
+
+- Every row in **Settings → LLM Providers**, codex included, carries an **Ignore system proxy** switch above the **Proxy URL** field (**`ProxySettingField`**). Both edit **`providers[].proxy`**, the route of every request of the row: its completions, its model list, its account usage and its sign-in ([Provider proxy](../getting-started/configuration.md#provider-proxy)). The Telegram bot's **`gateways.telegram.proxy`** reads the same way and has the same pair in **Settings → System**, under the gateways block ([Telegram gateway](gateway.md#proxy)).
+- The switch writes **`none`**: the row connects directly and ignores **`HTTPS_PROXY`**, **`HTTP_PROXY`** and **`NO_PROXY`** of the Coddy process. While it is on, the URL field is disabled and reads **Direct connection**.
+- With the switch off, a URL in the field sends every request of the row through that proxy, and an empty field (or a stored **`inherit`**) reads **Follows the system proxy**, the default route.
+- Turning the switch off brings back what the row held before it went on, for as long as the form is open. The document keeps one value, so after **Save** a row set to **`none`** no longer remembers the URL it replaced.
+- The value travels through **`GET`** / **`PUT /coddy/config`** as written. A value that is neither a keyword nor a proxy URL is refused on **Save**, and the error names the accepted ones.
+
 ## Settings: boolean switch fields
 
 - Every on/off option in the settings forms renders through the shared **`SwitchField`** (**`external/ui/src/ui/settings/SwitchField.tsx`**): the **`Switch`** control, its label, and the optional description on one two-column grid (**`.settings-switch-field`**). This covers the schema-driven booleans of **`SchemaForm`** (for example **Logical models → Multimodal** and **Stream responses**, **Tools and permissions → Background tasks → Enabled**, **System** gateway flags) and the **Skills → Skill auto-discovery** row.
@@ -5350,8 +5398,10 @@ gateways:
     # logs a warning and skips the bot instead of failing config validation.
     token: "${TELEGRAM_BOT_TOKEN}"
 
-    # Optional outbound proxy for Telegram API requests.
-    # Supported schemes: http, https, socks5, socks5h.
+    # How the bot reaches the Bot API (see "Proxy" below). Left out, or inherit,
+    # it follows HTTPS_PROXY, HTTP_PROXY and NO_PROXY of the Coddy process;
+    # none connects directly; a URL (http, https, socks5, socks5h) goes through it.
+    # proxy: none
     # proxy: "socks5h://127.0.0.1:1080"
     # proxy: "http://proxy.example.com:3128"
 
@@ -5387,15 +5437,20 @@ gateways:
 
 ### Proxy
 
-Set `proxy` to route outbound Telegram API requests through an HTTP or SOCKS5 proxy:
+`proxy` decides how the bot reaches the Bot API, and it reads like a provider's `proxy` ([Provider proxy](../getting-started/configuration.md#provider-proxy)):
+
+- no value, or `inherit` (the default): the proxy the environment of the Coddy process names - `HTTPS_PROXY` for `https://api.telegram.org`, `NO_PROXY` for the hosts that go direct, never for a loopback address; `ALL_PROXY` is not read. An empty field never meant a direct connection: on a machine with `HTTPS_PROXY` set, the bot goes through that proxy;
+- `none`: a direct connection, those variables ignored for the bot;
+- a proxy URL: every Bot API request goes through it.
 
 ```yaml
 gateways:
   telegram:
-    proxy: "socks5h://127.0.0.1:1080"  # or "http://proxy.example.com:3128"
+    proxy: none                       # the machine's proxy cannot reach Telegram
+    # proxy: "socks5h://127.0.0.1:1080"  # or "http://proxy.example.com:3128"
 ```
 
-Supported schemes: `http`, `https`, `socks5`, `socks5h`. `socks5h` resolves hostnames on the proxy side. Leave the field empty (the default) for a direct connection.
+Supported schemes: `http`, `https`, `socks5`, `socks5h`; with either SOCKS scheme the proxy resolves host names. In the web UI the field is the **Ignore system proxy** switch, which writes `none`, above the **Proxy URL** input (**Settings → System**, gateways block). `coddy --dry-run` asks `getMe` the way the bot will, through the same route.
 
 ### Rich Messages
 
@@ -10219,7 +10274,7 @@ API credentials and transport selection for upstream LLM vendors. When api_key i
 | `providers[].api_base` | string |  | Optional base URL override. For type "openai" include /v1 (e.g. http://localhost:11434/v1); for type "anthropic" an Anthropic-compatible gateway (default https://api.anthropic.com). For type "neuraldeep" it selects the deployment: https://api.neuraldeep.ru/v1 (Russia, the default) or https://api.neuraldeep.tech/v1 (the international mirror); any other value falls back to the default. Ignored for type "codex", which always uses a fixed official endpoint. |
 | `providers[].api_key` | string |  | Provider secret. A literal key, a "${ENV}" reference expanded at load time, or empty to read NAME_API_KEY at LLM call time. Resolution order: api_key -> api_key_command stdout -> NAME_API_KEY. |
 | `providers[].api_key_command` | string |  | Optional credential-helper command. When api_key is empty it runs via the detected host shell (pwsh, powershell, or cmd on Windows; bash or sh elsewhere) and the trimmed stdout is used as the key. On failure resolution falls back to NAME_API_KEY. |
-| `providers[].proxy` | string |  | Optional per-provider outbound proxy URL: http://, https://, socks5://, or socks5h:// (socks5h resolves hostnames via the proxy). |
+| `providers[].proxy` | string | inherit | inherit (the default, the same as leaving the key out), none, or a proxy URL: http://, https://, socks5:// or socks5h://. inherit follows the proxy the environment of the Coddy process names - HTTPS_PROXY, HTTP_PROXY and NO_PROXY, never for a loopback address; ALL_PROXY is not read. none connects directly and ignores those variables. A proxy URL sends every request of this row through that proxy, NO_PROXY and loopback included; with SOCKS the proxy resolves host names. The setting covers every request of the provider: its completions, its model list, its account usage and its sign-in. |
 | `providers[].timeout_ms` | integer | 0 | Optional bound on each LLM HTTP request to this provider, including the streamed body read. 0 (the default) sets no client timeout, so slow prompt processing on large contexts is never cut short. |
 | `providers[].usage_limits_panel` | boolean or null | true | Show this provider's account usage panel (the console footer line and /usage, the usage section and banner in the web UI) and read the provider's usage endpoint for it (GET /v1/limits for type neuraldeep). Omit or true keeps the panel on; false hides it and stops those reads for this row. Only providers whose type has a usage source are affected. |
 
@@ -10551,7 +10606,7 @@ Messenger bot adapters (used only by binaries built with -tags gateway or -tags 
 | `gateways.telegram` | object |  | Telegram bot adapter. |
 | `gateways.telegram.enable` | boolean | false | Poll Telegram in this coddy serve process. |
 | `gateways.telegram.token` | string | "" | Bot token from @BotFather. Leave empty to read the TELEGRAM_BOT_TOKEN environment variable (e.g. via ~/.coddy/.env). |
-| `gateways.telegram.proxy` | string | "" | Optional outbound proxy for Telegram API requests: http, https, socks5, or socks5h URL. |
+| `gateways.telegram.proxy` | string | inherit | inherit (the default, the same as leaving the key out), none, or a proxy URL: http://, https://, socks5:// or socks5h://, read like providers[].proxy. inherit follows the proxy the environment of the Coddy process names - HTTPS_PROXY, HTTP_PROXY and NO_PROXY, never for a loopback address; ALL_PROXY is not read. none connects the bot directly and ignores those variables. A proxy URL sends every Bot API request through that proxy; with SOCKS the proxy resolves host names. |
 | `gateways.telegram.rich_messages` | boolean | false | Use Bot API 10.1 Rich Messages (native Markdown, streamed thinking placeholder, collapsible tool list). Falls back to legacy formatting when unsupported. |
 | `gateways.telegram.admins` | list of integers |  | Telegram user IDs with elevated rights; admins always pass access checks. |
 | `gateways.telegram.default_access` | string | all | Fallback access level for chats without an override: "all", "admins", or "group:<name>". |
@@ -10835,7 +10890,7 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | `CODDY_NEURALDEEP_BASE_URL` | `internal/llm/neuraldeep_auth.go` | The API base every NeuralDeep request goes to, overriding `api_base`. Meant for stands and tests. | [Console](../surfaces/console.md#testing) |
 | `SSH_AUTH_SOCK` | `internal/tools/ssh/agent.go` | The SSH agent socket `ssh_run_command` tries before key files; unset or unreachable means key files only. | [Configuration](../getting-started/configuration.md#ssh-remote-execution) |
 | `BROWSER`, `NO_BROWSER` | `internal/platform/browser.go` | Whether `coddy providers login` may open a browser, and with what. `BROWSER` names the opener (`none` opts out; a `%` template or a `:` list is ignored and the openers on `PATH` are tried instead); a set `NO_BROWSER` opts out. On Linux `DISPLAY` or `WAYLAND_DISPLAY` must be set, and an SSH session (`SSH_CONNECTION`, `SSH_TTY` or `SSH_CLIENT` set) counts as having no browser on every platform. | [Security and trust](../operate/security.md#secrets) |
-| `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | `internal/netx/dial.go` (Go's `http.ProxyFromEnvironment`) | The proxy for the HTTP transports `internal/netx` builds when the section they serve sets no `proxy` of its own; an explicit `proxy` replaces them. `http_request` and `webfetch` honour them too, unless a call passes its own `proxy` (or `direct`). | [Swarm](../operate/swarm.md#encryption-and-proxies) |
+| `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | `internal/netx/dial.go` (Go's `http.ProxyFromEnvironment`) | The proxy for the HTTP transports `internal/netx` builds when the section they serve sets no `proxy` of its own; an explicit `proxy` replaces them. `http_request` and `webfetch` honour them too, unless a call passes its own `proxy` (or `direct`), and so do every request of an LLM provider row and the Telegram bot, unless `providers[].proxy` or `gateways.telegram.proxy` is `none` or a proxy URL. `ALL_PROXY` is not read. | [Swarm](../operate/swarm.md#encryption-and-proxies), [Provider proxy](../getting-started/configuration.md#provider-proxy), [Telegram gateway](../surfaces/gateway.md#proxy) |
 
 ## Remote, HTTP and swarm
 
@@ -13660,7 +13715,7 @@ Every error a provider returns is prefixed with the **`providers[].name`** it ca
 
 The resilient wrapper (**`resilient.go`**) repeats a call up to **`agent.llm_retry_max`** times when **`isRetryableLLMError`** says the failure belongs to the attempt, not to the request: HTTP **`429`**, **`408`**, **`500`**, **`502`**, **`503`** and **`504`**; a transport failure with no status while nothing reached the caller (an unexpected EOF, a connection reset, an HTTP/2 stream the peer reset - `stream error: stream ID N; INTERNAL_ERROR; received from peer`, as net/http prints it, with no `http2:` prefix - a **`GOAWAY`**, a connection closed because its liveness ping went unanswered, or a stream the idle guard cut before any delta); and a request that never left the client - a TLS handshake that timed out or a dial that did not complete (**`isDialFailure`**: a timeout, no route, a temporary DNS failure). The dial check runs ahead of the **`context.DeadlineExceeded`** gate, because a dial timeout matches that sentinel just like the caller's own timer; the caller's timer is ruled out earlier by the **`ctx.Err()`** check in **`callWithRetry`**. A cancellation, an unknown host and any failure after deltas were emitted stay final.
 
-The transports every provider's HTTP client is built on live in **`transport.go`**, one per proxy setting and shared across the providers built for every turn, so a request reuses the previous turn's TLS session instead of opening one of its own. They differ from **`http.DefaultTransport`** in two ways. HTTP/2 liveness: a connection that carried no frame for 30 s is asked for a PING, and one that does not answer within 15 s is closed, so a tunnel or a proxy path that died without a FIN or a RST surfaces as `http2: client connection lost` and is retried, instead of a request that waits forever - a proxy in the path (`HTTPS_PROXY`, **`providers[].proxy`**) answers TCP keepalives itself, and only an end-to-end frame proves the far side is there. And the stall guard: with **`agent.llm_stream_idle_timeout_ms`** set (five minutes by default), a `text/event-stream` body that sends nothing for that long after its first bytes is cut with an error **`IsStreamStalled`** recognises. Each provider's stream keeps the text and reasoning already delivered next to that error, exactly as it does for a truncation, and the ReAct loop persists them before ending the turn with the stall named; the wrapper retries the request only while nothing reached the caller. The wait for the first byte is the first-token guard's, and a blocking (**`stream: false`**) answer, which arrives in one piece, is bounded by **`providers[].timeout_ms`** alone.
+The transports every provider's HTTP client is built on live in **`transport.go`**, one per proxy setting (an empty **`providers[].proxy`** and **`inherit`** share the one that asks the environment's **`HTTPS_PROXY`**, **`none`** has one with no proxy function at all, every proxy URL one of its own) and shared across the providers built for every turn, so a request reuses the previous turn's TLS session instead of opening one of its own. The requests a row makes besides its completions - the model list, the account usage, a sign-in - take the same transport through **`HTTPClientForProviderProxy`**, so the route of a row is decided in one place. They differ from **`http.DefaultTransport`** in two ways. HTTP/2 liveness: a connection that carried no frame for 30 s is asked for a PING, and one that does not answer within 15 s is closed, so a tunnel or a proxy path that died without a FIN or a RST surfaces as `http2: client connection lost` and is retried, instead of a request that waits forever - a proxy in the path (`HTTPS_PROXY`, **`providers[].proxy`**) answers TCP keepalives itself, and only an end-to-end frame proves the far side is there. And the stall guard: with **`agent.llm_stream_idle_timeout_ms`** set (five minutes by default), a `text/event-stream` body that sends nothing for that long after its first bytes is cut with an error **`IsStreamStalled`** recognises. Each provider's stream keeps the text and reasoning already delivered next to that error, exactly as it does for a truncation, and the ReAct loop persists them before ending the turn with the stall named; the wrapper retries the request only while nothing reached the caller. The wait for the first byte is the first-token guard's, and a blocking (**`stream: false`**) answer, which arrives in one piece, is bounded by **`providers[].timeout_ms`** alone.
 
 Supported backends (see **`docs/getting-started/configuration.md`** for shapes):
 - OpenAI and OpenAI-compatible HTTP APIs (**`type: openai`**)
@@ -15067,6 +15122,7 @@ The **Settings** drawer (**`#/settings`**, **`Settings.tsx`**) is **tabbed**, no
 - **Layout**: on **`min-width: 1200px`** the drawer is wider (**`min(960px, …)`**) with a vertical section rail on the left (**`.settings-nav`**) and the content panel on the right (**`.settings-tabs-layout`** is `display:flex; row`). On **`max-width: 1199px`** (same breakpoint as the rest of the shell, via **`isMobileShell`** / **`shellBreakpoint.ts`**) the nav is a **2-wide tile grid** master–detail (**`SettingsTileGrid`**, **`.settings-tile-grid`**): each tile (**`data-testid="settings-tile-<id>"`**) shows the section **title** on top and a short 3–5 word **description** below (**`SECTION_DESCRIPTIONS`** in **`settingsSections.ts`**) styled after the Scheduler job rows. The description clamps to two lines with an ellipsis (**`-webkit-line-clamp: 2`**) and the full text shows in a native **`title`** tooltip on hover. Tapping a tile opens that section with a **← Back to sections** control (**`.settings-mobile-back`**); the desktop rail (**`SettingsNav`**) is unchanged. On that shell the drawer has **one inline inset**, **14px**, set by the head and the lead pane: the tile grid, the section content (**`.settings-scroll`**) and the reload / save footer all ride it (**`padding-inline: 14px`** inside the **`max-width: 1199px`** block), so every band of the panel starts and ends on the same edge. The wide layout keeps the content panel's own **8px**, because there its left edge is the seam against the section rail rather than the drawer's edge.
 - **List sections** (**LLM Providers**, **Logical Models**) are **master–detail** (**`SettingsArraySection`**): a list of named buttons (labelled by **`name`** / **`model`**) with **Add**/**Remove**; **Add** or selecting a row hides the list and shows the item form, with **← Back to list**.
 - **Codex provider authentication**: when a provider row has **`type: codex`**, **`api_base`**, **`api_key`**, and **`api_key_command`** controls are replaced by **Sign In with ChatGPT**. The device-flow card shows the one-time code, a link to the official verification page, waiting/completed/error state, and **Sign Out** for Coddy-managed credentials. The token is server-side only.
+- **Proxy settings** (**`ProxySettingField`**, rendered through **`SchemaForm`**’s **`fieldOverride`** hook on path **`proxy`** for every provider type, codex included, and on **`telegram.proxy`** in the System tab's gateways block): an **Ignore system proxy** **`SwitchField`** (**`data-testid="proxy-setting-direct"`**) above the **Proxy URL** input (**`data-testid="proxy-setting-url"`**), both direct children of the form so they keep its spacing. The switch description names whose requests go direct (the provider's, or the bot's). The switch owns the **`none`** value; with it on the input is disabled (the muted look **`.settings-input:disabled`** shares with read-only inputs), empty, and its placeholder reads **Direct connection**. With it off the input holds the proxy URL, and an empty one (no value, or a stored **`inherit`**, any case) reads **Follows the system proxy**. Turning the switch off restores the last value the row held that was not **`none`** (typed, pasted or reloaded); that memory lives in the field for as long as the item form is open - the form mounts afresh for every row - because the document keeps one value, so a saved **`none`** no longer knows the URL it replaced.
 - **Logical Models** model field (**`ModelField`**) fetches the chosen provider's models from **`GET /coddy/providers/{name}/models`** for a pick-list, always with a manual-entry fallback. **ReAct Agent** and **Long-term Memory** default-model fields (**`ModelPicker`**) pick from configured logical models or accept manual entry.
 - **Logical Models** reasoning-levels field (**`ReasoningLevelsField`**, rendered through **`SchemaForm`**’s **`fieldOverride`** hook on path **`reasoning_levels`**) owns the three states that key can be in and names the current one in a status line (**`data-testid="reasoning-levels-status"`**): **key absent** = levels auto-detected from the model id, **`[]`** = the composer reasoning selector is hidden for this model, **non-empty** = exactly these levels. An action row above the list carries **Fetch reasoning levels** (**`data-testid="reasoning-levels-fetch"`**, **`GET /coddy/config/reasoning-levels?model=&provider_type=`** for the id currently in the form and the type of the provider row it points at in the unsaved document, so it works before either entry is saved) and, whenever the key is present, **Use auto-detected** (**`data-testid="reasoning-levels-auto"`**) which drops the key again. A fetch that detects nothing leaves the field untouched rather than writing **`[]`**, because that would hide the selector instead of restoring detection. The status line always describes the list on screen first (override / hidden) and only falls back to fetch feedback (nothing detected / error) while the key is absent; retyping the model id or editing the list by hand clears that feedback and abandons the request in flight, so an answer that lands after the id changed, after a manual edit, or after the row was removed is dropped; an answer that does land goes through the newest **`onChange`** the form handed the field, never the one captured when the request started, so sibling fields edited meanwhile keep their values.
 - **Skills** tab (**`SkillsSection`**) combines the schema-driven **`skills.dirs`** editor, a **config-backed remote-sources editor**, and the installed-skills list. Remote sources are rendered by **`SchemaForm`**'s **`fieldOverride`** hook (path **`sources`**) as **`SourcesEditor`**: each row is a source input with a per-marketplace **Sync** icon (**`POST /coddy/skills/sync?source=`**) and a trash **Remove**; the footer has **Add** (left) and **Sync all** (right, **`POST /coddy/skills/sync`**). Editing the rows mutates **`skills.sources`** in the config form (persisted on **Save**, since **`SkillsJSON`** round-trips **`sources`**). Each installed-skill row shows its **version** (**`.skills-list-item-version`**) and a **`remote`** badge when synced; an **iOS-style enable switch** (**`.skill-switch`**, theme-tinted via **`var(--accent)`** when on) toggles via **`/coddy/skills/{name}/enable|disable`**; a **Delete** icon (**`IconTrash`**) calls **`DELETE /coddy/skills/{name}`** and is **disabled for bundled read-only skills** (row **`readonly`** flag). When a skill is behind, a **Download-update** icon (**`IconDownload`**, tooltip naming the target version) appears and calls **`POST /coddy/skills/{name}/update`**.
