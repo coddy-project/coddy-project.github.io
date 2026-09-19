@@ -3512,6 +3512,7 @@ Top to bottom:
   blocks (collapse with `ctrl+t`); tool calls as background-tinted boxes
   (pending → success green tint / error red tint) with a bold title naming
   what the call acts on (`read <path>`, `$ command`, `load_skill <skill>`,
+  `Searching the docs <query>`, `Reading the docs <page>`,
   `spawn_agent <subagent> · <task> · background · timeout 300s`, where each
   part after the subagent appears only when the call passed it), preview
   capped at 10 lines, and `... (ctrl+o to expand)` reading the full result
@@ -3553,7 +3554,8 @@ Top to bottom:
   fragment of a name finds a file anywhere in the tree; the index is rebuilt when a
   mention starts, so a file written since the console started is offered and a
   deleted one is gone; a query starting with `/`, `~`, `./` or `../` browses that
-  folder, anywhere on disk; `@session:`, `@rule:` and `@agent:` list those kinds.
+  folder, anywhere on disk; `@session:`, `@rule:`, `@agent:` and `@coddy:` (the
+  pages of the built-in documentation) list those kinds.
   A cut list says so on its scroll line, `(3/50 of 1204, type to narrow)`. A folder
   or a scheme row keeps the list open; a file ends the mention with a space, quoted
   when its path holds one (a quoted folder closes its quote ahead of the cursor, so
@@ -3607,7 +3609,7 @@ throttle with immediate renders after keystrokes.
 ## Commands and keys
 
 Slash commands: client-side `/model`, `/reasoning [level]`, `/mode`, `/resume`,
-`/new`, `/theme`, `/hotkeys`, `/queue`, `/usage`, `/tasks`, `/quit`; server-driven `/compact`, `/export`,
+`/new`, `/theme`, `/hotkeys`, `/queue`, `/usage`, `/tasks`, `/docs`, `/quit`; server-driven `/compact`, `/export`,
 `/plugin`, and every loaded skill (from the ACP available-commands catalog).
 Enter on a slash suggestion applies and submits in one stroke. `/export [md|html|json|jsonl]
 [path]` writes the transcript into the workspace (`docs/features/session-export.md`);
@@ -3650,6 +3652,18 @@ footer keeps saying how many tasks still run.
 
 A task the agent started with `notify_on_finish` wakes it in this console
 when it ends ([Background tasks](../features/background-tasks.md#waking-the-agent-when-a-task-finishes)).
+
+**F1** opens Coddy's own documentation in the place of the editor, read out of
+the binary ([Built-in documentation](../features/built-in-docs.md#the-console-help)):
+typing searches the sections, **enter** opens one at its section, **tab** moves
+between sections, **n** and **p** turn the pages, **escape** goes back.
+`/docs [words or page]` opens the same screen where the terminal keeps F1 for
+itself (GNOME Terminal does), on a search or straight on a page:
+`/docs features/mentions#completion`.
+
+![The console help on F1: the sections a search found](../assets/cli-tui/19-docs-search.png)
+
+*F1, then `telegram proxy`: the sections found, the selected one with its address and snippet*
 The woken turn runs like a typed one - the status line, the queue, a gated tool
 asking in the permission modal - and shows nothing where the operator's message
 would stand: the agent's answer follows the previous turn, as the work carrying
@@ -3730,6 +3744,7 @@ offers the same tools; under `--remote` the server owns the reload.
 | ctrl+c | clear editor; twice within 2 s exits |
 | ctrl+d | exit when the editor is empty |
 | ctrl+l | model selector |
+| F1 | the built-in documentation: search, read, turn pages (`/docs` too) |
 | ctrl+p / ctrl+shift+p | cycle configured models |
 | shift+tab | cycle and persist the session reasoning level (models with `reasoning_levels`) |
 | ctrl+o | expand header hints + last tool output + last `!!` block |
@@ -4659,7 +4674,7 @@ Verification use cases
 ## Composer **`@`** mentions
 
 - **`textarea#composer`** keeps plain **`input`** including every literal **`@`** mention, and **`POST /v1/responses`** sends that text as typed: the server resolves the mentions when the message is sent (**`internal/session/mentions.go`**, the grammar in **`internal/mention`**), the same resolver the console, ACP editors and the Telegram bot use. The composer no longer derives **`attachments`** from the draft; **`extractAtFileAttachments`** (**`external/ui/src/ui/skills/draftAt.ts`**) only feeds the recent picks. What a mention attaches and its limits: [Mentions](../features/mentions.md).
-- The **`@`** menu asks **`GET /coddy/mentions`** (**`q`** = the text after **`@`**, **`limit=50`**; the first query after the picker opens adds **`refresh=1`**, so a file written a moment ago is offered). Rows are **`MentionRow`**s (**`external/ui/src/ui/skills/mentionRows.ts`**): **`kind`** (**`file`**, **`directory`**, **`session`**, **`rule`**, **`agent`**, **`plan`**, **`scheme`**), **`insert`** (the text that replaces **`@`** plus the query), **`label`**, **`detail`** and **`continue`**. Each row leads with a kind label (**`.mention-kind`**, the meta kinds on the accent); a **`scheme`** row is **`@session:`**, **`@rule:`** or **`@agent:`** and narrows the search to that kind.
+- The **`@`** menu asks **`GET /coddy/mentions`** (**`q`** = the text after **`@`**, **`limit=50`**; the first query after the picker opens adds **`refresh=1`**, so a file written a moment ago is offered). Rows are **`MentionRow`**s (**`external/ui/src/ui/skills/mentionRows.ts`**): **`kind`** (**`file`**, **`directory`**, **`session`**, **`rule`**, **`agent`**, **`plan`**, **`doc`**, **`scheme`**), **`insert`** (the text that replaces **`@`** plus the query), **`label`**, **`detail`** and **`continue`**. Each row leads with a kind label (**`.mention-kind`**, the meta kinds on the accent); a **`scheme`** row is **`@session:`**, **`@rule:`**, **`@agent:`** or **`@coddy:`** and narrows the search to that kind.
 - Choosing a row replaces **`@`** plus the query with **`insert`**. A **`continue`** row (a folder, a scheme hint) adds no space and keeps the picker open on its new query - **`@src/`** lists what **`src/`** holds; any other row ends the mention with a space, quoted (**`@"my notes.md"`**) when the path holds one. A quoted folder (**`@"my notes/`**) closes its quote ahead of the caret, so the draft names the folder even if no file follows, and the next quoted pick takes that quote over (**`applyMentionRow`** in **`mentionRows.ts`**). A second answer for the same draft - the server's rows after the recent picks, a retry while the index builds - keeps the row the arrows moved to. **`Composer`** defers two **`updatePickerMenus`** ticks after a finished pick so the dropdown does not immediately reopen on the trailing space.
 - **ArrowDown** / **ArrowUp** move the highlight (**`is-active`**, **`aria-selected`**, scrolled into view); **Enter** and **Tab** take the highlighted row. The picker works while a turn runs, so a queued follow-up can mention a file too.
 - A query starting with **`/`**, **`~`**, **`./`** or **`../`** browses that folder on the server, anywhere on disk; a scheme-less query ranks the session's workspace (file name first, then path segments, then letters in order) and merges in the rules, subagents and plans whose names match. When the server matched more than the list holds, **`.mention-more`** (**`data-testid="mention-more"`**) says **`50 of 1204, type to narrow`** on the title row, which stays on screen however far the list scrolls; while the first index of the workspace is still being built the picker asks again every 400 ms, up to five times.
@@ -5129,11 +5144,83 @@ Guide: `docs/operate/swarm.md`. Visual contract: `DESIGN.md` (**Swarm screen**).
   browser cannot dial. Matching sessions appear as rows under the map only while
   there is a query; a row opens that session on its node. Nodes that did not
   answer are listed as warnings above the map rather than dropped.
+- On a phone (below 1200 px) the screen opens under the top bar and above the
+  dimmed backdrop, so taps reach the map, the search and the nodes; tapping the
+  top bar's own entries still leaves it.
 - Built with `-tags "swarm ui"` the relay serves this SPA at its own address;
   without the `ui` tag its root explains how to rebuild.
 - The environment selector in the map header opens **downward**, because on a
   relay the chip sits at the top of the window rather than in the composer at
   the foot.
+
+## Documentation screen
+
+![The documentation reader at 1280 px](../assets/built-in-docs/reader-page-dark-1280.png)
+
+*The documentation reader: contents, the page, the sections of the page*
+
+Guide: `docs/features/built-in-docs.md`. Visual contract: `DESIGN.md` (**Documentation screen**).
+
+- **Docs** in the rail (above Settings), **F1** anywhere in the app, or an address
+  **`#/docs/<page>#<section>`** opens the reader (**`ui/docs/DocsView.tsx`**) in the
+  same glass dock the swarm screen uses. The rail entry reopens the page the
+  reader was left on; **`#/docs`** alone settles on the first page of the
+  contents with **`replaceState`**, so Back does not return to an empty reader.
+  **F1** again or the **×** control closes it and returns to where it was opened
+  from (a chat, the swarm screen, the scheduler); a click on the backdrop closes it too.
+- **`/docs [words or page]`** in the composer is the console's command, run in the
+  browser (**`ui/docs/docsCommand.ts`**, **`Composer`** **`onDocsCommand`**): the
+  draft is cleared and nothing is sent, while a turn runs as well. Alone it
+  reopens the book; an argument with a **`/`**, **`#`** or scheme, or the exact title
+  of the page **`GET /coddy/docs/page`** resolves it to, opens that page at its
+  section; any other words open the reader with the search typed in and its hits
+  open (**`searchSeed`**). The Commands group of the slash menu lists **`/docs`**
+  beside the server's commands.
+- The data comes from **`GET /coddy/docs`** (contents), **`GET /coddy/docs/page`**
+  (one page with its headings and neighbours) and **`GET /coddy/docs/search`**
+  (**`ui/docs/api.ts`**), through the environment shim like every other route, so
+  a remote environment shows the documentation of the binary it talks to.
+- Every page, section, hit and neighbour is a real **`href`**: following one adds
+  a history entry (Back and Forward move between pages read), a middle click opens
+  a new tab, and the **`#`** after a section heading is that section's address. A
+  **`coddy:<page>#<section>`** link in any rendered Markdown - a page, or an answer
+  of the agent - becomes **`#/docs/<page>#<section>`** (**`docsHrefFromCoddyLink`**
+  in **`scheduler/hashRoute.ts`**, used by **`markdown/Markdown.tsx`**). A malformed
+  escape in a pasted address is kept as typed rather than taking the router down.
+- Headings get the anchors the server computed, paired by level and text
+  (**`assignHeadingIds`** in **`ui/docs/docsReader.ts`**), then the reader scrolls to
+  the section the address names. **On this page** follows the section being read as
+  the page scrolls; below 1280 px it is left out, below 1200 px the contents fold
+  into a **Contents** button above the page.
+- The header sits on the columns of the page: the title over the contents, the
+  search box over the text, **Ask the agent** and the close control over the
+  outline. The header does not scroll: the page scrolls in the body under it
+  (**`.docs-body`**), so its scrollbar starts below the search box. The reader
+  grows no wider than its three columns (1350 px) and stays centred, so the
+  outline keeps to the text on a wide window.
+- The search box (**`/`** focuses it; the reader opens with the keyboard on the
+  page, so the arrow and page keys scroll it) searches as it is typed, 120 ms after
+  the last key, and drops the hits under itself while the contents stay: page ›
+  section, and the snippet with the matched words marked. It is a combobox: Up and
+  Down move the selection (**`aria-activedescendant`**), Enter opens the selected
+  hit and folds the list away, Escape clears.
+- A click on an image of the page opens it over everything (**`ui/docs/ImageLightbox.tsx`**,
+  rendered into the body): fitted first, **`+`** / **`-`** / the buttons zoom from
+  100% to 300%, a click on the image toggles fitted and 200%, **`0`** fits again,
+  a zoomed image scrolls, Escape or the close control closes it. A video of a page
+  (a Markdown image whose file is **`.mp4`**, **`.webm`** or **`.mov`**, which is
+  what the server makes of a GitHub attachment line) plays in a **`<video>`**
+  fetched from GitHub at the release.
+- **`@coddy:<page>#<section>`** is a link to the reader in a sent message
+  (**`UserMessage.tsx`**) and in an answer (**`markdown/remarkDocMentions.ts`**),
+  read with the grammar of mentions (**`ui/docs/docMentions.ts`**); code stays code.
+- **Ask the agent** starts a new chat (**`askAboutDocs`** in
+  **`App.tsx`**) whose draft mentions the page, or the section being read; with
+  text selected on the page it quotes the selection and mentions the section the
+  selection sits in (**`askDraftFor`**, **`sectionAnchorAt`**). The button keeps
+  the selection by not taking focus on mouse down, and is disabled while the next
+  page loads; the page on screen stays, dimmed, until it arrives. On a relay, where
+  there is no chat, the button is not shown.
 
 ## Swagger
 
@@ -7087,7 +7174,7 @@ A config commit (`config_commit`) is gated harder than a write: it prompts in `a
 
 Surfaces without a person answering resolve prompts on their own. Print mode (`coddy -p`) allows under `bypass` and rejects otherwise. The Telegram gateway approves the chat agent's own prompts so the bot can work unattended; a narrowed subagent whose own mode is not `bypass` is asked about in the chat with **Allow** / **Reject** buttons instead, and only the person whose session asked can answer. A turn woken by a finished background task asks where somebody can answer: the console's modal, the editor under `coddy acp`, and on `coddy serve` the Telegram chat bound to the session (with the chat's own rules) or else the web UI and a console following the turn, where the prompt waits, persisted, until one of them answers; only a `coddy serve` with no surface to show the session denies a gated call inside it, unless its mode is `bypass`. A detached subagent that asks after the turn that spawned it has ended is held, not auto-answered: its prompt waits in the conversation it belongs to - the parent chat in the web UI, the console's modal (also over `--remote`), the Telegram chat of the session - until somebody answers or the run times out, and where nothing can show it (`coddy acp`, print mode, a scheduled run) it is refused with a reason the child reports.
 
-Modes bound the tool set before permissions apply: `plan` writes text and markdown only, and `ask` gets a read-only allowlist (`read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `question`, `load_skill`) that is enforced when a call executes, so a call replayed from history is refused rather than run. See [Operating modes](../features/modes.md). A subagent definition can only narrow the parent's `permission_mode`, `tools` and `disallowed_tools`, and a child's prompts are relayed to the parent's client with a `[subagent <name>]` prefix ([Subagents](../features/subagents.md)).
+Modes bound the tool set before permissions apply: `plan` writes text and markdown only, and `ask` gets a read-only allowlist (`read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `question`, `load_skill`, `coddy_docs_search`, `coddy_docs_read`) that is enforced when a call executes, so a call replayed from history is refused rather than run. See [Operating modes](../features/modes.md). A subagent definition can only narrow the parent's `permission_mode`, `tools` and `disallowed_tools`, and a child's prompts are relayed to the parent's client with a `[subagent <name>]` prefix ([Subagents](../features/subagents.md)).
 
 ## Workspace trust for project-local files
 
@@ -7186,13 +7273,14 @@ Made for design documents, specs and the investigation that precedes a change. T
 - `question`, and the read-only `config_get` and `config_changes` (staging and committing a configuration change stay in agent mode);
 - `plan_write`, `plan_list` and `plan_read` for the plan document;
 - `load_skill`, and `spawn_agent`, whose child stays in plan mode;
+- `coddy_docs_search` and `coddy_docs_read` for Coddy's own documentation ([Built-in documentation](built-in-docs.md));
 - the tools of connected MCP servers.
 
 No built-in file writes and no todo tools: once the plan is ready, implementation happens in agent mode.
 
 ### `ask`
 
-Made for questions about the codebase, review, diagnosis and web research. The model is offered `read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `question` and `load_skill`, and nothing else: no shell, no plan, todo or config tools, no `spawn_agent`, no MCP tools. The same list is enforced again when a call runs, which is what separates ask from plan (see [Ask mode at execution time](#ask-mode-at-execution-time)).
+Made for questions about the codebase, review, diagnosis and web research. The model is offered `read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `question`, `load_skill`, `coddy_docs_search` and `coddy_docs_read`, and nothing else: no shell, no plan, todo or config tools, no `spawn_agent`, no MCP tools. The same list is enforced again when a call runs, which is what separates ask from plan (see [Ask mode at execution time](#ask-mode-at-execution-time)).
 
 ### What they share
 
@@ -8011,7 +8099,7 @@ Every loaded definition is an **immutable value** carrying its scope, its path a
 Two definitions ship embedded so delegation works before the operator writes a file. Both are listed with scope `builtin` and path `(embedded)`.
 
 - **`general`** - a general-purpose worker with the **parent's tool set** (no `tools` restriction of its own), for multi-step tasks, research, or independent units of work that can run in parallel. Its role tells it to read before changing anything, keep edits minimal, verify when the task calls for it, never retry a permission the operator did not grant, and report what it did and what the parent must still decide.
-- **`explore`** - a read-only explorer for locating files, symbols and usages and gathering evidence before changes are proposed. Its tool list is exactly `read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `load_skill`, `background_list`, `background_output`, `background_wait`: no `run_command`, no writes, no MCP tools. Plan mode alone would not be read-only (it still offers the shell), which is why the list is spelled out. Because nothing in that set is an MCP tool, an `explore` child never dials an MCP server.
+- **`explore`** - a read-only explorer for locating files, symbols and usages and gathering evidence before changes are proposed. Its tool list is exactly `read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `load_skill`, `coddy_docs_search`, `coddy_docs_read`, `background_list`, `background_output`, `background_wait`: no `run_command`, no writes, no MCP tools. Plan mode alone would not be read-only (it still offers the shell), which is why the list is spelled out. Because nothing in that set is an MCP tool, an `explore` child never dials an MCP server.
 
 ## Scopes and project trust
 
@@ -9298,6 +9386,7 @@ An `@` in a prompt points the agent at something: a file, a line range, a folder
 | Another session | `@session:sess_3e23…` (an id or a unique prefix of one) | a digest of that session |
 | A rule | `@rule:deploy`, or `@deploy` for a mention-only rule | the rule's body |
 | A subagent | `@agent:explore` | an instruction to hand the work to that subagent with `spawn_agent` |
+| A page of Coddy's documentation | `@coddy:features/mentions`, `@coddy:surfaces/gateway#proxy` | the page, or that section of it ([Built-in documentation](built-in-docs.md)) |
 | A saved design plan | `@plans/auth-refactor.plan.md` | the plan document in ask mode; in agent mode the plan runs ([Modes](modes.md)) |
 | A web page | `@https://go.dev/doc/effective_go` | the page as Markdown (JSON pretty-printed, plain text as it is) |
 
@@ -9329,7 +9418,7 @@ Workspace: /home/me/project
 </coddy_attachment>
 ```
 
-`kind` names what the attachment is when it is not a file (`directory`, `session`, `rule`, `agent`, `plan`, `skill`, `url`). `mention` is the mention as it was typed when that differs from `path` - `~/notes.md` for `/home/me/notes.md` - and it is what a transcript collapses the attachment back to: the web UI, a console that reopens the session and an editor that loads it show `@~/notes.md` where the message was typed, never the file body.
+`kind` names what the attachment is when it is not a file (`directory`, `session`, `rule`, `agent`, `plan`, `skill`, `url`, `doc`). `mention` is the mention as it was typed when that differs from `path` - `~/notes.md` for `/home/me/notes.md` - and it is what a transcript collapses the attachment back to: the web UI, a console that reopens the session and an editor that loads it show `@~/notes.md` where the message was typed, never the file body.
 
 What each kind carries:
 
@@ -9337,6 +9426,7 @@ What each kind carries:
 - **A folder** is listed breadth first - the top levels whole, then deeper ones while the listing has room - up to 400 entries, with folders whose contents were cut marked. The folder is read when the message is sent, so one written a moment before is listed whole. Inside a git checkout the listing leaves out what `.gitignore` leaves out; a folder outside any checkout, or one git ignores as a whole, is walked four levels deep, skipping hidden folders, version-control folders and dependency caches (`node_modules`, `.venv`, `__pycache__`, ...).
 - **A session** is a digest of at most 24 KiB: the title, the workspace, when it ran, its compaction summary when it has one, then its latest messages (the user's text and the assistant's answers; tool results are left out and a line names the tools each answer called), plus the path of its full transcript for anything the digest cut. It is context from another conversation, not instructions for this one.
 - **A rule** carries its body and the path of its file.
+- **A documentation page** is the page as the binary carries it, or with `#section` that section and its subsections, up to 64 KiB: every guide fits whole, and a long reference page (the HTTP API, the web UI specification) arrives as its beginning with the line to continue at and its sections, for the model to read the part it needs with `coddy_docs_read`. The page name takes the spellings [Built-in documentation](built-in-docs.md#pages-and-sections) lists (`@coddy:mentions` finds `features/mentions`); a trailing `.`, `/` or `#` ends the mention, and a page or a section that does not exist stays prose. In the web UI a sent `@coddy:` mention is a link that opens the page in the documentation reader, and so is one the agent writes in an answer.
 - **A subagent** is an instruction: delegate the part of the request meant for it with `spawn_agent`. In ask mode, or for a project definition that awaits approval, the attachment says why it cannot be spawned.
 - **A web page** is fetched when the message is sent, through the webfetch tool's transport and address guard: public addresses only, every redirect vetted, 20 seconds, 64 KiB of text. A page that cannot be read is attached with the reason.
 
@@ -9354,7 +9444,7 @@ A provider caches a request by its prefix, and the system message opens every re
 
 | Mention | An operator's prompt | A queued follow-up | A subagent's task (written by the parent model) | A Telegram chat |
 | --- | --- | --- | --- | --- |
-| Files, folders, ranges, rules | yes | yes | yes | yes |
+| Files, folders, ranges, rules, documentation pages | yes | yes | yes | yes |
 | Subagents, plans, web pages | yes | yes | no | yes |
 | Other sessions | yes | yes | no | no |
 
@@ -9364,7 +9454,7 @@ A path outside the workspace is read with the same reach the `read` tool has: a 
 
 ## Completion
 
-The candidates come from one search every surface shares (`GET /coddy/mentions`, `session.Manager.SearchMentions`): the files and folders of the session's workspace ranked against what was typed - the file name first, then path segments, then letters in order, so `@targhand` finds `zz/deep/target_handler.go` - merged with the rules, subagents and plans whose names match. A query that starts with `/`, `~`, `./`, `../` or a drive letter browses that folder instead, filtered by the name typed after its last separator. `@session:`, `@rule:` and `@agent:` list that kind; an empty `@` offers those three first, then the top of the workspace.
+The candidates come from one search every surface shares (`GET /coddy/mentions`, `session.Manager.SearchMentions`): the files and folders of the session's workspace ranked against what was typed - the file name first, then path segments, then letters in order, so `@targhand` finds `zz/deep/target_handler.go` - merged with the rules, subagents and plans whose names match. A query that starts with `/`, `~`, `./`, `../` or a drive letter browses that folder instead, filtered by the name typed after its last separator. `@session:`, `@rule:` and `@agent:` list that kind; `@coddy:` lists the pages of the documentation, finds pages by name and sections by their words (`@coddy:prox`), and after `@coddy:<page>#` the sections of that page. An empty `@` offers those four first, then the top of the workspace.
 
 The workspace index comes from `git ls-files` inside a git checkout (so `.gitignore` decides and dotfiles such as `.github/workflows/ci.yml` stay reachable) and from a walk elsewhere that skips hidden folders and dependency caches, capped at 50,000 entries. It is rebuilt when a mention starts, so a file written a moment ago - by you or by the agent - is offered, and a deleted one is gone.
 
@@ -9405,6 +9495,128 @@ Type the mention; the bot's own `@name` is removed before the prompt is read.
 - [Rules and instructions](rules.md) - mention-only rules and the rules a mentioned path activates.
 - [Message queue](message-queue.md) - a follow-up's mentions resolve when the agent reads it.
 - [Web UI](../surfaces/web-ui.md), [Console](../surfaces/console.md), [HTTP API](../reference/http-api.md) - the surfaces and `GET /coddy/mentions`.
+
+
+# Features / Built-in documentation
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/built-in-docs.md
+
+# Built-in documentation
+
+Coddy carries its own documentation. Every page of this documentation is compiled into the binary when it is built, so the pages a person reads and the pages the agent looks up are the documentation of the very binary that runs: no request goes to a site, nothing drifts between the text and the program, and it works on a machine with no network.
+
+The same pages are open from every surface:
+
+| Where | How | What you get |
+| --- | --- | --- |
+| Web UI | **Docs** in the rail, **F1**, `/docs [words or page]` in the composer, or an address `#/docs/<page>#<section>` | A reader: contents, the page, the sections of the page, search, the page before and after, **Ask the agent** |
+| Console | **F1**, or `/docs [words or page]` | A help screen over the editor: search, then the page opened at the section found |
+| Shell | `coddy docs list`, `coddy docs search <words>`, `coddy docs show <page>[#section]` | The contents, the best sections, a page or a section as Markdown |
+| The agent | the tools `coddy_docs_search` and `coddy_docs_read` | Search and read, in every mode |
+| A prompt | `@coddy:<page>#<section>` | The page or the section attached to the message |
+
+## Pages and sections
+
+A page is known by its path under `docs/` without `.md`: `features/mentions`, `reference/config`. That name is its address everywhere - `@coddy:features/mentions`, `coddy docs show features/mentions`, the web reader's `#/docs/features/mentions`, and the public copy at `https://coddy.dev/docs/features/mentions`. A section adds the anchor GitHub gives its heading: `features/mentions#completion`.
+
+Where a page or a section is asked for by name, Coddy also takes the other ways people write it: the file path with or without `docs/` and `.md`, a `coddy:` or `@coddy:` link, a `coddy.dev/docs` address, a page's file name when only one page has it (`mentions`), and a page's title (`Mentions`). A name that matches nothing is answered with the closest pages; a section the page does not have, with the sections it has.
+
+Inside a page read out of the binary, a link to another page is written `coddy:<page>#<section>`. The web reader opens it in place and the agent passes it to `coddy_docs_read`. In the web UI a page named anywhere in a conversation opens the reader: an `@coddy:<page>#<section>` in a message you sent, and a `coddy:` link or an `@coddy:` reference in an answer, which is how the agent is told to point you at a page.
+
+Images, videos and links to files of the repository point at GitHub at the release the binary was built from (`main` for a development build): the text is in the binary, the screenshots and recordings are not, so they show when the machine is online and fall back to their caption when it is not. A recording that GitHub embeds from an attachment plays in the reader from its copy in the repository.
+
+## Search
+
+The search ranks sections, not pages, so a hit lands on the paragraph that answers. It scores each section with BM25 over three fields - the page title, the section heading and the text - with the heading and the title counting more than the text, so a query that names a chapter finds the chapter. Words match regardless of case after a light English stemming (`sessions` finds `session`), an identifier is matched whole and by its parts (`max_turns` and `turns` both find `agent.max_turns`), and a word of three letters or more also finds the words it begins, so a query typed letter by letter finds pages before it is finished. At most three sections of one page are shown, so a long page does not push the others out. Each hit carries a snippet: the run of the section's text holding the most matched words, with those words marked.
+
+The index is built the first time something searches, in about a tenth of a second, and kept for the life of the process.
+
+## The web UI reader
+
+![The reader: contents on the left, the page, the sections of the page on the right](../assets/built-in-docs/reader-page-dark-1280.png)
+*The reader at 1280 px: the contents with the page being read, the page, the sections of the page with the one being read marked.*
+
+**Docs** in the rail opens the reader on the page it was last left on, **F1** opens and closes it from anywhere in the app, `/docs` in the composer does what it does in the console (`/docs telegram proxy` opens the reader on that search, `/docs features/mentions#completion` on that section, and nothing goes to the agent), and an address such as `#/docs/features/mentions#completion` opens that section directly, in a new tab or from a link someone sent. Every page, section and search result is a real link: the browser's Back and Forward move between the pages read, a middle click opens one in a new tab, and the `#` beside a section heading is that section's address. The header with the search stays put and the page scrolls under it; the column on the right follows the section being read.
+
+![Search results under the search box, the matched words marked](../assets/built-in-docs/reader-search-dark-1280.png)
+*The search box in the header lists the sections found under itself as you type. Up and Down pick one, Enter opens it at its section, Escape clears the search.*
+
+- **Reading like a book.** The foot of every page links the page before and the page after, in the order of the contents.
+- **Ask the agent** opens a new chat with the page mentioned (`@coddy:<page>#<section>`, the section being read when there is one). With text selected on the page, the button asks about the selection: the chat opens with the selection quoted and the section it sits in mentioned, ready for the question.
+- **Images** open over the page on a click, fitted to the window; `+`, `-` and the buttons zoom up to 300%, a click on the image switches between the fitted and the doubled size, and a zoomed image scrolls. Escape closes it.
+- **coddy.dev** above the page opens the public copy of the same page, for sharing with someone who has no Coddy.
+- `/` puts the cursor in the search box.
+
+The reader follows the app's theme and language, and on a narrow screen the contents fold into a button above the page.
+
+## The console help
+
+![The console help: the search list with the snippet of the selected section](../assets/cli-tui/19-docs-search.png)
+*F1, then `telegram proxy`: the sections found, the selected one with its address and snippet.*
+
+**F1** opens the help in the place of the editor on the contents; typing searches. **Enter** opens the selected entry, scrolled to its section. Some terminals keep F1 for themselves (GNOME Terminal opens its own help); `/docs` opens the same screen, `/docs telegram proxy` with that search, and `/docs features/mentions#completion` straight on that section.
+
+![The console help: a page opened at the section found](../assets/cli-tui/20-docs-page.png)
+*The page opened at the section: where the reader is on the page, and the keys.*
+
+| Key | In the list | On a page |
+| --- | --- | --- |
+| letters, Backspace | edit the search | - |
+| Up, Down | pick an entry | scroll a line |
+| Enter | open it at its section | scroll a line |
+| PgUp, PgDn, Space | - | scroll a screen |
+| Home, End | - | the top, the bottom |
+| Tab, Shift+Tab | - | the next section, the one before |
+| `n`, `p` | - | the next page, the one before |
+| `/` | - | back to the search |
+| Escape | close the help | back to the list |
+| F1, Ctrl+C | close the help | close the help |
+
+Images show as their caption. The help reads the binary the console runs, so under `--remote` it shows the console's own documentation, not the server's.
+
+## The agent's tools
+
+The agent reaches for its documentation when a question is about Coddy itself - how to set up the Telegram bot, what a key of `config.yaml` does, which tools ask mode allows - rather than answering from what it remembers:
+
+| Tool | Arguments | Returns |
+| --- | --- | --- |
+| `coddy_docs_search` | `query`, `limit` (8 by default, at most 20) | The best sections, each with the reference to read, the page and section titles and the snippet |
+| `coddy_docs_read` | `page` (a reference, a `coddy:` link or a title; left out for the contents), `offset` | The page or the section, with its reference, its lines and its public address |
+
+Both need no permission and are offered in agent, plan and ask mode, to subagents, and to the built-in `explore` subagent. In the chat a call reads as what it does, with the query or the page beside it: *searching the documentation* and *reading the documentation* in the web UI, *Searching the docs* and *Reading the docs* in the console. A page is read in parts of about 24 KB: a long one ends with the line to continue at and the list of its sections, so the model reads the section it needs rather than the whole page.
+
+## Mentioning a page
+
+`@coddy:` in a prompt attaches a page, or one section of it, to the message:
+
+```text
+set this up for me like @coddy:surfaces/gateway#proxy says, the machine needs socks5
+```
+
+The page, or the section with its subsections, rides in the message as a `<coddy_attachment kind="doc">` ([Mentions](mentions.md)), up to 64 KiB: a longer reference page arrives as its beginning, with the line to continue at and its sections, and the model reads the part it needs with `coddy_docs_read`. Completion works on every surface: `@coddy:` lists the pages, `@coddy:prox` finds pages by name and sections by their words, and `@coddy:features/mentions#` lists the sections of that page.
+
+## From the shell
+
+```bash
+coddy docs                                   # the contents
+coddy docs search telegram proxy --limit 3   # the best sections
+coddy docs show features/mentions#completion # one section, as Markdown
+```
+
+`coddy docs` works in every build, the one without the console included, and needs no configuration. The shell completions offer the pages after `coddy docs show`.
+
+## What the binary carries
+
+The pages of the groups of `docs/nav.yaml` are embedded (`docs/embed.go`); the design records under `docs/plans/`, the images under `docs/assets/`, and the pages the map keeps at the root of the repository (the contributing guide, the web UI design contract, the agent notes) are not. About 1.3 MB of Markdown is added to the binary. A new group folder under `docs/` must be added to the embed pattern: the tests of `internal/docs` fail on a page of the map the binary does not carry.
+
+Implementation: `internal/docs` (the library, sections, search, reading, link rewriting), `internal/tools/docs_search.go` and `docs_read.go`, `internal/session/mentions.go` (`resolveDoc`) and `mention_search.go` (`docCandidates`), `external/httpserver/docs_http.go` (`GET /coddy/docs`, `/coddy/docs/page`, `/coddy/docs/search`, [HTTP API](../reference/http-api.md)), `external/ui/src/ui/docs/`, `external/cli/docs_modal.go` and `cmd/coddy/docs.go`. Specification: `features/builtin_docs.feature`.
+
+## Related
+
+- [Mentions](mentions.md) - the other things a prompt can point at;
+- [Tools](../reference/tools.md) - every tool the model can call;
+- [Web UI](../surfaces/web-ui.md) and [Console](../surfaces/console.md) - the surfaces the reader and the help live in;
+- [Writing documentation](../contributing/documentation.md) - how the pages are written and checked.
 
 
 # Features / Message queue
@@ -10328,6 +10540,9 @@ Usage:
   coddy hooks list [--cwd DIR]
   coddy hooks trust <file> [--cwd DIR]
   coddy hooks untrust <file> [--cwd DIR]
+  coddy docs [list] | search <words> [--limit N] | show <page>[#section] (the
+        documentation built into this binary; F1 in the console, Docs in the
+        web UI)
   coddy update [flags]
 ```
 
@@ -11347,6 +11562,7 @@ The built-in commands on each surface and how skills become commands. A slash co
 | `/queue [list\|drop <n>\|clear]` | console | Lists the follow-ups waiting for the running turn, takes one back by its number, or empties the queue. Works against a remote server too. | [Message queue](../features/message-queue.md#in-the-console) |
 | `/usage` | console | Forces a fresh read of the active provider's account usage and prints the breakdown; under `--remote` the server's own key is read. | [Console](../surfaces/console.md#commands-and-keys) |
 | `/tasks` | console | Opens the background tasks of the session in the place of the editor: what runs, what finished, a task's output on **enter**, **s** to stop one. Under `--remote` it lists and stops the processes of the server. | [Background tasks](../features/background-tasks.md#in-the-console) |
+| `/docs [words or page]` | console, web UI | Opens Coddy's built-in documentation, the same screen F1 opens: the contents, a search for the words, or a page (`/docs features/mentions#completion`) opened at its section. A page is named by its address or its exact title; any other words are a search. In the web UI the composer runs it in the browser and nothing reaches the agent. `/help` is the same command in the console. | [Built-in documentation](../features/built-in-docs.md#the-console-help) |
 | `/quit`, `/exit` | console | Exits. | [Console](../surfaces/console.md#commands-and-keys) |
 | `/compact [instructions]` | console, web UI, ACP editors, `POST /v1/responses` | Summarises the older history and keeps the recent turns verbatim; the words after the command steer the summariser. Listed only while `compaction.enable` is true; a manual compaction is always forced. | [Context compaction](../features/compaction.md#the-compact-command) |
 | `/export [md\|html\|json\|jsonl] [path] [--no-tools] [--no-thinking]` | console, web UI, ACP editors, `POST /v1/responses` | Writes the transcript into the session workspace; a directory receives `coddy-export-<timestamp>.<ext>`, a file name sets the format by extension. Under `--remote` the file lands on the server. | [Session export](../features/session-export.md#usage) |
@@ -11366,7 +11582,7 @@ Three boundaries follow from the code:
 
 | Surface | Source of the list | Notes |
 |---|---|---|
-| Console | A fixed client-side list (`model`, `reasoning`, `mode`, `resume`, `new`, `theme`, `hotkeys`, `queue`, `usage`, `tasks`, `quit`) merged with the rows the server advertises through the ACP `available_commands_update` notification (`slashCatalog` in `external/cli/app.go`). | Typing `/` opens the suggestion menu; Enter on a suggestion applies it and submits in one stroke. |
+| Console | A fixed client-side list (`model`, `reasoning`, `mode`, `resume`, `new`, `theme`, `hotkeys`, `queue`, `usage`, `tasks`, `docs`, `quit`) merged with the rows the server advertises through the ACP `available_commands_update` notification (`slashCatalog` in `external/cli/app.go`). | Typing `/` opens the suggestion menu; Enter on a suggestion applies it and submits in one stroke. |
 | Web UI | Two groups in the composer: the built-ins from `GET /coddy/commands`, loaded once when the composer mounts, and the skills from `GET /coddy/slash-commands`, paged and filtered by `prefix`, scoped to the session workspace through `X-Coddy-Session-ID`. | Both lists are re-read when the server announces a configuration reload (`event: config_reloaded` on `GET /coddy/events`), so a skill installed by `/plugin` shows up without a page reload. Picking a row inserts the plain `/name` token and nothing else. |
 | ACP editors | `available_commands_update` after `session/new` and `session/load`: the built-ins first, then the skills sorted by name; rows carry `name` (without the slash) and `description` only. | The same function, `skills.BuiltinCommands` in `internal/skills/slash.go`, feeds the HTTP endpoint and the notification, so the two never disagree: `compact` only while compaction is enabled, `export` and `plugin` always. |
 | Telegram | `start`, `help`, `mode`, `model`, `context`, `resume` and `clear`, registered with `setMyCommands` at startup. | They appear in the client's command menu; nothing else is offered. |
@@ -11425,6 +11641,7 @@ Keys are parsed into the `ctrl+x` / `shift+enter` / `alt+backspace` notation of 
 | ctrl+c | clear the editor; on an empty editor, twice within 2 s exits |
 | ctrl+d | exit when the editor is empty |
 | ctrl+l | model selector |
+| F1 | the built-in documentation ([Built-in documentation](../features/built-in-docs.md#the-console-help)); `/docs` where the terminal keeps F1 for itself |
 | ctrl+p / ctrl+shift+p | cycle the configured models forward / backward |
 | shift+tab | cycle the reasoning level (models with `reasoning_levels`) |
 | ctrl+o | expand the header hints, the last tool output and the last `!!` block |
@@ -11444,6 +11661,21 @@ Inside the `/tasks` overlay ([Background tasks](../features/background-tasks.md#
 | s | stop the task under the cursor, or the open one, if it is still running |
 | r | read the tasks, and the open task's output, again |
 | escape | leave the open task; on the list, close the overlay |
+
+Inside the help that F1 and `/docs` open ([Built-in documentation](../features/built-in-docs.md#the-console-help)):
+
+| Key | Action |
+|---|---|
+| letters, backspace | edit the search (in the list) |
+| up / down | move between the entries; on a page, scroll a line |
+| enter | open the entry at its section; on a page, scroll a line |
+| pgup / pgdn / space | scroll a page by a screen |
+| home / end | the top / the bottom of the page |
+| tab / shift+tab | the next / the previous section of the page |
+| n / p | the next / the previous page of the documentation |
+| / | from a page, back to the search |
+| escape | leave the page; on the list, close the help |
+| F1 / ctrl+c | close the help |
 
 Editing keys inside the draft:
 
@@ -11494,6 +11726,9 @@ The composer is a plain `textarea`; keys not listed here keep their browser mean
 | Enter | question prompt | send the answer, once every question has one; typed in the composer it still belongs to the composer |
 | Escape | question prompt | skip the questions |
 | Escape / Tab | confirmation dialog | cancel / keep the focus inside the dialog |
+| F1 | anywhere | open the documentation reader, or close it ([Built-in documentation](../features/built-in-docs.md#the-web-ui-reader)) |
+| / | documentation reader, outside a field | put the cursor in its search box |
+| ArrowUp / ArrowDown, Enter, Escape | documentation search box | move the selected hit, open it at its section, clear the search |
 
 Stopping a turn has no key: it is the Stop button in the composer bar. The `@` menu opens as you type an `@` ([Mentions](../features/mentions.md#in-the-web-ui)), and a `:` after a file turns it into the line-range picker; neither is a binding.
 
@@ -11567,6 +11802,8 @@ The `background_*` tools are registered only while `tools.background` is enabled
 |---|---|---|---|---|
 | `question` | Ask the user one or more multiple-choice questions and wait for the answers | `questions[]` of `header`, `question`, `options[]` (`label`, `description`), `multiple`, `custom` | none (the turn waits for the user) | agent, plan, ask |
 | `load_skill` | Load the full instructions of a catalogued skill by name; registered only while `skills.auto_discovery` is on ([Skills](../features/skills.md)) | `name` | none | agent, plan, ask |
+| `coddy_docs_search` | Search Coddy's own documentation, built into the binary, with BM25 over the sections ([Built-in documentation](../features/built-in-docs.md#the-agents-tools)) | `query`, `limit` | none | agent, plan, ask |
+| `coddy_docs_read` | Read a page or a section of that documentation, or its contents without a page; long pages come in parts | `page`, `offset` | none | agent, plan, ask |
 | `spawn_agent` | Delegate a self-contained task to a subagent, waiting for its report or running it as a background task ([Subagents](../features/subagents.md#the-spawn_agent-tool)) | `agent`, `prompt`, `description`, `background`, `expected_seconds`, `timeout_seconds`, `notify_on_finish` | none itself; the child's own calls prompt through the parent | agent, plan (the child of a plan-mode parent stays in plan mode); hidden in ask, at `subagents.max_depth` and where no runtime exists, such as a scheduled run |
 
 ## Todo checklist
@@ -11830,7 +12067,7 @@ header where the client can set one, since a query token reaches proxy access lo
 - **API-only mode**: set **`ui.enable: false`** in config to run the server without the SPA even when the **`ui`** tag is compiled in. **`GET /`** then returns a short plaintext notice (HTTP 404) instead of the UI; every **`/v1/*`** and **`/coddy/*`** route keeps working and keeps requiring **`httpserver.auth_token`** when set. Useful for a headless remote box other UIs connect to.
 - Recommended session URL pattern: **`#/s/<sessionId>`** (client-only history). For **`POST /v1/responses`** and **`POST /v1/chat/completions`**, send **`X-Coddy-Session-ID`** with a **`sess_<hex>`** id that satisfies server-side validation (`internal/session/validate.go`).
 - **`GET /coddy/sessions`**, **`PATCH /coddy/sessions/{id}`**, and other **`/coddy/sessions/{id}/...`** routes identify the session **only** by the **`{id}`** path segment (no duplicate header in OpenAPI; clients may still send **`X-Coddy-Session-ID`**, it is not used to pick the resource for those URLs).
-- The bundled UI calls **`POST /v1/responses`** with **`stream: true`**. On session open and reconnect, it reads **`GET /coddy/sessions/{id}/activity`** and **`GET /coddy/sessions/{id}/queue`** without requiring a row in the filtered or paginated **`GET /coddy/sessions`** listing. Server activity drives Stop and queue controls separately from the local stream reader; a lost reader does not prove the turn ended. The existing **`GET /coddy/sessions/{id}/composer-stream`** relay (SSE) lets the UI replay bytes already emitted for a running turn and continue receiving live chunks until **`data: [DONE]`** or an error event. Starting a new **`POST /v1/responses`** cancels that relay subscription client-side. For ReAct (**`model`** **`agent`**, **`plan`**, or **`ask`**), it sends optional **`metadata.model`** with the selected YAML **`models[].model`** **`id`** and optional **`metadata.runPlanSlug`** to implement a saved design plan (**`coddy.dev/runPlanSlug`** on ACP **`session/prompt`**; answered with **`409`** before the turn starts when **`model`** is **`ask`**) (from **`GET /v1/models`**, **`owned_by`** not **`coddy`**); default follows **`default_agent_model`**, persisted choice in **`coddy_llm_model`**. When the selected model exposes **`reasoning_levels`**, it also sends optional **`metadata.reasoning`** with the chosen level; default follows the model's **`reasoning_default`**, persisted choice in **`coddy_llm_reasoning`**. It sends the **`@`** mentions of **`input`** as typed: the server resolves them when the turn starts - a file anywhere on disk, a line range (**`@Dockerfile:21-31`**, reaching the model as **`<coddy_attachment ... lines="21-31">`** holding only those lines), a folder listing, another session, a rule, a subagent, a web page - the way it resolves every surface's prompt (see **`docs/features/mentions.md`**). **`GET /coddy/mentions`** powers the **`@`** picker, **`POST /coddy/mentions/check`** tells the composer which typed mentions resolve so only those are highlighted, and **`GET /coddy/workspace/file`** powers the line-range picker that opens after the **`:`**. SSE **default** chunks follow **`chat.completion.chunk`** deltas (**`delta.content`** for assistant text, **`delta.reasoning_content`** for streamed model reasoning so the UI can keep the **thinking** foldout separate). Named **`event:`** lines (**`tool_call`**, **`tool_call_update`**, **`plan`**, **`token_usage`**, **`turn_progress`**, **`available_commands`**, **`message_queue`**, **`user_message`**) expose tool progress and incremental token totals between LLM rounds; **`message_queue`** carries the whole message queue of the session on every change and **`user_message`** carries a queued follow-up the agent has just read, at the point it entered the conversation (see **`docs/features/message-queue.md`**); the turn stream reserves **`provider_usage`** for a snapshot emitted mid-turn (nothing emits one today; the account usage of a finished turn is read from **`GET /coddy/providers/{name}/usage`** or arrives on **`GET /coddy/events`**); when **`memory.enable`** is **true**, the server also emits **`memory_run`** for the memory subagent of the turn (**`started`** with the task and child session ids, **`finished`** with the task status, the duration, whether the report was **`delivered`** to the model in this turn and, for a failed run, the error it ended with as **`reason`**, or **`skipped`** with a reason); no text travels on it, and the run's record is the task row with **`agent.system`** true under **`GET /coddy/sessions/{id}/background-tasks`** plus the child transcript it names (see **`docs/features/memory.md`**). A turn the server started on its own because background tasks the model marked with **`notify_on_finish`** ended opens with **`background_wake`**: **`tasks`** names each with **`id`**, **`kind`**, **`label`**, **`agent`**, **`status`**, **`exitCode`**, **`durationMs`** and **`error`**, and the turn's first message is persisted with the same tasks, so no client shows the instruction as a user bubble, live or after a reload; the bundled UI shows nothing in its place, and the task row says **`woke_agent`** (see **`docs/features/background-tasks.md`**). **`coddy_meta`** JSON follows the usual rule immediately before **`data: [DONE]`**; for agent/plan/ask turns it also carries **`stop_reason`** (`end_turn`, `cancelled`, `max_turns`, ...) so remote clients recover the ACP stop reason. **Stop generation** in the composer calls **`POST /coddy/sessions/{id}/cancel`** with **`X-Coddy-Session-ID`** matching **`{id}`**. Right after sending it, the UI triggers **`AbortSignal`** on its own streamed **`fetch`** of that turn (the POST or the relay): a browser keeps six HTTP/1.1 connections per host across all of its tabs, and the cancel could otherwise wait for the one that stream holds. The turn runs on without the stream; a failed cancel shows an error, keeps the running controls available for a retry and rejoins the turn through **`GET /coddy/sessions/{id}/composer-stream`**. Success acknowledges cooperative cancellation, while **`turn_ended`** or a fresh activity snapshot reporting idle confirms completion. That maps to ACP **`session/cancel`** for the agent turn (**`TurnCtx`** propagation for direct **`models[].model`** completions uses the same cancel hook). Cancel mid-stream still **persists** accumulated assistant **`content`** for that turn; **`GET /coddy/sessions/{id}/messages`** can briefly trail that write, so the SPA **merges** fetched rows with its per-session shadow or on-screen transcript (**`mergeTranscriptPreferLocalSuffix`** in **`external/ui/src/ui/chat/transcriptServerSnapshot.ts`**). More than one session may stream in parallel (**`pickStreamMutationBase`** in **`streamMutationBase.ts`** keeps SSE mutations scoped per **`X-Coddy-Session-ID`**).
+- The bundled UI calls **`POST /v1/responses`** with **`stream: true`**. On session open and reconnect, it reads **`GET /coddy/sessions/{id}/activity`** and **`GET /coddy/sessions/{id}/queue`** without requiring a row in the filtered or paginated **`GET /coddy/sessions`** listing. Server activity drives Stop and queue controls separately from the local stream reader; a lost reader does not prove the turn ended. The existing **`GET /coddy/sessions/{id}/composer-stream`** relay (SSE) lets the UI replay bytes already emitted for a running turn and continue receiving live chunks until **`data: [DONE]`** or an error event. Starting a new **`POST /v1/responses`** cancels that relay subscription client-side. For ReAct (**`model`** **`agent`**, **`plan`**, or **`ask`**), it sends optional **`metadata.model`** with the selected YAML **`models[].model`** **`id`** and optional **`metadata.runPlanSlug`** to implement a saved design plan (**`coddy.dev/runPlanSlug`** on ACP **`session/prompt`**; answered with **`409`** before the turn starts when **`model`** is **`ask`**) (from **`GET /v1/models`**, **`owned_by`** not **`coddy`**); default follows **`default_agent_model`**, persisted choice in **`coddy_llm_model`**. When the selected model exposes **`reasoning_levels`**, it also sends optional **`metadata.reasoning`** with the chosen level; default follows the model's **`reasoning_default`**, persisted choice in **`coddy_llm_reasoning`**. It sends the **`@`** mentions of **`input`** as typed: the server resolves them when the turn starts - a file anywhere on disk, a line range (**`@Dockerfile:21-31`**, reaching the model as **`<coddy_attachment ... lines="21-31">`** holding only those lines), a folder listing, another session, a rule, a subagent, a page of the built-in documentation, a web page - the way it resolves every surface's prompt (see **`docs/features/mentions.md`**). **`GET /coddy/mentions`** powers the **`@`** picker, **`POST /coddy/mentions/check`** tells the composer which typed mentions resolve so only those are highlighted, and **`GET /coddy/workspace/file`** powers the line-range picker that opens after the **`:`**. SSE **default** chunks follow **`chat.completion.chunk`** deltas (**`delta.content`** for assistant text, **`delta.reasoning_content`** for streamed model reasoning so the UI can keep the **thinking** foldout separate). Named **`event:`** lines (**`tool_call`**, **`tool_call_update`**, **`plan`**, **`token_usage`**, **`turn_progress`**, **`available_commands`**, **`message_queue`**, **`user_message`**) expose tool progress and incremental token totals between LLM rounds; **`message_queue`** carries the whole message queue of the session on every change and **`user_message`** carries a queued follow-up the agent has just read, at the point it entered the conversation (see **`docs/features/message-queue.md`**); the turn stream reserves **`provider_usage`** for a snapshot emitted mid-turn (nothing emits one today; the account usage of a finished turn is read from **`GET /coddy/providers/{name}/usage`** or arrives on **`GET /coddy/events`**); when **`memory.enable`** is **true**, the server also emits **`memory_run`** for the memory subagent of the turn (**`started`** with the task and child session ids, **`finished`** with the task status, the duration, whether the report was **`delivered`** to the model in this turn and, for a failed run, the error it ended with as **`reason`**, or **`skipped`** with a reason); no text travels on it, and the run's record is the task row with **`agent.system`** true under **`GET /coddy/sessions/{id}/background-tasks`** plus the child transcript it names (see **`docs/features/memory.md`**). A turn the server started on its own because background tasks the model marked with **`notify_on_finish`** ended opens with **`background_wake`**: **`tasks`** names each with **`id`**, **`kind`**, **`label`**, **`agent`**, **`status`**, **`exitCode`**, **`durationMs`** and **`error`**, and the turn's first message is persisted with the same tasks, so no client shows the instruction as a user bubble, live or after a reload; the bundled UI shows nothing in its place, and the task row says **`woke_agent`** (see **`docs/features/background-tasks.md`**). **`coddy_meta`** JSON follows the usual rule immediately before **`data: [DONE]`**; for agent/plan/ask turns it also carries **`stop_reason`** (`end_turn`, `cancelled`, `max_turns`, ...) so remote clients recover the ACP stop reason. **Stop generation** in the composer calls **`POST /coddy/sessions/{id}/cancel`** with **`X-Coddy-Session-ID`** matching **`{id}`**. Right after sending it, the UI triggers **`AbortSignal`** on its own streamed **`fetch`** of that turn (the POST or the relay): a browser keeps six HTTP/1.1 connections per host across all of its tabs, and the cancel could otherwise wait for the one that stream holds. The turn runs on without the stream; a failed cancel shows an error, keeps the running controls available for a retry and rejoins the turn through **`GET /coddy/sessions/{id}/composer-stream`**. Success acknowledges cooperative cancellation, while **`turn_ended`** or a fresh activity snapshot reporting idle confirms completion. That maps to ACP **`session/cancel`** for the agent turn (**`TurnCtx`** propagation for direct **`models[].model`** completions uses the same cancel hook). Cancel mid-stream still **persists** accumulated assistant **`content`** for that turn; **`GET /coddy/sessions/{id}/messages`** can briefly trail that write, so the SPA **merges** fetched rows with its per-session shadow or on-screen transcript (**`mergeTranscriptPreferLocalSuffix`** in **`external/ui/src/ui/chat/transcriptServerSnapshot.ts`**). More than one session may stream in parallel (**`pickStreamMutationBase`** in **`streamMutationBase.ts`** keeps SSE mutations scoped per **`X-Coddy-Session-ID`**).
 - On the first user message of a brand-new chat (no session in the rail yet), the UI **`POST`**s **`/coddy/describe`** in parallel with **`/v1/responses`**. When **`short`** arrives, the header and session list titles update **immediately**; **`PATCH /coddy/sessions/{id}`** still runs once headers expose the canonical session id (**retries PATCH** briefly if persistence lags describe), carrying the **`tags`** the same answer proposed, so naming and filing a new chat cost one model call between them. That PATCH carries **`titleIfUnpinned`**, which makes the title a suggestion: a session already named during the first turn - in the chat header, or by the agent's **`session_describe`** tool - keeps its name, and only the tags land.
 - The bundled UI exposes **Settings** at **`#/settings`**. It loads **`GET /coddy/config/schema`** (JSON Schema for the editor) and **`GET /coddy/config`** (current values, including **API keys**, optional per-provider **`proxy`** URLs, and the **`gateways.telegram.token`** bot token), then **`POST /coddy/config/validate`** and **`PUT /coddy/config`** on save. The logical-model form additionally calls **`GET /coddy/providers/{name}/models`** behind **Fetch models** and **`GET /coddy/config/reasoning-levels`** behind **Fetch reasoning levels**, which fills **`models[].reasoning_levels`** with the tiers detected for the model id being edited (the type of the provider row it points at is sent as **`provider_type`**, so an unsaved provider is honoured). The **`gateways`** block round-trips through this API, so editing settings in the UI no longer drops the Telegram configuration. There is no separate auth on these routes - expose **`coddy serve`** only on trusted networks.
 
@@ -11882,8 +12119,11 @@ header where the client can set one, since a query token reaches proxy access lo
 | PUT | **`/coddy/mcp/{name}`** | Upserts one named entry in an mcp.json file. **`?scope=local`** (default) targets the project **`.coddy/mcp.json`** under the server's default cwd; **`?scope=global`** targets the user-global **`<home>/mcp.json`**. JSON body is the Cursor-format entry: **`command`**, **`args`**, **`env`** (object), **`url`**, **`headers`** (object), **`disabled`**, **`disabledTools`**. Requires **`command`** or **`url`**; **`400`** when the name contains **`__`**, spaces, or path separators, the scope is unknown, or the body is invalid. **`200`** **`{"ok":true}`**. Config.yaml-defined servers are edited via **`PUT /coddy/config`** instead. |
 | DELETE | **`/coddy/mcp/{name}`** | Removes the named entry from the mcp.json file that defines it (project or global). **`400`** for config.yaml-defined or unknown servers. **`200`** **`{"ok":true}`**. |
 | GET | **`/coddy/workspace/files`** | Paginated workspace listing under session **cwd** (**`page`**, **`page_size`** required). Non-blank **case-insensitive** substring **`prefix`** on **`path_rel`**; omit or blank **`prefix`** yields empty **`items`**. **`dirs=true`** adds directory rows (**`kind`** **`dir`**, **`path_rel`** trailing **`/`**). JSON **`items[].name`**, **`items[].path_rel`**, **`items[].kind`** (**`file`** or **`dir`**), **`total`**, **`has_more`**. |
-| POST | **`/coddy/mentions/check`** | Which **`@`** mentions of a draft a sent prompt would attach, for the composer's highlight. Body **`{"text": "..."}`** (at most 256 KiB, else **`413`**); **`X-Coddy-Session-ID`** names the session it would be sent to. The resolver runs dry - a file is looked at and never read, a folder is not listed, a session is found and not summarised, a page is not fetched. JSON **`mentions[]`**, one per **`@`** token in document order (a token in a fenced block, an inline code span or a quoted line is prose and left out): **`token`**, the whole token; **`typed`**, the part that resolves (**`@src/a.go`** of **`@src/a.go b.go`**); **`kind`** (**`file`**, **`directory`**, **`session`**, **`rule`**, **`agent`**, **`plan`**, **`url`**). **`typed`** and **`kind`** are absent for a token that names nothing, such as **`@google/genai`** in **`npm install @google/genai`**. **`400`** for a broken body. |
-| GET | **`/coddy/mentions`** | Candidates for an **`@`** mention (the composer's picker, a console in remote mode). Optional **`q`** (the text after **`@`**; a leading **`"`** opens a quoted path), **`limit`** (1 to 200, default 50), **`refresh=1`** (rebuild the workspace index first); **`X-Coddy-Session-ID`** names the session whose **cwd**, rules and plans answer. A scheme-less **`q`** ranks the files and folders of the workspace (inside a git checkout the index follows **`.gitignore`** and keeps dotfiles) and merges in matching rules, subagents and plans; **`q`** starting with **`/`**, **`~`**, **`./`**, **`../`** or a drive letter browses that folder; **`session:`**, **`rule:`**, **`agent:`** list that kind; an empty **`q`** offers the three scheme hints and the top of the workspace. JSON **`items[]`** (**`kind`**: **`file`**, **`directory`**, **`session`**, **`rule`**, **`agent`**, **`plan`** or **`scheme`**; **`insert`**, the text that replaces **`@`** plus the query; **`label`**; **`detail`**; **`continue`**, true when choosing it keeps the picker open), **`total`** (every match before the cut), **`indexing`**, **`index_truncated`**. **`400`** for a bad **`limit`**. |
+| POST | **`/coddy/mentions/check`** | Which **`@`** mentions of a draft a sent prompt would attach, for the composer's highlight. Body **`{"text": "..."}`** (at most 256 KiB, else **`413`**); **`X-Coddy-Session-ID`** names the session it would be sent to. The resolver runs dry - a file is looked at and never read, a folder is not listed, a session is found and not summarised, a page is not fetched. JSON **`mentions[]`**, one per **`@`** token in document order (a token in a fenced block, an inline code span or a quoted line is prose and left out): **`token`**, the whole token; **`typed`**, the part that resolves (**`@src/a.go`** of **`@src/a.go b.go`**); **`kind`** (**`file`**, **`directory`**, **`session`**, **`rule`**, **`agent`**, **`plan`**, **`url`**, **`doc`**). **`typed`** and **`kind`** are absent for a token that names nothing, such as **`@google/genai`** in **`npm install @google/genai`**. **`400`** for a broken body. |
+| GET | **`/coddy/docs`** | The contents of the documentation built into the binary ([Built-in documentation](../features/built-in-docs.md)): **`version`** (the binary's) and **`groups[]`** of **`docs/nav.yaml`**, each with **`id`**, **`title`**, **`summary`** and **`pages[]`** (**`slug`**, **`title`**, **`summary`**). A **`slug`** is the page's path under **`docs/`** without **`.md`**. No site is contacted. |
+| GET | **`/coddy/docs/page`** | One page. **`ref`** (required) takes a slug, a path with or without **`docs/`** and **`.md`**, a **`coddy:`** link, an **`@coddy:`** mention, a **`coddy.dev/docs`** address, a file name one page has or a title, optionally with **`#section`**. JSON **`slug`**, **`title`**, **`summary`**, **`group`** (**`id`**, **`title`**), **`anchor`** (the section **`ref`** named, else empty), **`markdown`** (links to other pages rewritten to **`coddy:<slug>#<anchor>`**, images and repository files to GitHub at the release tag), **`headings[]`** (**`level`**, **`text`**, **`anchor`**), **`prev`** and **`next`** (**`slug`**, **`title`**, or null), **`url`** (the public address). **`400`** without **`ref`**; **`404`** for a page or a section that does not exist, naming the closest pages or the page's sections. |
+| GET | **`/coddy/docs/search`** | Sections of the documentation ranked against **`q`** with BM25 over the page title, the section heading and the text; a word of three letters or more also finds the words it begins; at most three sections per page. Optional **`limit`** (1 to 50, default 10). JSON **`query`**, **`version`**, **`hits[]`** (**`slug`**, **`title`**, **`group`**, **`anchor`** and **`heading`** unless the hit is the part above the first section, **`snippet[]`** of **`text`** fragments with **`hit`** on the matched words). An empty **`q`** answers no hits; **`400`** for a bad **`limit`**. |
+| GET | **`/coddy/mentions`** | Candidates for an **`@`** mention (the composer's picker, a console in remote mode). Optional **`q`** (the text after **`@`**; a leading **`"`** opens a quoted path), **`limit`** (1 to 200, default 50), **`refresh=1`** (rebuild the workspace index first); **`X-Coddy-Session-ID`** names the session whose **cwd**, rules and plans answer. A scheme-less **`q`** ranks the files and folders of the workspace (inside a git checkout the index follows **`.gitignore`** and keeps dotfiles) and merges in matching rules, subagents and plans; **`q`** starting with **`/`**, **`~`**, **`./`**, **`../`** or a drive letter browses that folder; **`session:`**, **`rule:`**, **`agent:`** list that kind; **`coddy:`** lists the pages of the built-in documentation, finds pages by slug or title and sections by their words, and after **`<page>#`** the sections of that page; an empty **`q`** offers the four scheme hints and the top of the workspace. JSON **`items[]`** (**`kind`**: **`file`**, **`directory`**, **`session`**, **`rule`**, **`agent`**, **`plan`**, **`doc`** or **`scheme`**; **`insert`**, the text that replaces **`@`** plus the query; **`label`**; **`detail`**; **`continue`**, true when choosing it keeps the picker open), **`total`** (every match before the cut), **`indexing`**, **`index_truncated`**. **`400`** for a bad **`limit`**. |
 | GET | **`/coddy/workspace/file`** | One workspace text file as display lines, for the composer's line-range picker. Required **`path_rel`** (workspace-relative, never escapes session **cwd**); optional **`max_lines`** (1 to 5000, default 2000). JSON **`path_rel`**, **`mime_type`**, **`lines[]`** (no terminators; a trailing newline adds no empty last line and CRLF loses the trailing carriage return), **`total_lines`** (whole file), **`truncated`**. Legacy encodings decode to UTF-8; files over 512 KiB are refused. **`400`** for a directory, undecodable content, a traversing path or a bad **`max_lines`**; **`404`** for a missing file. |
 | GET | **`/coddy/workspace/context`** | Workspace context for the composer chips: **`path`**, **`name`**, **`is_git_repo`**, **`is_worktree`**, plus **`repo_root`**, **`branch`**, **`branches`**, **`worktrees[]`** (**`path`**, **`branch`**, **`main`**) inside a git repository. **`shell`** carries the interpreter **`run_command`** executes through on the server host (**`/usr/bin/bash`**, **`cmd.exe`**, ...) - a host fact rather than a folder one, served here because this is the call the SPA already makes; the tool card names it instead of the word Shell. Uses the session **cwd** from **`X-Coddy-Session-ID`** (server default cwd without the header). Optional **`path`** query describes an explicit folder instead (pre-session preview); a missing folder yields **`400`**. Git data degrades gracefully when the **`git`** binary is absent (**`is_git_repo:false`**). |
 | GET | **`/coddy/workspace/folders`** | Direct subfolders of **`path`** (default: session **cwd**) for the workspace folder picker: **`{"path","parent","folders":[{"name","path"}]}`**. Hidden folders and **`node_modules`** are skipped; rows sorted by name. Missing folder yields **`400`**. **`path=:drives:`** returns the machine's drive roots instead (**`{"drives":true,"folders":[{"name":"C:","path":"C:\\"}]}`**, **`path`** = **`parent`** = **`:drives:`**); on a host with no drive letters (Linux, macOS) the sentinel is just an unknown folder (**`400`**). A drive root reports **`"parent":":drives:"`**, which is how the picker walks up out of a volume — everywhere else **`parent`** stays the real parent directory. |
@@ -12421,7 +12661,7 @@ Stop reasons: `end_turn` | `max_tokens` | `max_turns` | `agent_refused` | `cance
 - a `resource` without `text` is read from disk, anywhere the client names it: a file, a line range of it, or a folder's listing. A missing file or lines past the end fail the prompt, since the client asked for them explicitly;
 - a `resource_link` (the block every ACP agent must accept) to a local file or folder is read like a mention of it; a link Coddy cannot open itself - an editor-internal URI, a web address - reaches the model as a line naming it.
 
-`@` mentions typed into a `text` block are resolved the way every surface resolves them - files anywhere on disk, folders, line ranges, `@session:<id>`, `@rule:<name>`, `@agent:<name>`, web pages - into attachments of the same user message ([Mentions](../features/mentions.md)). A mention never fails the prompt: one that names nothing stays prose.
+`@` mentions typed into a `text` block are resolved the way every surface resolves them - files anywhere on disk, folders, line ranges, `@session:<id>`, `@rule:<name>`, `@agent:<name>`, `@coddy:<page>#<section>`, web pages - into attachments of the same user message ([Mentions](../features/mentions.md)). A mention never fails the prompt: one that names nothing stays prose.
 
 ### Subagent runs and child sessions (Coddy-specific)
 
@@ -12881,7 +13121,7 @@ A pipeline step that asks the agent one question and reads the answer: a review 
    coddy --dry-run   # the file, then the providers it names
    ```
 
-5. **Run the prompt.** `-p` takes the prompt. `--mode ask` restricts the turn to the read-only tools (`read`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `question`, `load_skill`: no shell, no file writes, no MCP tools), which is the right shape for a review and means no permission prompt can arise. `--model` picks one of the configured models, `--cwd` the workspace. The answer goes to stdout and everything else to stderr, so redirecting stdout gives a file you can post as a comment.
+5. **Run the prompt.** `-p` takes the prompt. `--mode ask` restricts the turn to the read-only tools (`read`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `question`, `load_skill`, `coddy_docs_search`, `coddy_docs_read`: no shell, no file writes, no MCP tools), which is the right shape for a review and means no permission prompt can arise. `--model` picks one of the configured models, `--cwd` the workspace. The answer goes to stdout and everything else to stderr, so redirecting stdout gives a file you can post as a comment.
 
    ```bash
    git diff origin/main...HEAD > review.patch
@@ -13891,7 +14131,7 @@ How the documentation under `docs/` is organised, what a change to Coddy must ca
 | `docs/getting-started/` | Install, configure, update, troubleshoot, the changelog | Guides, read once in order |
 | `docs/surfaces/` | One page per way of talking to the agent: console, web UI, editors, Telegram | Surface pages |
 | `docs/operate/` | Running it as a service, remote mode, swarm, scheduler, security | Operator guides |
-| `docs/features/` | One page per capability: modes, sessions, rules, skills, subagents, hooks, MCP, background tasks, compaction, memory, export | Feature pages |
+| `docs/features/` | One page per capability: modes, sessions, rules, skills, subagents, hooks, MCP, background tasks, compaction, memory, export, the built-in documentation | Feature pages |
 | `docs/reference/` | Complete lists: CLI, `config.yaml`, environment variables, slash commands, keyboard, tools, HTTP API, ACP | Reference pages, generated where the code is the source of truth |
 | `docs/tutorials/` | Task-shaped guides, one page per tutorial | Tutorials |
 | `docs/contributing/` | How Coddy is built, tested, designed and documented | Contributor pages |
@@ -13899,6 +14139,8 @@ How the documentation under `docs/` is organised, what a change to Coddy must ca
 | `docs/assets/` | What the pages embed: screenshots, videos, brand files | See [the assets index](../assets/INDEX.md) |
 
 The map of all of it is [`docs/nav.yaml`](../nav.yaml): every page with its group, title and a one-line summary. [`docs/README.md`](../README.md) (the hub) is generated from it, and so are the `llms.txt` and `llms-full.txt` published at the site root, and the sidebar of the documentation site will be too. A page that is not in the map does not exist as far as readers and agents are concerned, and `make docs-check` says so. The design records of `docs/plans/` are the one exception: they are internal and stay out of the map.
+
+The pages of the map ship inside the binary ([Built-in documentation](../features/built-in-docs.md)): `docs/embed.go` embeds `nav.yaml` and the Markdown of the group folders, and the web UI's reader, the console's F1 help, `coddy docs` and the agent's `coddy_docs_*` tools all read that copy. Two things follow for a writer. A new group folder under `docs/` has to be added to the pattern in `docs/embed.go`, or `TestDefaultCarriesEveryPageOfTheMap` in `internal/docs` fails. And a page is read outside the repository: relative links to other pages work everywhere (they become `coddy:<slug>#<anchor>`), images and links to files of the repository resolve to GitHub at the release tag, so an image needs a caption that stands on its own, which is what a reader offline and the console see instead of it.
 
 A page that moves takes its address with it: there are no redirect stubs, so an old link breaks, and the coddy.dev address (`coddy.dev/docs/<slug>`) follows the map. Links that leave the repository use that form, and the binary, the schema and the bundled skill print the current addresses.
 
@@ -14258,7 +14500,11 @@ Activation uses globs, **`alwaysApply`**, **`@mention`**, sticky auto rules, and
 
 ### Mentions (`internal/mention`)
 
-The one grammar of **`@`** references (**`grammar.go`**: paths relative, absolute, under **`~`** or above the workspace, quoted paths, line ranges **`:N-M`** and **`#L`**, folders, **`@session:`** / **`@rule:`** / **`@agent:`**, web pages; every reading of an ambiguous token, longest first, with the one that exists on disk winning), path resolution against a session's workspace (**`paths.go`**), the workspace index for completion (**`index.go`**: **`git ls-files`** in a checkout, a walk elsewhere, cached per root and rebuilt when a mention starts), fuzzy ranking (**`fuzzy.go`**) and the **`<coddy_attachment>`** element a resolved mention is written as, with its display twin **`ForDisplay`** (**`attachment.go`**). Pure: no sessions. **`internal/session/mentions.go`** resolves a prompt's mentions once, when the message is sent - a file, a folder listing, another session's digest, a rule, a subagent, a plan, a web page through the fetcher **`internal/tools/web`** registers - and **`mention_search.go`** answers completion for the console, the web UI and a remote console (**`GET /coddy/mentions`**); **`mention_check.go`** runs the same resolver dry, reading nothing, so the web composer highlights only a mention sending would attach (**`POST /coddy/mentions/check`**). **`internal/agent/mentions.go`** renders the attachments into the user message and adds the rules the mentioned paths activate to that same message, so no mention moves the system prompt. The web composer's twin of the grammar is **`external/ui/src/ui/skills/draftAt.ts`**; both are tested against **`internal/mention/testdata/grammar_cases.json`**. See **`docs/features/mentions.md`**.
+The one grammar of **`@`** references (**`grammar.go`**: paths relative, absolute, under **`~`** or above the workspace, quoted paths, line ranges **`:N-M`** and **`#L`**, folders, **`@session:`** / **`@rule:`** / **`@agent:`** / **`@coddy:`**, web pages; every reading of an ambiguous token, longest first, with the one that exists on disk winning), path resolution against a session's workspace (**`paths.go`**), the workspace index for completion (**`index.go`**: **`git ls-files`** in a checkout, a walk elsewhere, cached per root and rebuilt when a mention starts), fuzzy ranking (**`fuzzy.go`**) and the **`<coddy_attachment>`** element a resolved mention is written as, with its display twin **`ForDisplay`** (**`attachment.go`**). Pure: no sessions. **`internal/session/mentions.go`** resolves a prompt's mentions once, when the message is sent - a file, a folder listing, another session's digest, a rule, a subagent, a plan, a page of the built-in documentation, a web page through the fetcher **`internal/tools/web`** registers - and **`mention_search.go`** answers completion for the console, the web UI and a remote console (**`GET /coddy/mentions`**); **`mention_check.go`** runs the same resolver dry, reading nothing, so the web composer highlights only a mention sending would attach (**`POST /coddy/mentions/check`**). **`internal/agent/mentions.go`** renders the attachments into the user message and adds the rules the mentioned paths activate to that same message, so no mention moves the system prompt. The web composer's twin of the grammar is **`external/ui/src/ui/skills/draftAt.ts`**; both are tested against **`internal/mention/testdata/grammar_cases.json`**. See **`docs/features/mentions.md`**.
+
+### Built-in documentation (`internal/docs`)
+
+The pages of **`docs/nav.yaml`** are embedded by **`docs/embed.go`** (package **`docs`** at the root of the tree, the only place the embed pattern can reach them from) and read by **`internal/docs`**: **`Load`** / **`Default`** build the **`Library`** of groups and pages, each page split into headings with the anchors GitHub gives them (**`Anchor`**, which **`internal/docsgen`**'s link check uses too, so an anchor the check accepts is one every reader finds), its links rewritten for a reader outside the repository (**`coddy:<slug>#<anchor>`** between pages, GitHub at the release tag for images and repository files). **`Search`** ranks sections with BM25F over the page title, the section heading and the text, the index built once per process on first use; **`Resolve`** turns every spelling of a page into the page and its anchor; **`Page.Read`** returns a page or a section under a byte budget with the offset to continue at. Pure: it reads only the embedded tree. The consumers are the tools **`coddy_docs_search`** / **`coddy_docs_read`** (**`internal/tools`**), the **`@coddy:`** mention (**`internal/session/mentions.go`**, **`mention_search.go`**), **`GET /coddy/docs*`** (**`external/httpserver/docs_http.go`**), the console's help (**`external/cli/docs_modal.go`**) and **`coddy docs`** (**`cmd/coddy/docs.go`**). See **`docs/features/built-in-docs.md`**.
 
 ### Config (`internal/config`)
 
@@ -14280,7 +14526,7 @@ YAML-based configuration. Resolution uses **`CODDY_HOME`** (default **`~/.coddy`
 
 ### `ask` mode
 - Read-only research surface enforced by **`internal/agent.ToolSetForMode("ask")`**
-- **`read`**, **`keep_result`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`question`**, **`load_skill`** — no shell, no plan or todo tools, no config tools, and no MCP tools
+- **`read`**, **`keep_result`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`question`**, **`load_skill`**, **`coddy_docs_search`**, **`coddy_docs_read`** — no shell, no plan or todo tools, no config tools, and no MCP tools
 - Unlike **plan**, the allowlist is also enforced at execution time: a tool call outside the set (for example replayed from history) is refused with a read-only notice instead of being executed; approving such a pending call with **allow always** records no grant either
 - A **`@plans/<slug>.plan.md`** mention or **`runPlanSlug`** metadata never starts a plan run in ask mode (the mention is inlined as reading material, the metadata shortcut is refused), and the memory subagent runs recall-only (no memory writes)
 - Suitable for: questions about the codebase, code review and diagnosis, and web research without any mutation surface
@@ -15342,7 +15588,7 @@ Plus MCP tools (**`serverName__toolName`**). When ready to ship implementation w
 
 ### Ask Mode
 
-Embedded **`ask.md`** describes a read-only assistant: it answers from the repository and the web and never mutates anything. The registry allowlist (**`internal/agent.ToolSetForMode("ask")`**) is **`read`**, **`keep_result`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`question`** and **`load_skill`**; there is no shell, no plan, todo or config tool, no **`spawn_agent`**, and **MCP** tools are never appended. Unlike plan mode the allowlist is also enforced at execution time, so a call replayed from history is refused with a read-only notice. A plan mention or **`runPlanSlug`** metadata never starts a plan run in ask mode, and the memory subagent runs recall-only. A subagent child never runs in ask mode unless its parent's turn was already in ask mode, which cannot spawn.
+Embedded **`ask.md`** describes a read-only assistant: it answers from the repository and the web and never mutates anything. The registry allowlist (**`internal/agent.ToolSetForMode("ask")`**) is **`read`**, **`keep_result`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`question`**, **`load_skill`**, **`coddy_docs_search`** and **`coddy_docs_read`**; there is no shell, no plan, todo or config tool, no **`spawn_agent`**, and **MCP** tools are never appended. Unlike plan mode the allowlist is also enforced at execution time, so a call replayed from history is refused with a read-only notice. A plan mention or **`runPlanSlug`** metadata never starts a plan run in ask mode, and the memory subagent runs recall-only. A subagent child never runs in ask mode unless its parent's turn was already in ask mode, which cannot spawn.
 
 ## Built-in Tools Specification
 
@@ -15533,7 +15779,7 @@ Token usage totals are persisted per session and restored after restart.
 
 Left-to-right zones:
 
-1. **Nav rail**: **History** opens the session list overlay; **Scheduler** opens the cron jobs drawer (requires **`coddy serve`** built with **`http,scheduler`** and scheduler enabled). Background tasks are **not** in the rail: they belong to one chat, so their opener sits in that chat's header (see **Background tasks panel**). Brand goes to the empty start screen. **Brand is text only** (**Coddy** plus **agent**), **no** circle or logo mark before the label, even if a reference mockup shows one. Optional **narrow vs wide rail** (**icons only vs icons plus labels**) on viewports **`min-width: 1920px`**, persisted in **`coddy_nav_rail`** cookie (**`narrow`** default). **Brand**, **History**, **Scheduler**, and **Settings** use real **`href`** fragment targets so **middle-click** or **Ctrl/Cmd-click** opens a **new tab** on the same origin for parallel chats. GitHub and API docs links are **not** in the rail — they appear only in the **start-screen footer** (see Repo links below).
+1. **Nav rail**: **History** opens the session list overlay; **Scheduler** opens the cron jobs drawer (requires **`coddy serve`** built with **`http,scheduler`** and scheduler enabled); **Docs**, below the spacer and above **Settings**, opens the documentation reader (see **Documentation screen**). Background tasks are **not** in the rail: they belong to one chat, so their opener sits in that chat's header (see **Background tasks panel**). Brand goes to the empty start screen. **Brand is text only** (**Coddy** plus **agent**), **no** circle or logo mark before the label, even if a reference mockup shows one. Optional **narrow vs wide rail** (**icons only vs icons plus labels**) on viewports **`min-width: 1920px`**, persisted in **`coddy_nav_rail`** cookie (**`narrow`** default). **Brand**, **History**, **Scheduler**, and **Settings** use real **`href`** fragment targets so **middle-click** or **Ctrl/Cmd-click** opens a **new tab** on the same origin for parallel chats. GitHub and API docs links are **not** in the rail — they appear only in the **start-screen footer** (see Repo links below).
 2. **Session list**: **always a drawer overlay** with a dimming backdrop. It must **not** consume a second grid column or shrink the chat canvas (no inline sessions column beside the rail at any breakpoint). **Panel chrome title copy is History** (not "Chats"). There is **no** global hamburger that opens a separate app menu; the **stacked-lines control** in the wide rail header **only** collapses the rail to the narrow (icons-only) layout, matching the references. Each row is a real **`href`** to **`#/s/<sessionId>`** so **middle-click** opens that chat in a **new tab**.
 3. **Chat canvas**: on **`min-width: 1200px`**, editable title and transcript share **`#messages`** with **`overflow-y: auto`**, and **`.chat-bottom`** is **`position: absolute`** with **`--coddy-chat-scrollbar-gutter`** padding so the composer does not cover the scrollbar track. The vignette above the docked composer remains a local transcript shield; in the light theme it blends toward **`--coddy-canvas-gradient-bottom`** instead of using the dark-theme black tint. The sticky title uses **`.chat-title-column`** (**`max-width: 920px`**, centered) so the title bar matches the composer stripe. The pinned title region (**`.chat-scroll-sticky-head`**) carries an **opaque** canvas backing (**`background-color: var(--coddy-canvas-gradient-top)`**) so the title stays fixed at the top of the scrollport while transcript text scrolls **behind** it — no see-through bleed. The shield matches the canvas top color in every theme, so it reads as the title card floating over the page rather than a separate bar. On **`max-width: 1199px`** (phones, tablets, and smaller desktops), **`body`** scrolls (native scrollbar); **`.rail-column`** (top bar with brand and links) is **`position: fixed`** to the **viewport top** (**`.shell-main`** gets **`padding-top: var(--coddy-mobile-top-inset)`** so content clears it). The chat title row (**`.chat-scroll-sticky-head`**) is **`position: sticky`** with **`top: var(--coddy-mobile-title-sticky-top)`** (**`--coddy-mobile-top-inset` plus `--coddy-mobile-chat-stack-gap`**, same **12px** token as title **`padding-bottom`**) so spacing under the rail matches title-to-first-message rhythm. Only **`.rail-pill`** is frosted. In active chat, **`.chat-bottom`** is **`position: fixed`** to the viewport bottom so the composer stays on screen while **`chat-scroll-tail`** reserves space, **`ChatScreen`** uses **`window`** for stick-to-bottom, and the skills slash menu uses the same **`slash-menu--portal`** path as desktop (**`createPortal`**).
 
@@ -16234,7 +16480,7 @@ An **`@`** at line start or after whitespace, an opening bracket or a quote open
 
 - **Automation**: container **`data-testid="workspace-files-menu"`** (**`role="listbox"`**, aria label **`composer.workspaceFilesAriaLabel`**), rows **`data-testid={`mention-row-${kind}-${label}`}`** (label with non **`[a-zA-Z0-9_-]`** runs replaced by **`_`**) with **`data-at-idx`**, the cut count **`data-testid="mention-more"`**.
 - **Title row** is the shared **`slash-menu-title`**, **`composer.workspaceFilesTitle`** (**Mention** / **Упоминание**).
-- **Rows** are **`.slash-row-btn.mention-row`** inside one **`.slash-row-line`** (two-line clamp, as the slash rows): a kind label **`.mention-kind`** first - **10px** uppercase text at **16px** line height, **44px** minimum width, **6px** radius, a **7%** text-tint plate with **62%** text; the meta kinds (**`.mention-kind--session`**, **`--rule`**, **`--agent`**, **`--plan`**, **`--scheme`**) take the accent on a **14%** accent plate - then the label in **`.slash-row-name`** (a scheme hint prints **`@session:`**), then **`.slash-row-desc`**: nothing for a path (its label is the whole path), the id and date for a session, the description for a rule or a subagent, a localized sentence for a scheme hint.
+- **Rows** are **`.slash-row-btn.mention-row`** inside one **`.slash-row-line`** (two-line clamp, as the slash rows): a kind label **`.mention-kind`** first - **10px** uppercase text at **16px** line height, **44px** minimum width, **6px** radius, a **7%** text-tint plate with **62%** text; the meta kinds (**`.mention-kind--session`**, **`--rule`**, **`--agent`**, **`--plan`**, **`--doc`**, **`--scheme`**) take the accent on a **14%** accent plate - then the label in **`.slash-row-name`** (a scheme hint prints **`@session:`**), then **`.slash-row-desc`**: nothing for a path (its label is the whole path), the id and date for a session, the description for a rule or a subagent, a localized sentence for a scheme hint.
 - **Highlight**: **ArrowUp** / **ArrowDown** move **`is-active`** (the slash picker's accent tint) and **`aria-selected`**, wrapping, and scroll the row into view; the pointer moves it too (**`onMouseEnter`**). **Enter** and **Tab** take the highlighted row, while a turn runs as well; **Escape** closes the picker.
 - **Taking a row** replaces **`@`** plus the query with its **`insert`**. A folder or a scheme hint (**`continue`**) adds no space and the picker stays open on the new query; anything else ends the mention with a space.
 - **Cut list**: when the server matched more than it returned, **`.mention-more`** on the right of the title row (**`.mention-title`**) says **50 of 1204, type to narrow** (**`composer.mentionMore`**): the rows scroll, the title is what the reader sees when the picker opens. The **`.at-range-menu-hint`** footer (a **`:`** after a file picks lines) shows only while a file row is listed.
@@ -16310,7 +16556,7 @@ Use these to regress behaviour after CSS or **`Composer`** edits. **Vitest** row
 - Treat the `postcss` fence label as a CSS grammar alias; retain the original label and source for rendering and copying. Plugin-specific PostCSS extensions have CSS-level highlighting only.
 - Use the declared fence language (`js` / `javascript`, `ts`, `css`, `html`, `json`, `python`, `go`, and other bundled highlight.js common languages). Unknown or unlabelled fences remain literal text without language guessing; incomplete streamed fences still render safely.
 - Syntax colors use the `--syntax-*` semantic palette in each of the seven appearance themes. Keywords, strings, numbers, titles, attributes/selectors, types, comments, metadata, and deletions follow the active theme immediately, including already-rendered responses. Keep token selectors scoped to `.md-code`.
-- Each code block has a copy button in the top right corner that copies only the block contents.
+- Each code block has a copy button in the top right corner that copies only the block contents. The block keeps its own line box (**12px** at **1.5**, whatever the text around it) and the button sits on the middle of its first line (**`top: 3px`** for a **26px** button over **1px** border, **6px** padding and an **18px** line), so a one-line block has it centred (**`codeCopyButtonCss.test.ts`**).
 
 ### Memory tree (deferred explorer)
 
@@ -16371,6 +16617,7 @@ is the screen: there is no list of nodes under it, because everything the list d
   is driven by that live data and by nothing else, and
   **`@media (prefers-reduced-motion: reduce)`** removes all of it, leaving the states carried by
   the copy and a static ring.
+- **Dock on a phone.** Below **1200px** the shell's backdrop rises to **`z-index: 60`** and **`#/swarm`** opens it, so **`.swarm-dock-cluster`** takes **70** there, like the settings drawer and the documentation reader, and starts under the top bar the rail becomes (**`top: calc(var(--coddy-mobile-top-inset) + 6px)`**, the side insets clearing the safe area). Under the backdrop every tap on the map, the search box or a node landed on the backdrop and closed the screen. Pinned by **`SwarmView.test.tsx`** (**takes taps on a phone**) and **`features/swarm_web_ui.feature`**.
 - **Header.** Title (relay name) and a subtitle counting relays, agents and offline nodes, then
   **`.swarm-header-actions`** holding the **`headerSlot`** - **`App.tsx`** passes
   **`<EnvironmentChip/>`** there at the relay root, because the composer that normally carries it
@@ -16408,6 +16655,21 @@ is the screen: there is no list of nodes under it, because everything the list d
 The relay serves this SPA from its own address when built with **`-tags "swarm ui"`**
 (**`external/swarm/spa_ui.go`**), so a relay is something you open in a browser rather than a
 service you reach through some other node's UI.
+
+### Documentation screen (`ui/docs/DocsView.tsx`)
+
+Coddy's own documentation, read out of the binary (**`GET /coddy/docs*`**), at **`#/docs/<page>#<section>`**. It is a reading surface, so it takes the swarm screen's glass dock (**`.docs-dock-cluster`**, the same fixed inset, radius, border, tint and blur as **`.swarm-dock-cluster`**) and reuses the app's controls rather than drawing its own. Unlike the swarm map it is a **sheet**, not a floor: it grows no wider than its three columns (**1350px**: 240 + 780 + 210, two 32px gaps, 28px either side) and stays centred in the space right of the rail (**`width: min(1350px, ...)`** with **`margin-inline: auto`**), so a wide window neither frames the page in empty glass nor pushes the outline away from the text (**`docsReaderCss.test.ts`**). The sheet does not scroll: the header stays put and the page scrolls in the body under it (**`.docs-body`**, **`overflow: auto`**, a size container), so the sheet's scrollbar starts below the search box instead of running up beside it. Reference capture: **`docs/assets/built-in-docs/reader-page-dark-1280.png`**.
+
+- **Header** (**`.docs-header`**) is laid on the columns of the page (the same **`grid-template-columns`** and **32px** gap as the layout, areas **title search actions**): the title over the contents, the search over the text and as wide as it (at most **780px**), the actions over the outline. The title **Documentation** is spelled like the head of every other panel (**`.sessions-head`** of History, Scheduler and Tasks: **12px**, **700**, uppercase, **0.06em** tracking, a **72%** text tint), with the version alone in **11px** at **52%** under it (where the pages come from is not news on this screen). The actions are **Ask the agent** (**`.docs-ask`**, a **999px** pill **30px** tall - the height of the close control beside it, as every row of controls keeps one height - on a **16%** accent plate with a **45%** accent border, the accent's own action because it starts a conversation; the longer explanation is its **`title`**) and the shared close control **`.sessions-close`** - never a bare glyph. The header sits on an **82%** canvas plate with a **6%** hairline under it, outside what scrolls. On the stacked shell it becomes two rows: the title with the actions, then the search across.
+- **Three columns** from **1280px**: the contents (**240px**), the page (a reading measure of at most **780px**), **On this page** (**210px**); below **1280px** the outline goes, below **1200px** (the stacked shell) the contents fold into a **Contents** button with **`<Chevron pointing="down">`** above the page. Both side columns are sticky at the top of the body (**18px**, as tall as the body less that gap at either end: **`calc(100cqh - 2 * var(--docs-top))`**), scroll on their own with the thin scrollbars of Settings, and pad themselves by **3px** so a focus ring is never clipped.
+- **Contents** (**`.docs-toc`**): group titles in **11px** uppercase at **52%** text; each page is a **`.docs-toc-page`** drawn exactly like a Settings tab (**`.settings-nav-item`**: **10px** radius, the **6%** text-tint hover, the page being read on a **22%** accent plate with a **40%** accent border and **`aria-current="page"`**).
+- **Search** (**`.docs-search`**) is the swarm screen's field (**`--coddy-surface-field`**, **10px** radius, **14px** text, a **2px** accent focus outline), with a **`/`** key cap at its right end while it is empty. The hits hang under it (**`.docs-search-results`**, **12px** radius, the panel border and shadow, at most **62vh**) while the box is in use, and the contents stay where they are. The panel is **opaque** - the canvas colour with a **5%** text tint layered on it - because it lives inside the blurred header, where a nested blur sees nothing and a glass tint lets the page show through. The list (**`.docs-hits`**, a **`role="listbox"`** the input controls as a **combobox**) reads page **›** section, then a three-line snippet whose matched words are **`<mark>`**s on a **24%** accent plate; the selected hit (**`aria-activedescendant`**, also the one under the pointer) sits on a **14%** accent plate with a **32%** accent border. Opening a hit folds the panel away; focusing the box brings it back; Escape clears it.
+- **The page** (**`.docs-article .md`**) reads, it does not chat: **15px** at **1.68** line height, **h1 28px**, **h2 20px** with a hairline under it and **36px** above, **h3 16px**; links in the accent mixed **72%** with the text, underlined at **45%**; images fit the column with the panel border. Every section heading carries a **`#`** link (**`.docs-heading-anchor`**) that shows on hover or focus. A breadcrumb (group **›** page) and a quiet **coddy.dev ↗** link sit above the title. While the next page loads, the one on screen stays at **55%** opacity (**`.is-loading`**, **`aria-busy`**) and the ask pill is disabled.
+- **Images and videos.** An image of the page shows **`cursor: zoom-in`** and opens in a lightbox (**`.docs-lightbox`**, rendered into the body at **`z-index: 400`** over an **88%** canvas veil with an **8px** blur): a bar with the caption, **−**, the level, **+** and the shared close control, all **30px** tall in the close control's frame, over a stage that scrolls a zoomed image. The level is one **58px** control that puts the image back to fit: a frame icon while the image is fitted, the percentage while it is zoomed, so the bar keeps its width either way (the words are its **`title`**). A zoom keeps the point clicked, or the middle of the view for the keys and the buttons, where it was. A video (**`video.md-video`**) fills the column with a **10px** radius and the panel border, on black until its first frame (**`#t=0.1`**) arrives.
+- **`/docs`** in the composer opens this screen rather than sending a prompt, and the slash menu's **Commands** group lists it (a row the browser adds to the server's catalog, only where the composer can open the reader). With words it opens the reader with them typed in the search box and the hits open under it.
+- **The foot** (**`.docs-pager`**): the page before and the page after as two cards on **`--coddy-surface-subtle`** with the panel border, the direction in **12px** muted text over the title; the accent frames the one under the pointer.
+- **On this page** (**`.docs-outline`**): the sections two levels deep on a hairline rule, the one being read (it follows the scroll) marked by a **2px** accent segment of that rule and the full text colour.
+- Every transition here is removed under **`prefers-reduced-motion: reduce`**. The screen follows every theme through the tokens only (**`--text`**, **`--bg`**, **`--accent`**, **`--coddy-blend-base`**, **`--coddy-glass-panel-*`**, **`--coddy-surface-*`**): no colour of its own.
 
 ### Sign-in screen (`httpserver.login`)
 
@@ -16884,7 +17146,8 @@ Short map for automation-friendly contributors.
 | `internal/subagents` | Subagent definitions (markdown + YAML frontmatter from **`subagents.dirs`**, built-ins **`general`** and **`explore`**), canonical **scopes**, the **trust receipts** for project-scope files (**`trust.go`**; policy **`subagents.project_trust`**, receipts in **`<home>/subagents-trust.json`**), the process-wide **`Limiter`**, and the catalog (**`coddy agents list`**, **`GET /coddy/subagents`** with the bounds each definition declares, the prompt block; the web UI lists it read-only under **Settings → Subagents**). The runtime that spawns a child is **`internal/agent/subagent.go`**; child sessions are owned by **`internal/session`**, which stores each one inside the bundle of the session that spawned it (**`<parent>/subagents/<child>/`**) under an ordinary **`sess_`** id. Guide: **`docs/features/subagents.md`**. |
 | `internal/hooks` | Operator lifecycle hooks: definition files in Claude Code's shape (**`definition.go`**, **`matcher.go`** with tool-name aliases), the loader with canonical **scopes** (**`loader.go`**; policy **`hooks.project_trust`**), the **trust receipts** for project-scope files (**`trust.go`**; **`<home>/hooks-trust.json`**, keyed by canonical workspace, file and digest; surfaces **`coddy hooks list|trust|untrust`**, **`GET /coddy/hooks`**, **`POST /coddy/hooks/trust|untrust`**), the **catalog** (**`catalog.go`**), and the **runner** (**`runner.go`**: stdin JSON payload, exit-code and JSON answer, timeouts and process groups through **`internal/platform`**). **`internal/agent/hooks.go`** wires `PreToolUse` / `PostToolUse` / `PostToolUseFailure` into **`executeToolCall`**, `UserPromptSubmit` and `Stop` into the loop, `PreCompact` / `PostCompact` into **`CompactSession`**, `SubagentStart` / `SubagentStop` into the spawn runtime and `Notification` into the permission gate; **`internal/session/hooks.go`** fires `SessionStart` from the manager and keeps its context on the session. **`hooktest`** re-executes a test binary as the hook process. Guide: **`docs/features/hooks.md`**, design: **`docs/plans/hooks.md`**. |
 | `internal/session` | Session manager, Filesystem persistence, Acp hooks, rules catalog, and the **provider usage** cache and schedule (**`provider_usage.go`**: the account quota behind a session's model, fetched by **`internal/llm/neuraldeep_usage.go`** from the hub's `GET /v1/limits`, published as **`provider_usage`** at session ready and from every turn's release, served over **`GET /coddy/providers/{name}/usage`** and the events stream). Design: **`docs/plans/neuraldeep-usage.md`**. |
-| `internal/mention` | The one grammar of **`@`** mentions (**`grammar.go`**: relative, absolute, **`~`** and **`../`** paths, quoted paths, **`:N-M`** / **`#L`** ranges, folders, **`@session:`** / **`@rule:`** / **`@agent:`**, web pages; every reading of an ambiguous token, the one that exists winning), path resolution (**`paths.go`**), the workspace index for completion (**`index.go`**: **`git ls-files`** or a walk, cached per root, rebuilt when a mention starts), fuzzy ranking (**`fuzzy.go`**) and the **`<coddy_attachment>`** element plus its display twin **`ForDisplay`** (**`attachment.go`**). **`internal/session/mentions.go`** resolves a prompt's mentions once, into that user message; **`mention_search.go`** answers completion (**`GET /coddy/mentions`**, the console in-process); **`mention_check.go`** runs the resolver dry for the web composer's highlight (**`POST /coddy/mentions/check`**), so only a mention sending would attach is marked; **`internal/agent/mentions.go`** adds the rules a mentioned path activates to the same message, so a mention never moves the system prompt. The SPA twin is **`external/ui/src/ui/skills/draftAt.ts`**, held to **`internal/mention/testdata/grammar_cases.json`** like the Go side. Guide: **`docs/features/mentions.md`**. |
+| `internal/mention` | The one grammar of **`@`** mentions (**`grammar.go`**: relative, absolute, **`~`** and **`../`** paths, quoted paths, **`:N-M`** / **`#L`** ranges, folders, **`@session:`** / **`@rule:`** / **`@agent:`** / **`@coddy:`**, web pages; every reading of an ambiguous token, the one that exists winning), path resolution (**`paths.go`**), the workspace index for completion (**`index.go`**: **`git ls-files`** or a walk, cached per root, rebuilt when a mention starts), fuzzy ranking (**`fuzzy.go`**) and the **`<coddy_attachment>`** element plus its display twin **`ForDisplay`** (**`attachment.go`**). **`internal/session/mentions.go`** resolves a prompt's mentions once, into that user message; **`mention_search.go`** answers completion (**`GET /coddy/mentions`**, the console in-process); **`mention_check.go`** runs the resolver dry for the web composer's highlight (**`POST /coddy/mentions/check`**), so only a mention sending would attach is marked; **`internal/agent/mentions.go`** adds the rules a mentioned path activates to the same message, so a mention never moves the system prompt. The SPA twin is **`external/ui/src/ui/skills/draftAt.ts`**, held to **`internal/mention/testdata/grammar_cases.json`** like the Go side. Guide: **`docs/features/mentions.md`**. |
+| `internal/docs`, `docs/embed.go` | The documentation built into the binary: **`docs/embed.go`** (package **`docs`**, the only place the embed pattern reaches the tree from) carries **`nav.yaml`** and the pages of its groups, never **`plans/`** or **`assets/`**; **`internal/docs`** reads them into a **`Library`** (**`library.go`**: **`Default`**, **`Resolve`** for every spelling of a page, **`Prev`** / **`Next`**), splits pages at headings with GitHub's anchors (**`markdown.go`**: **`Anchor`** and **`HeadingAnchors`**, which **`internal/docsgen`**'s link check uses too, and the link rewriting to **`coddy:<slug>#<anchor>`** and to GitHub at the release tag), ranks sections with BM25F (**`search.go`**, index built once on first use) and reads a page or a section under a byte budget (**`read.go`**). Consumers: **`coddy_docs_search`** / **`coddy_docs_read`** (**`internal/tools`**), **`@coddy:`** (**`internal/session/mentions.go`**, **`mention_search.go`**), **`GET /coddy/docs*`** (**`external/httpserver/docs_http.go`**), the web reader (**`external/ui/src/ui/docs/`**), the console's F1 help (**`external/cli/docs_modal.go`**), **`coddy docs`** (**`cmd/coddy/docs.go`**). A new group folder under **`docs/`** goes into the embed pattern; **`TestDefaultCarriesEveryPageOfTheMap`** fails otherwise. Guide: **`docs/features/built-in-docs.md`**. |
 | `internal/rules` | Rules: discovery roots (`.coddy/rules`, the shared `.agents/rules` as system **`agents-dir`**, `.cursor/rules`, `.claude/rules`, `.codex/rules`, and the operator's own **`${CODDY_HOME}/rules`** as system **`user`**, which applies in every workspace and loses a name clash to the project), nested `AGENTS.md` and `DESIGN.md` files read on demand for the folders a tool enters and never walked for (**`agents.go`**, **`AgentsForPaths`**), the dialect chosen by extension in **`markdown.go`** (**`.mdc`** Cursor: `description` / `globs` / `alwaysApply`, default manual; **`.md`** Claude Code: `paths`, unconditional without them) with a lenient reader for Cursor's YAML-invalid `globs: **/*.go` headers, doublestar glob matching anchored at the session cwd (**`MatchGlob`**), sticky activation from mentioned paths (`@path`, an editor's `file://` attachment) and filesystem tool paths (**`select.go`**, **`scope.go`**; a rule a mention brings rides in that user message, not in **`{{.Rules}}`**), and the catalog behind **`coddy rules list`**. The project docs preamble (**`project_docs.go`**) puts the agent home's **`AGENTS.md`** and **`DESIGN.md`** first, above the workspace's own pair, and no config key names them - the file existing is the switch; **`AgentsForPaths`** reads that same pair for a nested folder a tool enters. The instruction files of **`instructions.files`** are a separate block, read by **`internal/session/instructions_load.go`** into **`{{.Instructions}}`**; a file the preamble already carries is not sent twice. Guide: **`docs/features/rules.md`**. |
 | `external/httpserver` | The HTTP surface **`coddy serve`** runs under **`httpserver.enable`**, built with **`tags=http`** (SSE bridge, Swagger statics, `/coddy` REST, ServeMux wiring). **`Serve(ctx, Options)`** takes an already-built manager; **`turn_mirror.go`** implements **`session.TurnMirror`**, publishing a turn another surface started into that session's composer relay so a browser can watch it - session updates fan out, permission and question requests stay with the surface that has a human. **`subagent_permission_hub.go`** is this server's offer to **`serve.Runtime`** for detached permission prompts: a subagent whose spawning turn has ended publishes its prompt on the agent task row (**`pending_permission`**, shown in the parent chat) and on **`GET /coddy/events`** (**`subagent_permission`**), answered through the ordinary **`POST /coddy/sessions/{child}/permission`**. |
 | `external/ui` | Embedded SPA (`go:embed`) when built with **`tags=http,ui`**. |
