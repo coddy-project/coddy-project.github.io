@@ -76,7 +76,7 @@ providers:
     api_key: "~"
 ```
 
-Anthropic, NeuralDeep (`coddy providers login neuraldeep` instead of a key) and Codex (ChatGPT OAuth) are covered in [Configuration](configuration.md).
+Anthropic, NeuralDeep (`coddy providers login neuraldeep` instead of a key) and Codex (ChatGPT OAuth) are covered in [Configuration](configuration.md); a Devin account signs in with `coddy providers login devin` ([Devin](../features/devin.md)).
 
 ## 3. Check the file
 
@@ -423,6 +423,7 @@ Resolved locations use environment variables and flags (see README). In short:
 - **`CODDY_CONFIG`** - explicit path to `config.yaml`. Same as **`--config`**.
 - **`CODEX_HOME`** - Codex CLI state directory read by **`type: codex`** providers when no Coddy-managed credential exists. Default **`~/.codex`**.
 - **`CODDY_CODEX_BASE_URL`** - override for the Codex backend endpoint (default **`https://chatgpt.com/backend-api/codex`**). Process-level on purpose: **`api_base`** stays ignored for **`type: codex`**, so a settings document cannot redirect a ChatGPT OAuth token. Used by the executable specs and by self-hosted Codex gateways.
+- **`CODDY_DEVIN_CLI_CREDENTIALS`** - the Devin CLI **`credentials.toml`** read by **`type: devin`** providers when no Coddy-managed login exists. Default **`~/.local/share/devin/credentials.toml`** (or under **`$XDG_DATA_HOME`**). **`CODDY_DEVIN_API_SERVER_URL`**, **`CODDY_DEVIN_WEBAPP_URL`** and **`CODDY_DEVIN_API_URL`** move the Devin endpoints for the whole process, for stands and tests; see [Devin](../features/devin.md).
 
 If no **`--config`** is given, the loader uses **`$CODDY_HOME/config.yaml`** (default home **`~/.coddy`**). If that file is missing, it tries **`config.yaml`** in the process current working directory (**`$CWD`** at startup). If neither file exists, built-in defaults apply (no error).
 
@@ -566,6 +567,12 @@ providers:
   - name: "codex"
     type: "codex"
 
+  # `coddy providers login devin` signs in to a Devin account in the browser
+  # (or reuses the Devin CLI login with --devin-cli) and adds this row and one
+  # model per family. The session token lives under $CODDY_HOME/providers/devin/.
+  - name: "devin"
+    type: "devin"
+
   - name: "local"
     type: "openai"
     api_base: "http://localhost:11434/v1"
@@ -609,6 +616,10 @@ models:
 
   - model: "codex/gpt-5.6-sol"
     max_tokens: 8192
+
+  - model: "devin/claude-sonnet-5"
+    reasoning_levels: [low, medium, high, xhigh, max]  # each level is a variant of the family
+    reasoning_default: medium
 
 # ReAct loop settings (Go: config.Agent, internal/config/agent.go)
 agent:
@@ -1015,7 +1026,7 @@ An environment variable named **`CWD`** does not replace the placeholder (a bare
 
 ## Model Provider Reference
 
-Provider **`type`** values match **`internal/llm.NewProvider`**: **`openai`**, **`anthropic`**, **`neuraldeep`**.
+Provider **`type`** values match **`internal/llm.NewProvider`**: **`openai`**, **`anthropic`**, **`neuraldeep`**, **`codex`**, **`devin`**.
 
 YAML split:
 
@@ -1065,6 +1076,11 @@ Credentials come from either a hub sign-in or a plain key. **`coddy providers lo
 While a `neuraldeep` model is active, the console footer, the remote console and the HTTP API show the account's usage (the hub's read-only **`GET /v1/limits`**: session and week windows as percent used with reset times, the wallet in rubles, a hit limit with its reset time), refreshed at session start and after every turn; see **`docs/surfaces/console.md`** (Footer, `/usage`) and **`docs/reference/http-api.md`** (**`GET /coddy/providers/{name}/usage`**). The row's own credential is used, and no dollar figure is ever shown. The panel is on by default; **`usage_limits_panel: false`** on the row (the **Usage limits panel** switch in Settings → LLM Providers) hides it on every surface and stops the **`GET /v1/limits`** reads for that row, for a shared screen or an account that is not yours to watch.
 
 The same API is served from two deployments: **`https://api.neuraldeep.ru/v1`** for Russia and **`https://api.neuraldeep.tech/v1`** for everywhere else. **`api_base`** selects one - leave it empty for the first, and any value that is not one of the two falls back to it (a startup warning says so). The choice travels with the credential: sign-in goes to **`hub.neuraldeep.ru`** or **`hub.neuraldeep.tech`** to match, so pick the endpoint before signing in (**`coddy providers login neuraldeep --api-base https://api.neuraldeep.tech/v1`**, or the endpoint dropdown in Settings). A login with **`--api-base`** also moves an existing provider row to that endpoint (unless **`--no-config`**), so the row and the key agree; in Settings the sign-in follows the dropdown as picked in the form, before Save. A key minted by one hub is not honored by the other; Coddy warns at startup when the stored login and the selected endpoint disagree, and the Settings row shows the same warning live. **`CODDY_NEURALDEEP_BASE_URL`** and **`CODDY_NEURALDEEP_HUB_URL`** still redirect the whole process for stands and tests, and they win over the config. Optional **`proxy`** routes this row's requests, the hub sign-in and the usage reads included ([Provider proxy](#provider-proxy)). Use **`models[].model`** like **`neuraldeep/qwen3.6-35b-a3b`**, plus **`max_tokens`**, **`temperature`**.
+
+### `devin`
+The models of a Devin (Cognition) account, reached the way the Devin CLI reaches them.
+
+**`coddy providers login devin`** signs in through the browser (PKCE, like **`devin auth login`**): the Devin page sends the browser back to a loopback port on this machine, and over SSH you paste the address it ended on into the terminal instead. **`--devin-cli`** reuses the login the Devin CLI already holds and opens no browser. The session token is stored under **`$CODDY_HOME/providers/<name>/devin-auth.json`**; without it the provider falls back to the Devin CLI's **`credentials.toml`**, and an explicit **`api_key`** (or **`api_key_command`** / **`DEVIN_API_KEY`**) wins over both. The login adds one model per family, such as **`devin/claude-opus-5`**, with the family's variants as its **`reasoning_levels`**: level **`high`** is sent as **`claude-opus-5-high`**. **`api_base`** is ignored; optional **`proxy`** routes the sign-in, the catalog and chat ([Provider proxy](#provider-proxy)). The full story, including how levels map to variants and how the output cap is chosen, is on [Devin](../features/devin.md).
 
 ### Local OpenAI-compatible servers (Ollama, llama.cpp, LM Studio)
 Use **`type: openai`** and set **`api_base`** to an OpenAI-compatible base URL that already includes **`/v1`**, for example **`http://localhost:11434/v1`** for Ollama.
@@ -7245,7 +7261,7 @@ A session that finds a held hooks file records a notice, so you learn that hooks
 
 - **Provider keys.** `providers[].api_key` is a literal, a `${ENV}` reference expanded when the file loads, or empty, in which case `NAME_API_KEY` (the provider name upper-cased, hyphens to underscores) is read at call time. `api_key_command` runs a credential helper through the host shell, bounded to 30 seconds, and uses its stdout when `api_key` is empty; the order is literal, then helper, then the environment variable. Keep `config.yaml` free of literal keys and reference the environment.
 - **The `.env` file.** `$CODDY_HOME/.env` is read before `config.yaml` is parsed, one `KEY=VALUE` per line (`export`, quotes and comments accepted); a variable already set in the process environment is never overridden. A literal dollar sign in a value is written as `$$`. See [Configuration](../getting-started/configuration.md).
-- **Provider logins.** `coddy providers login codex` and `coddy providers login neuraldeep` (and the sign-in buttons in the web UI) store the issued credentials under `$CODDY_HOME/providers/<name>/` - `codex-auth.json`, `neuraldeep-auth.json` - in a directory created `0700` with the file at `0600`. `coddy providers list` shows which source each request actually uses and `coddy providers logout <name>` revokes and forgets a login.
+- **Provider logins.** `coddy providers login codex`, `coddy providers login neuraldeep` and `coddy providers login devin` (and, for the first two, the sign-in buttons in the web UI) store the issued credentials under `$CODDY_HOME/providers/<name>/` - `codex-auth.json`, `neuraldeep-auth.json`, `devin-auth.json` - in a directory created `0700` with the file at `0600`. `coddy providers list` shows which source each request actually uses and `coddy providers logout <name>` revokes and forgets a login (for Devin it forgets the local token; the Devin session ends on Devin's side). A `devin` row also reads the Devin CLI's own `credentials.toml` when no Coddy login exists, and never writes to it; the Devin browser sign-in listens on `127.0.0.1` only and checks the `state` in constant time, like the NeuralDeep one.
 - **Redaction.** `GET /coddy/config` never returns `httpserver.auth_token`; a save from the Settings UI writes a `${VAR}` reference back as a reference rather than as the secret it resolved to; `coddy -t` and `--dry-run` never echo a value under a secret-shaped key (`api_key` and any `*_api_key` such as `tools.websearch.brave_api_key`, `auth_token`, `pairing_tokens`) and mask the Telegram token in errors; the config-commit prompt lists the staged commands with secrets redacted; the swarm proxy replaces the caller's `Authorization` header rather than forwarding it.
 - **Tokens on the wire.** `--remote-token` and `CODDY_REMOTE_TOKEN` are never read from `config.yaml`, and a token about to travel over plain `http://` to a non-loopback host produces a warning. The web UI keeps remote tokens in the browser only.
 - **Transcripts on disk.** Every session bundle under `$CODDY_HOME/sessions/<id>/` holds the full conversation in `messages.json`, tool output included, and the files attached to it under `assets/` (written read-only, `0444`). Whoever can read the home directory can read every conversation; `sessions.dir` moves the store, and `/export` writes a copy into the workspace on request.
@@ -9217,6 +9233,121 @@ confirm-then-commit workflow, and discovery safety checks.
 - The LLM can decide to retry, use alternative tools, or inform the user
 
 
+# Features / Devin
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/devin.md
+
+# Devin
+
+A `type: devin` provider gives Coddy the models of a Devin (Cognition) account: Claude, GPT, Gemini, SWE, Kimi, GLM and the rest of the families the account's plan serves. You sign in the way the Devin CLI does, through the browser, or reuse the login `devin auth login` already holds. Devin is only the backend here: the agent stays Coddy's own, with its system prompt, its tools, its permission gate and its ReAct loop, on every surface - the console, the web UI, ACP editors and the Telegram gateway.
+
+Usage is billed to the Devin account the same way a Devin CLI session is.
+
+## Sign in
+
+```bash
+coddy providers login devin
+```
+
+The command opens the Devin sign-in page in a browser and waits. After you sign in, the page sends the browser back to `http://127.0.0.1:<port>/callback` on this machine, where Coddy receives the authorization code, exchanges it for a session token (PKCE, the same exchange `devin auth login` makes) and proves the token by minting a user JWT with it. Then it prints the account and writes three things:
+
+- the session token, to `$CODDY_HOME/providers/devin/devin-auth.json` with mode `0600`;
+- the provider row and one model per family the account can use, into `config.yaml`;
+- `agent.model`, when the config has none yet.
+
+```text
+$ coddy providers login devin
+Open https://app.devin.ai/auth/cli/continue?...
+Sign in there; the page then sends the browser back to this machine.
+If the browser runs on another machine, that last page will not load: copy its address from the address bar and paste it here.
+Waiting for the sign-in to finish...
+Signed in as Jane <jane@example.com>. Credential stored at /home/jane/.coddy/providers/devin/devin-auth.json
+Updated /home/jane/.coddy/config.yaml: provider devin, agent.model devin/claude-opus-5, 39 models (devin/claude-opus-5, devin/claude-fable-5-1, devin/claude-sonnet-5, ...)
+```
+
+On a machine reached over SSH there is no browser to open, and a browser on your laptop cannot reach the server's loopback port. Open the printed address on the laptop, sign in, and when the browser lands on the `127.0.0.1` page that does not load, copy that address from the address bar and paste it into the terminal: it carries the code, and the sign-in completes the same way. A line that is not such an address is refused with a note and the wait goes on. The wait ends after ten minutes, or sooner with Ctrl-C.
+
+`--no-config` stores the token and leaves `config.yaml` alone. A second login only adds what is missing: rows and models already in the file stay as you wrote them.
+
+### Reuse the Devin CLI login
+
+```bash
+coddy providers login devin --devin-cli
+```
+
+With a Devin CLI installed and signed in, no browser is needed: the command checks the CLI's own login by minting a user JWT with it and publishes the catalog into `config.yaml`. The token stays where the Devin CLI keeps it; Coddy reads it at every request and never writes to that file. `devin auth logout` therefore ends the login for Coddy as well.
+
+## Where the session token comes from
+
+A request uses the first of these that holds a token:
+
+1. the row's `api_key`, `api_key_command`, or the `DEVIN_API_KEY` variable (for a row named `devin`; the name follows the usual `NAME_API_KEY` rule). The value is a Devin session token, `devin-session-token$...`; a bare token gets that prefix;
+2. the Coddy-managed login, `$CODDY_HOME/providers/<name>/devin-auth.json`;
+3. the Devin CLI login, `credentials.toml` under `$XDG_DATA_HOME/devin` or `~/.local/share/devin` (on macOS also `~/Library/Application Support/devin`, on Windows `%LOCALAPPDATA%\devin`). `CODDY_DEVIN_CLI_CREDENTIALS` names the file explicitly.
+
+`coddy providers list` shows which one a row uses, with the token masked:
+
+```text
+  devin (devin): signed in to Devin (jane@example.com, devin-session-token$…Q2xw)
+```
+
+`coddy providers logout devin` deletes the Coddy-managed file only. When a Devin CLI login exists, the row keeps working through it, and the command says so. The session itself stays valid on Devin's side until you end it there.
+
+At startup `coddy acp` and the HTTP server of `coddy serve` log one `devin credential` line per devin row, naming the source it will use or warning that there is none.
+
+## Models and reasoning levels
+
+The Devin catalog lists every variant of a model as its own id: Claude Opus 5 comes as `claude-opus-5-low`, `-medium`, `-high`, `-xhigh` and `-max`, plus paid variants such as `-fast`. Coddy offers one model per family and reaches the variants through the reasoning level, so the login writes entries like this one:
+
+```yaml
+models:
+  - model: devin/claude-opus-5
+    reasoning_levels: [low, medium, high, xhigh, max]
+    reasoning_default: medium
+    max_context_tokens: 1000000
+    multimodal: true
+```
+
+A turn on `devin/claude-opus-5` at level `high` is sent as `claude-opus-5-high`. The levels, the default, the context window and the image support all come from the catalog, per family; a family with one variant gets `reasoning_levels: []`, and the reasoning selector is hidden for it. Where a family has a `none` variant, the selector offers `off` next to `none`, and both pick that variant. A level the family lacks falls back to the family's default variant; `minimal` takes `minimal`, `none` or `low`, the first the family has.
+
+Any full variant id works as a model as well, `devin/claude-opus-5-high-fast` for instance: an id the catalog knows is sent as written, whatever the reasoning level. So does an id the catalog does not list, and the Devin API server then answers for it.
+
+`max_tokens` on a model entry caps the output; without it the variant's own limit from the catalog is used. The cap is lowered when the prompt plus the cap would not fit the context window, because the server answers an overshoot with an opaque internal error that no retry fixes. A `temperature` configured on the model is sent unless a reasoning level is in effect; without one the request carries `1.0`, as the Devin clients do.
+
+Thinking streams into the transcript like any other provider's. Signed reasoning blocks (Claude, Gemini) are kept with the assistant message and replayed on the next request of the same variant, so the model continues its own chain of thought across tool calls.
+
+## Configuration
+
+```yaml
+providers:
+  - name: devin
+    type: devin
+    # api_key: devin-session-token$...   # optional, wins over the logins
+    # proxy: none                        # the route of every request of the row
+
+models:
+  - model: devin/claude-sonnet-5
+    reasoning_levels: [low, medium, high, xhigh, max]
+    reasoning_default: medium
+```
+
+`api_base` is ignored for `type: devin`: a session token only ever goes to the Devin API server. The server comes from the login itself: an account served by a dedicated deployment records it with the token, and the user JWT can move chat to the account's own server. `proxy` routes the sign-in, the catalog and chat alike ([Provider proxy](../getting-started/configuration.md#provider-proxy)).
+
+`coddy --dry-run` asks each devin row for its catalog and checks the configured models against the family list; a full variant id there is reported as a warning, since the family list does not name variants.
+
+## How it works
+
+The provider speaks the protocol the Devin CLI and Devin Desktop use with the Devin API server: Connect-RPC with protobuf messages. The session token is exchanged for a user JWT (`GetUserJwt`, cached until shortly before it expires), the catalog comes from `GetCliModelConfigs` (cached for thirty minutes per account), and a turn is one `GetChatMessage` server stream of gzip-compressed frames carrying text, thinking, tool-call fragments, usage and the stop reason. Coddy's system prompt travels as the request's system prompt, its tools as tool definitions, and tool results as tool messages. Usage counts the prompt cache: the reported input adds the uncached part, the cache write and the cache read, and the cache read is reported as cached input.
+
+The protocol is not published by Cognition. Coddy follows what the official clients send, so a change on Devin's side can break the provider until Coddy follows it.
+
+A stream the server ends with an error before any text reached the caller is retried under the usual rules (a rate limit, `resource_exhausted`, counts as HTTP 429); once text has streamed it is not, so no delta is shown twice. A stream cut before its end frame keeps the text it delivered and drops the tool calls of the unfinished answer.
+
+## Stands and tests
+
+`CODDY_DEVIN_API_SERVER_URL`, `CODDY_DEVIN_WEBAPP_URL` and `CODDY_DEVIN_API_URL` move the API server, the sign-in page and the code exchange for the whole process; `internal/devinfake` is the offline stand that plays all three, and `features/devin_provider.feature` drives the sign-in, the Devin CLI login and a full agent turn against it with no account and no network.
+
+
 # Features / Web search
 
 Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/web-search.md
@@ -10726,7 +10857,7 @@ Usage:
   coddy plugin remove <name>
   coddy plugin enable <name> | disable <name>
   coddy mcp list | trust <name> | untrust <name> [--cwd DIR]
-  coddy providers list | login <name> [--browser] [--no-config] [--api-base URL] | logout <name> [--home DIR]
+  coddy providers list | login <name> [--browser] [--devin-cli] [--no-config] [--api-base URL] | logout <name> [--home DIR]
   coddy rules list [--cwd DIR]
   coddy agents list [--cwd DIR]
   coddy agents trust <name> [--cwd DIR]
@@ -10941,6 +11072,8 @@ Usage of providers:
     	neuraldeep: sign in through a loopback browser callback instead of the device flow
   -device
     	neuraldeep: the device flow, which is the default (accepted for compatibility)
+  -devin-cli devin auth login
+    	devin: use the login devin auth login already holds instead of a browser sign-in
   -home string
     	override CODDY_HOME
   -no-config
@@ -11043,9 +11176,9 @@ API credentials and transport selection for upstream LLM vendors. When api_key i
 |-----|------|---------|-------------|
 | `providers` | list of objects |  | API credentials and transport selection for upstream LLM vendors. When api_key is empty, the runtime reads the NAME_API_KEY environment variable (NAME is the provider name in uppercase with hyphens mapped to underscores). |
 | `providers[].name` | string |  | Logical id used as the first segment of models[].model. ASCII letters, digits, hyphen, underscore; must start with a letter. |
-| `providers[].type` | string, one of `openai`, `anthropic`, `neuraldeep`, `codex` |  | Wire protocol for this provider. Use "openai" for configurable OpenAI-compatible endpoints (OpenAI, DeepSeek, Groq, Ollama, llama.cpp, LM Studio), "anthropic" for Anthropic, "neuraldeep" for NeuralDeep's OpenAI-compatible API at one of its two official deployments (selected with api_base), or "codex" for ChatGPT OAuth against the official Codex backend (Responses API). |
-| `providers[].api_base` | string |  | Optional base URL override. For type "openai" include /v1 (e.g. http://localhost:11434/v1); for type "anthropic" an Anthropic-compatible gateway (default https://api.anthropic.com). For type "neuraldeep" it selects the deployment: https://api.neuraldeep.ru/v1 (Russia, the default) or https://api.neuraldeep.tech/v1 (the international mirror); any other value falls back to the default. Ignored for type "codex", which always uses a fixed official endpoint. |
-| `providers[].api_key` | string |  | Provider secret. A literal key, a "${ENV}" reference expanded at load time, or empty to read NAME_API_KEY at LLM call time. Resolution order: api_key -> api_key_command stdout -> NAME_API_KEY. |
+| `providers[].type` | string, one of `openai`, `anthropic`, `neuraldeep`, `codex`, `devin` |  | Wire protocol for this provider. Use "openai" for configurable OpenAI-compatible endpoints (OpenAI, DeepSeek, Groq, Ollama, llama.cpp, LM Studio), "anthropic" for Anthropic, "neuraldeep" for NeuralDeep's OpenAI-compatible API at one of its two official deployments (selected with api_base), "codex" for ChatGPT OAuth against the official Codex backend (Responses API), or "devin" for a Devin (Cognition) account signed in through the browser or the Devin CLI, served by the Devin API server; see https://coddy.dev/docs/features/devin. |
+| `providers[].api_base` | string |  | Optional base URL override. For type "openai" include /v1 (e.g. http://localhost:11434/v1); for type "anthropic" an Anthropic-compatible gateway (default https://api.anthropic.com). For type "neuraldeep" it selects the deployment: https://api.neuraldeep.ru/v1 (Russia, the default) or https://api.neuraldeep.tech/v1 (the international mirror); any other value falls back to the default. Ignored for types "codex" and "devin", which always use their official endpoints. |
+| `providers[].api_key` | string |  | Provider secret. A literal key, a "${ENV}" reference expanded at load time, or empty to read NAME_API_KEY at LLM call time. Resolution order: api_key -> api_key_command stdout -> NAME_API_KEY. For type "devin" it is a Devin session token and, when set, wins over the browser login and the Devin CLI login. |
 | `providers[].api_key_command` | string |  | Optional credential-helper command. When api_key is empty it runs via the detected host shell (pwsh, powershell, or cmd on Windows; bash or sh elsewhere) and the trimmed stdout is used as the key. On failure resolution falls back to NAME_API_KEY. |
 | `providers[].proxy` | string | inherit | inherit (the default, the same as leaving the key out), none, or a proxy URL: http://, https://, socks5:// or socks5h://. inherit follows the proxy the environment of the Coddy process names - HTTPS_PROXY, HTTP_PROXY and NO_PROXY, never for a loopback address; ALL_PROXY is not read. none connects directly and ignores those variables. A proxy URL sends every request of this row through that proxy, NO_PROXY and loopback included; with SOCKS the proxy resolves host names. The setting covers every request of the provider: its completions, its model list, its account usage and its sign-in. |
 | `providers[].timeout_ms` | integer | 0 | Optional bound on each LLM HTTP request to this provider, including the streamed body read. 0 (the default) sets no client timeout, so slow prompt processing on large contexts is never cut short. |
@@ -11661,6 +11794,9 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | `CODDY_CODEX_BASE_URL` | `internal/llm/codex_auth.go` | Overrides the Codex backend endpoint for the whole process; `api_base` is ignored for `type: codex` on purpose, so a configuration file can never redirect an OAuth token. | [Configuration](../getting-started/configuration.md#config-file-location-and-paths) |
 | `CODDY_NEURALDEEP_HUB_URL` | `internal/llm/neuraldeep_auth.go` | The hub that issues keys during `coddy providers login neuraldeep` and answers the usage panel, overriding the deployment derived from `api_base`. | [Configuration](../getting-started/configuration.md) |
 | `CODDY_NEURALDEEP_BASE_URL` | `internal/llm/neuraldeep_auth.go` | The API base every NeuralDeep request goes to, overriding `api_base`. Meant for stands and tests. | [Console](../surfaces/console.md#testing) |
+| `CODDY_DEVIN_API_SERVER_URL` | `internal/llm/devin_auth.go` | The Devin API server every `type: devin` request goes to (the user JWT, the model catalog, chat) and the fallback of the sign-in code exchange, for the whole process. `api_base` is ignored for `type: devin`, so a configuration file cannot redirect a session token. Meant for stands and tests. | [Devin](../features/devin.md#stands-and-tests) |
+| `CODDY_DEVIN_WEBAPP_URL`, `CODDY_DEVIN_API_URL` | `internal/llm/devin_auth.go` | The sign-in page host (`https://app.devin.ai`) and the Devin API that exchanges the sign-in code for a session token (`https://api.devin.ai`) during `coddy providers login devin`. Meant for stands and tests. | [Devin](../features/devin.md#stands-and-tests) |
+| `CODDY_DEVIN_CLI_CREDENTIALS` | `internal/llm/devin_auth.go` | The Devin CLI `credentials.toml` a `type: devin` provider falls back to when no Coddy-managed login exists. Default: `$XDG_DATA_HOME/devin/credentials.toml` or `~/.local/share/devin/credentials.toml`, whichever exists. | [Devin](../features/devin.md#where-the-session-token-comes-from) |
 | `SSH_AUTH_SOCK` | `internal/tools/ssh/agent.go` | The SSH agent socket `ssh_run_command` tries before key files; unset or unreachable means key files only. | [Configuration](../getting-started/configuration.md#ssh-remote-execution) |
 | `BROWSER`, `NO_BROWSER` | `internal/platform/browser.go` | Whether `coddy providers login` may open a browser, and with what. `BROWSER` names the opener (`none` opts out; a `%` template or a `:` list is ignored and the openers on `PATH` are tried instead); a set `NO_BROWSER` opts out. On Linux `DISPLAY` or `WAYLAND_DISPLAY` must be set, and an SSH session (`SSH_CONNECTION`, `SSH_TTY` or `SSH_CLIENT` set) counts as having no browser on every platform. | [Security and trust](../operate/security.md#secrets) |
 | `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` | `internal/netx/dial.go` (Go's `http.ProxyFromEnvironment`) | The proxy for the HTTP transports `internal/netx` builds when the section they serve sets no `proxy` of its own; an explicit `proxy` replaces them. `http_request` and `webfetch` honour them too, unless a call passes its own `proxy` (or `direct`), and so do every request of an LLM provider row and the Telegram bot, unless `providers[].proxy` or `gateways.telegram.proxy` is `none` or a proxy URL. `ALL_PROXY` is not read. | [Swarm](../operate/swarm.md#encryption-and-proxies), [Provider proxy](../getting-started/configuration.md#provider-proxy), [Telegram gateway](../surfaces/gateway.md#proxy) |
