@@ -39,6 +39,7 @@ Every page below is the Markdown kept in the repository, read straight from the 
 ## Features
 
 - [Operating modes](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/modes.md): agent, plan and ask, which tools each mode allows and how to switch on every surface. (docs/features/modes.md)
+- [Session settings](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/session-settings.md): Switching the model, reasoning level, mode and permission mode from the conversation with /model, /reasoning, /think, /nothink, /agent, /plan, /ask and /permissions, for the session or the next turns, the permission dialog's session switch, and the model switching itself. (docs/features/session-settings.md)
 - [Sessions](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/sessions.md): Session bundles on disk, resuming, branches from an edited message, todo lists, the sessions CLI. (docs/features/sessions.md)
 - [Rules and instructions](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/rules.md): Rules from the .coddy, .agents, .cursor, .claude and .codex folders, AGENTS.md and DESIGN.md of a folder the agent enters, your own pair and rules in the agent home, instruction files, dialects by extension, activation. (docs/features/rules.md)
 - [Skills](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/skills.md): SKILL.md packs as slash commands, skills.dirs, the registries and the plugin command. (docs/features/skills.md)
