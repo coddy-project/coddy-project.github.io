@@ -50,6 +50,9 @@ curl -fsSL https://coddy.dev/install.sh | bash
 irm https://coddy.dev/install.ps1 | iex
 ```
 
+Running the installer over an existing binary replaces it without asking — updating is what the
+script is for. `-y` and `-Yes` are still accepted so older unattended commands keep working.
+
 `install.sh` installs the binary into `~/.local/bin` and, when the release archive carries them, the
 man page and the bash and zsh completions into the matching `share` directory. A user-level install
 then writes one guarded block to the rc file of the login shell (`~/.zshrc`, or `~/.bashrc` /

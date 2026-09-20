@@ -1,7 +1,7 @@
 # Install Coddy from GitHub Releases (Windows amd64).
 # Usage:
 #   irm https://coddy.dev/install.ps1 | iex
-#   .\install.ps1 [-Version "0.9.5"] [-InstallDir $path] [-Home $path] [-Yes]
+#   .\install.ps1 [-Version "0.9.5"] [-InstallDir $path] [-Home $path]
 param(
     [string]$Version = $env:CODDY_VERSION,
     [string]$Repo = $(if ($env:CODDY_REPO) { $env:CODDY_REPO } else { "coddy-project/coddy-agent" }),
@@ -9,7 +9,7 @@ param(
     [Alias("Home")]
     [string]$CoddyHome = $(if ($env:CODDY_HOME) { $env:CODDY_HOME } else { "" }),
     [string]$Api = $(if ($env:CODDY_API) { $env:CODDY_API } else { "https://api.github.com" }),
-    [switch]$Yes
+    [switch]$Yes  # accepted for compatibility; existing installs never prompt
 )
 
 $ErrorActionPreference = "Stop"
@@ -50,12 +50,10 @@ $downloadUrl = "https://github.com/$Repo/releases/download/$tag/$asset"
 New-Item -ItemType Directory -Force -Path $InstallDir, $CoddyHome, (Join-Path $CoddyHome "sessions"), (Join-Path $CoddyHome "skills") | Out-Null
 
 $dest = Join-Path $InstallDir "coddy.exe"
-if ((Test-Path $dest) -and -not $Yes) {
-    $ans = Read-Host "Replace existing $dest with $tag? [y/N]"
-    if ($ans -notmatch "^[yY]") {
-        Write-Info "cancelled"
-        exit 0
-    }
+# Running the installer over an existing binary is the consent: an update is
+# what the script is for, so it just replaces it.
+if (Test-Path $dest) {
+    Write-Info "replacing existing $dest"
 }
 
 $tmp = Join-Path $env:TEMP ("coddy-install-" + [guid]::NewGuid().ToString())

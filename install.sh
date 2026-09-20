@@ -2,6 +2,7 @@
 # Install Coddy from GitHub Releases into ~/.local/bin and bootstrap ~/.coddy.
 # Usage:
 #   curl -fsSL https://coddy.dev/install.sh | bash
+#   curl -fsSL https://coddy.dev/install.sh | bash -s -- -y   # unattended
 #   ./install.sh [--version X.Y.Z] [--install-dir DIR] [--home DIR] [-y]
 set -euo pipefail
 
@@ -14,7 +15,6 @@ CODDY_DATA_DIR="${CODDY_DATA_DIR:-}"
 CODDY_HOME="${CODDY_HOME:-}"
 CODDY_VERSION="${CODDY_VERSION:-}"
 CODDY_NO_SHELL_SETUP="${CODDY_NO_SHELL_SETUP:-0}"
-YES=0
 
 usage() {
   cat <<EOF
@@ -36,7 +36,8 @@ Options:
   --home D          Agent state directory (default: ~/.coddy)
   --repo OWNER/NAME Override GitHub repo (default: coddy-project/coddy-agent)
   --no-shell-setup  Do not touch ~/.zshrc or ~/.bashrc
-  -y, --yes         Non-interactive
+  -y, --yes         Accepted for compatibility; an existing binary is
+                    always replaced without asking
   -h, --help        Show this help
 
 Environment:
@@ -68,7 +69,7 @@ while [ $# -gt 0 ]; do
     --no-shell-setup) CODDY_NO_SHELL_SETUP=1; shift ;;
     --home) CODDY_HOME="${2:-}"; shift 2 ;;
     --repo) CODDY_REPO="${2:-}"; shift 2 ;;
-    -y|--yes) YES=1; shift ;;
+    -y|--yes) shift ;;  # accepted for compatibility; updates never prompt
     -h|--help) usage; exit 0 ;;
     *) die "unknown option: $1 (try --help)" ;;
   esac
@@ -140,13 +141,10 @@ ASSET="coddy_${TAG}_${GOOS}_${GOARCH}.tar.gz"
 DOWNLOAD_URL="${CODDY_DOWNLOAD_BASE%/}/${CODDY_REPO}/releases/download/${TAG}/${ASSET}"
 
 DEST="${CODDY_INSTALL_DIR}/coddy"
-if [ -f "$DEST" ] && [ "$YES" -eq 0 ]; then
-  printf 'Replace existing %s with %s? [y/N] ' "$DEST" "$TAG"
-  read -r ans || ans=""
-  case "$ans" in
-    y|Y|yes|YES) ;;
-    *) log "cancelled"; exit 0 ;;
-  esac
+# Running the installer over an existing binary is the consent: an update is
+# what the script is for, so it just replaces it.
+if [ -f "$DEST" ]; then
+  log "replacing existing ${DEST}"
 fi
 
 TMP="$(mktemp -d)"
