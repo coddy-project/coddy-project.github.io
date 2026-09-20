@@ -10463,6 +10463,12 @@ tools:
 
 Setting `enable: false` removes the `background` option from `run_command` and does not register the background tools at all. Subagent runs (`docs/features/subagents.md`) live in the same pool, so `max_concurrent`, `max_timeout_seconds` and `output_buffer_bytes` bound them too; `subagents.*` adds the process-wide cap on child runs, the nesting depth and the default run timeout.
 
+## Preview servers
+
+A third kind of task is neither a command nor an agent run: `kind: server` is the static file server the `preview_server` tool starts over a project directory ([Preview server](preview-server.md)). It is goroutines of the Coddy process, launched through the same callback as a subagent run, so it has no pid, no exit code worth showing and nothing for `background_reap` to find after a crash. Its row carries `url`, the address it answers at: the Tasks panel and `/tasks` show it as a link, `background_list` prints it after the label, and `background_output` is its request log.
+
+It is also the one kind of task with no hard limit. A page the operator asked to keep open has no duration to estimate, so the pool arms no timer for it and `timeout_seconds` reads `0`; only a `timeout_seconds` on the `preview_server` call itself ends it early, verbatim and uncapped by `max_timeout_seconds`. A quiet server is never flagged `silent for …`. Everything else is the ordinary lifecycle: it counts toward `max_concurrent`, `background_stop` and the Stop button end it, deleting the session or draining the process takes it down, and a record left `running` by a dead process comes back as `orphaned`.
+
 ## System tasks
 
 A task the runtime starts on its own behalf, today the memory subagent of a user turn ([Long-term memory](memory.md)), is a `kind: agent` task whose `agent` object carries `system: true`. It is admitted past `tools.background.max_concurrent` and never counted toward it, because that cap bounds the work the model starts and a run per turn would refuse the model's next command; the model-facing tools (`background_list`, `background_output`, `background_wait`, `background_stop`) omit it and refuse its id, while the REST rows and the Tasks drawer show it, its card tagged `memory`. Drain stops it like any task, after a grace for a run that is still persisting.
@@ -10506,7 +10512,84 @@ A **scheduled run** ([Scheduler](../operate/scheduler.md)) is the same kind of t
 - The liveness probe has its own tests in `internal/platform`: `procgroup_test.go` for what both platforms owe (a running process is found, an exited one is not, probing is repeatable), and `procgroup_windows_test.go` for what only Windows can get wrong — reporting a killed process alive because its handle is still open, accepting a creation time the record does not describe, and killing a pid on such a record. Reading a bundle written before `process_started_at` existed is pinned in `internal/bgtask` (`TestLoadPersistedLeavesALegacyRecordWithoutAProcessIdentity`).
 - Subagent runs on the pool are specified in `features/subagents.feature` (`internal/agent/bdd_subagents_test.go`), `features/subagents_http.feature` (`external/httpserver/bdd_subagents_test.go`, including a detached prompt announced on the events stream and answered through the child session), `features/subagents_detached_prompts.feature` (`internal/serve`) and `features/subagents_web_ui.feature` (the prompt answered in the parent chat); `Pool.Launch` ordering and `Snapshot.Agent` persistence are unit tests in `internal/bgtask`. See `docs/features/subagents.md`.
 - The console side is specified in `features/cli_tui.feature` (the overlay over a real pooled command: list, output, stop; the status line's turn numbers) and `features/cli_remote.feature` (the same overlay and the `turn_progress` line against a fake remote server), with the overlay's rendering and keys, the running count and the poll cadence in `external/cli/tasks_test.go`. `examples/cli/capture_tasks.py` drives the real binary in a pty against a scripted model and renders the captures of this page and of the console guide.
-- End-to-end against a real model: `examples/httpserver/http_e2e_background.py`, `examples/httpserver/http_e2e_background_reap.py` (kills its own coddy mid-task and makes a fresh one clean up after it), and `examples/acp/acp_e2e_background.py`.
+- The preview server is specified in `features/preview_server.feature` (`internal/tools/preview/bdd_preview_server_test.go`: a real pool, a real directory and a real HTTP client), with the refusals - a directory outside the workspace, dot-files, a foreign `Host`, a symlink out of the root - in `internal/tools/preview/preview_test.go` and the untimed task in `internal/bgtask`.
+- End-to-end against a real model: `examples/httpserver/http_e2e_background.py`, `examples/httpserver/http_e2e_background_reap.py` (kills its own coddy mid-task and makes a fresh one clean up after it), `examples/acp/acp_e2e_background.py`, and `examples/httpserver/http_e2e_preview_server.py` for the server kind.
+
+
+# Features / Preview server
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/preview-server.md
+
+# Preview server
+
+The `preview_server` tool serves a directory of the project as a static website on a free localhost port and hands back the address. It exists for the moment you want to try the work yourself: a page opened from disk as `file://` cannot import ES modules, `fetch` its own data or start a worker, so HTML, JS and CSS work needs a web server before a browser will run it.
+
+Ask for it in your own words:
+
+```text
+Run this on a web server, I want to click around myself.
+```
+
+The agent starts the server, answers with the link - `http://127.0.0.1:53817/` - and invites you to open it. Nothing has to be installed for that: the server is part of Coddy, a few goroutines inside the running process, not a `python -m http.server` or an `npx serve` the agent has to find on the machine. A project with a dev server of its own (`npm run dev`, `vite`) still gets that one, as a [background command](background-tasks.md).
+
+## What is served
+
+| Argument | Meaning |
+|---|---|
+| `path` | Directory to serve, relative to the session's working directory. Left out, the working directory itself is served. A file is accepted too: its directory is served and the returned address opens that file. |
+| `timeout_seconds` | Stop the server by itself after this many seconds. Left out - the usual case - the server runs until it is stopped. |
+
+- The port is always a free one the system picks, so two sessions, or two directories of one session, never collide.
+- Files are read from disk on every request and answered with `Cache-Control: no-store`: save the file, reload the page, see the edit.
+- A directory with an `index.html` opens it; one without gets a listing.
+- `.js` and `.mjs` always go out as `text/javascript`, `.css`, `.json`, `.svg`, `.wasm` and fonts with their own types, whatever the host's registry says. A browser refuses an ES module served as `text/plain`, which is what Windows often makes of `.js`.
+- Asking again for a directory that is already being served returns the address that is up instead of opening a second port.
+
+## A task among the running tasks
+
+The server is a [background task](background-tasks.md) of the session, of kind `server`:
+
+- it stands among the running tasks in the Tasks panel of the web UI, tagged `server`, with its address as a link that opens in a new tab and a Stop button; `/tasks` in the console shows the same row;
+- `background_list` shows it to the agent with its address, `background_output` returns its request log - one line per request, `GET /app.js 404`, which is usually the whole answer to "the page is blank" - and `background_stop` ends it;
+- it counts toward `tools.background.max_concurrent` like any other task.
+
+![The Tasks panel with a running preview server: the server tag, the address as a link, Stop, and the request log of the open card](../assets/preview-server-task-dark-1280.png)
+
+*The server among the running tasks: its address is a link, and the open card is its request log.*
+
+Unlike a command it has no hard timeout of its own: `tools.background.max_timeout_seconds` bounds runaway commands, not a page you asked to keep open. The server ends when
+
+- it is stopped, by you or by the agent;
+- the session is deleted, or Coddy exits;
+- the `timeout_seconds` of the call that started it elapses - the task then reads `timed_out`.
+
+A server does not survive a restart of Coddy: the record stays in the session bundle as `orphaned`, the agent starts a new one when asked, and the stale row is cleared from the Tasks panel - a stop has nothing left to kill.
+
+## What it will not do
+
+The tool runs without a permission prompt, so it is deliberately narrow:
+
+- **Only the project.** The directory has to be the session's working directory or inside it, symlinks resolved; anything else is refused. Files are opened through an `os.Root`, so a symlink inside the directory cannot lead out of it either.
+- **No dot-files.** A path with an element that starts with a dot - `.git`, `.env`, `.coddy` - answers 404. A directory listing does not show them either, a symlink inside the directory cannot point at one, and a dot-named path cannot be picked as the directory to serve.
+- **Read-only.** `GET` and `HEAD`; everything else is 405.
+- **Loopback by default.** The server binds `127.0.0.1`. On a loopback bind a request whose `Host` header is not `localhost`, `127.0.0.1`, `[::1]` or the configured `public_host` is refused, so a web page elsewhere cannot reach your files by pointing its own name at your machine (DNS rebinding). No CORS headers are sent.
+- **Not password-protected.** Anything that can reach the address can read the served files while the server runs - the `Host` check keeps other web pages out, it is not authentication. On a shared machine that is every local process; on a non-loopback bind it is whoever can reach the address.
+
+The tool is offered in `agent` mode.
+
+## Configuration
+
+```yaml
+tools:
+  preview_server:
+    enable: true          # false hides the tool
+    host: 127.0.0.1       # bind address, without a port
+    public_host: ""       # host written into the address the agent hands out
+```
+
+`tools.background.enable: false` turns the tool off as well: without the task pool there is nothing to list or stop the server with.
+
+When Coddy runs where your browser is not - a container, a remote machine - loopback is out of reach. Bind `host: 0.0.0.0` and set `public_host` to the name you reach that machine by; inside a container the port is a random one, so publish a range or use host networking. A bind that is not loopback exposes the served directory to whoever can reach that address, and the `Host` check no longer applies: set it on purpose. The fields are listed in the [configuration reference](../reference/config.md).
 
 
 # Features / Context compaction
@@ -11486,6 +11569,10 @@ Filesystem and shell policy for built-in tools.
 | `tools.background.default_timeout_seconds` | integer | 900 | Hard limit for a task started without an explicit timeout and without a duration estimate. 0 uses the default. |
 | `tools.background.max_timeout_seconds` | integer | 3600 | Ceiling applied to any requested or estimate-derived timeout. 0 uses the default. |
 | `tools.background.output_buffer_bytes` | integer | 262144 | How much of each task's output stays in memory for the status ticker. The full log is still written to the session bundle. 0 uses the default. |
+| `tools.preview_server` | object |  | The preview_server tool: a static file server the agent starts over a project directory, on a free port, so the operator can open HTML, JS and CSS work in a browser. The server is a background task of the session and runs until it is stopped, the session is deleted or coddy exits. |
+| `tools.preview_server.enable` | boolean or null | true | Offer the preview_server tool. The server is a background task, so tools.background.enable: false turns it off as well. |
+| `tools.preview_server.host` | string | 127.0.0.1 | Address the server binds, without a port: the port is always a free one. Anything that is not loopback exposes the served directory to whoever can reach that address. |
+| `tools.preview_server.public_host` | string | "" | Host written into the URL the agent hands out, for a coddy that runs where the operator's browser is not (a container, a remote machine). Empty uses the bind host. |
 | `tools.websearch` | object |  | Which search engines the websearch tool asks, in what order their results merge, and what it may spend asking them. Each engine reports its own outcome next to the results, so a blocked backend is named rather than counted as "the web has nothing". |
 | `tools.websearch.engines` | list of strings | ["brave","bing"] | Search engines to ask, in merge order. Unset asks brave then bing. "ddg" and "google" are not asked by default: measured from a server, DuckDuckGo answers every query with an anti-bot interstitial and Google renders its results in the browser. "searxng" needs searxng_url. |
 | `tools.websearch.engine_timeout_seconds` | integer | 8 | Seconds one engine may take before it is reported as unavailable. 0 uses the default. |
@@ -12290,7 +12377,7 @@ The Permission column uses the classes the gate in `internal/agent/react.go` app
 
 ## Shell and background tasks
 
-The `background_*` tools are registered only while `tools.background` is enabled (the default). The guide is [Background tasks](../features/background-tasks.md#model-facing-surface).
+The `background_*` tools are registered only while `tools.background` is enabled (the default), and `preview_server` while `tools.preview_server` is enabled as well. The guide is [Background tasks](../features/background-tasks.md#model-facing-surface).
 
 | Tool | Purpose | Arguments (short) | Permission | Modes |
 |---|---|---|---|---|
@@ -12300,6 +12387,7 @@ The `background_*` tools are registered only while `tools.background` is enabled
 | `background_wait` | Wait for a task to finish, bounded by a default and a maximum | `task_id`, `timeout_seconds` | none | agent, plan |
 | `background_stop` | Terminate a task and everything it spawned | `task_id` | none | agent, plan |
 | `background_reap` | Find and kill processes of this session that outlived the run which started them | none | always | agent |
+| `preview_server` | Serve a directory of the project as a static website on a free localhost port and return the address for the user to open; the server is a background task that runs until it is stopped ([Preview server](../features/preview-server.md)) | `path`, `timeout_seconds` | none | agent |
 | `ssh_run_command` | Run a command on a remote host over SSH, using the agent socket and then key files ([Configuration](../getting-started/configuration.md#ssh-remote-execution)) | `host`, `command`, `port`, `timeout_seconds`, `permission_rationale` | always | agent |
 
 ## Web
@@ -12669,7 +12757,7 @@ header where the client can set one, since a query token reaches proxy access lo
 | POST | **`/coddy/sessions/{id}/queue`** | Queues **`{"text": "..."}`** for the running turn to read at its next step; **`201`** with the stored **`message`** and the whole **`messages`** list. A session with no turn running answers **`409`** with code **`no_active_turn`** (the caller sends that text through **`POST /v1/responses`** instead); a queue already holding 20 messages answers **`409`** with **`queue_full`**; a child (subagent) session answers **`409`** with **`subagent_read_only`**. Settings commands at the start of the text apply at once and are not queued, only the rest is; a text of commands only answers **`200`** with the **`notice`**, the unchanged list and the session's **`settings`**, and a turn-scoped command (**`--once`**, **`--count=N`**) followed by text answers **`409`** with **`turn_scoped_follow_up`**, since a queued message has no turn of its own. Nothing is persisted: a message the turn never read is dropped when the turn ends, which is also what **Stop** does. |
 | DELETE | **`/coddy/sessions/{id}/queue/{message_id}`** | Takes one queued message back and answers with the rest. **`404`** with code **`not_found`** when the agent read it first - losing that race is ordinary, and the message is already in the conversation. |
 | DELETE | **`/coddy/sessions/{id}/queue`** | Drops everything waiting and answers with the empty list. |
-| GET | **`/coddy/sessions/{id}/background-tasks`** | The session's tasks: commands the agent started with **run_command** **`background: true`** (**`kind`** **`command`**) and subagent runs started with **`spawn_agent`** (**`kind`** **`agent`**; such rows carry **`agent`** **`{name, session_id, model, input_tokens, output_tokens}`**: the definition name, the child session whose transcript **`GET /coddy/sessions/{session_id}/messages`** serves, the model the child runs on, and what its model calls have spent so far - the input every call sent, summed, and the output generated, the call in flight estimated until the provider reports it; a system run such as the memory subagent also has **`system: true`**). Each row carries **`id`**, **`kind`**, **`label`**, **`command`**, **`status`** (**`queued`**, **`running`**, **`succeeded`**, **`failed`**, **`timed_out`**, **`stopped`**, **`orphaned`**), **`started_at`**, **`finished_at`**, **`exit_code`**, **`expected_seconds`** (the model's own estimate), **`timeout_seconds`** (the hard limit), **`notify_on_finish`** (the task wakes the agent when it ends; recorded only where a wake can happen - never by **`coddy -p`**, a subagent or a scheduled run), **`woke_agent`** (the task's end started a turn: set when that turn begins and kept in the record, it is what the bell on a finished card stands for), plus server-computed **`elapsed_seconds`**, **`overdue`**, **`running`**; the payload also has a **`running`** count. Tasks recorded by an earlier **`coddy`** process are merged in from the session bundle as **`orphaned`**. **Poll** this for status: a background task outlives the SSE stream of the turn that started it. A running **`agent`** row also carries **`pending_permission`** while a **detached** child - one whose spawning turn has ended - is blocked on a permission prompt: the payload of the SSE **`permission`** event (**`sessionId`** is the *child* session, **`toolCall`**, **`options`**) plus **`parent_session_id`**, **`task_id`**, **`agent_name`** and **`asked_at`**. The bundled UI shows it at the end of the parent session's chat; it is announced on **`GET /coddy/events`** as **`subagent_permission`**, answered through **`POST /coddy/sessions/{child}/permission`**, and never persisted, so a prompt cannot outlive the process that raised it. See **`docs/features/background-tasks.md`**. |
+| GET | **`/coddy/sessions/{id}/background-tasks`** | The session's tasks: commands the agent started with **run_command** **`background: true`** (**`kind`** **`command`**) and subagent runs started with **`spawn_agent`** (**`kind`** **`agent`**; such rows carry **`agent`** **`{name, session_id, model, input_tokens, output_tokens}`**: the definition name, the child session whose transcript **`GET /coddy/sessions/{session_id}/messages`** serves, the model the child runs on, and what its model calls have spent so far - the input every call sent, summed, and the output generated, the call in flight estimated until the provider reports it; a system run such as the memory subagent also has **`system: true`**) and preview servers started with **`preview_server`** (**`kind`** **`server`**, with **`url`**: the address the static file server answers at; such a row has no process, and **`timeout_seconds`** **`0`** means it runs until it is stopped, see **`docs/features/preview-server.md`**). Each row carries **`id`**, **`kind`**, **`label`**, **`command`**, **`status`** (**`queued`**, **`running`**, **`succeeded`**, **`failed`**, **`timed_out`**, **`stopped`**, **`orphaned`**), **`started_at`**, **`finished_at`**, **`exit_code`**, **`expected_seconds`** (the model's own estimate), **`timeout_seconds`** (the hard limit), **`notify_on_finish`** (the task wakes the agent when it ends; recorded only where a wake can happen - never by **`coddy -p`**, a subagent or a scheduled run), **`woke_agent`** (the task's end started a turn: set when that turn begins and kept in the record, it is what the bell on a finished card stands for), plus server-computed **`elapsed_seconds`**, **`overdue`**, **`running`**; the payload also has a **`running`** count. Tasks recorded by an earlier **`coddy`** process are merged in from the session bundle as **`orphaned`**. **Poll** this for status: a background task outlives the SSE stream of the turn that started it. A running **`agent`** row also carries **`pending_permission`** while a **detached** child - one whose spawning turn has ended - is blocked on a permission prompt: the payload of the SSE **`permission`** event (**`sessionId`** is the *child* session, **`toolCall`**, **`options`**) plus **`parent_session_id`**, **`task_id`**, **`agent_name`** and **`asked_at`**. The bundled UI shows it at the end of the parent session's chat; it is announced on **`GET /coddy/events`** as **`subagent_permission`**, answered through **`POST /coddy/sessions/{child}/permission`**, and never persisted, so a prompt cannot outlive the process that raised it. See **`docs/features/background-tasks.md`**. |
 | DELETE | **`/coddy/sessions/{id}/background-tasks`** | Clears the **finished** tasks of the session, in memory and from the session bundle, and answers with **`cleared`**. Running tasks are untouched. History is deleted with the session anyway; this is the operator's way to throw it away early. |
 | GET | **`/coddy/sessions/{id}/background-tasks/{task_id}`** | One task plus **`output`**, the combined stdout and stderr captured so far (works while it still runs). Optional **`?tail=N`** returns only the last N lines; a non-integer or negative value is a **`400`**. A task the pool no longer holds is answered from the session bundle log, capped at its last 256 KiB with **`output_truncated`** set. **`404`** when the id is unknown. |
 | POST | **`/coddy/sessions/{id}/background-tasks/{task_id}/stop`** | Terminates the task and the whole process group it started, then returns the final row and its output. Stopping an already finished task changes nothing and still returns **`200`**. An unknown id is a **`404`**; a task that exists but could not be terminated is a **`500`**, so "not found" never masks a process that is still alive. |
@@ -17709,7 +17797,7 @@ Short map for automation-friendly contributors.
 | `internal/agent` | ReAct orchestration, MCP/tool wiring, and the opt-in wait for a hit usage limit (**`limit_wait.go`**: a **`llm.QuotaResetError`** from the resilient wrapper makes a top-level turn wait for the reset under **`agent.wait_for_limit_reset`**, sending **`provider_usage`** updates with **`resuming`** every 20 s, then re-issue the same call). |
 | `internal/mcp` | MCP transports, merged server list, and the **workspace trust gate** for project-local **`.coddy/mcp.json`** (**`trust.go`**, **`gate.go`**; policy **`mcp.project_trust`**, approvals in **`<home>/mcp-trust.json`**). Guide: **`docs/features/mcp.md`**. |
 | `internal/remote` | Go client for a remote `coddy serve` server: SSE frames back into ACP updates, `/coddy` REST, permission/question answers, and the permission prompts of background subagents the server announces on its events stream (**`detached_prompts.go`**). Powers `--remote` on the console and `coddy acp`. Guide: **`docs/surfaces/console.md`** (Remote mode), **`docs/plans/remote-control.md`**. |
-| `internal/bgtask` | Background task pool for detached shell commands (**`run_command`** **`background: true`** plus the **`background_*`** tools, the Tasks drawer, and **`/coddy/sessions/{id}/background-tasks`**) and for subagent runs started by **`spawn_agent`** (**`Pool.Launch`**, kind **`agent`**, **`Agent {name, session_id}`** on the row). **`Pool.Adopt`** takes over a foreground command that outlived its timeout instead of killing it. **`Pool.CanWake`** says whether this process subscribed a waker (**`WakeWatcherKey`**), so **`run_command`** and **`spawn_agent`** promise a **`notify_on_finish`** wake only where one will happen, and **`Pool.MarkWokeAgent`** records on the row (**`woke_agent`**, persisted) that a task's end did start a turn, which is what keeps the bell on a finished card in the Tasks drawer and **`woke the agent`** in **`/tasks`**. Guide: **`docs/features/background-tasks.md`**. |
+| `internal/bgtask` | Background task pool for detached shell commands (**`run_command`** **`background: true`** plus the **`background_*`** tools, the Tasks drawer, and **`/coddy/sessions/{id}/background-tasks`**), for subagent runs started by **`spawn_agent`** (**`Pool.Launch`**, kind **`agent`**, **`Agent {name, session_id}`** on the row), and for in-process servers the **`preview_server`** tool starts (**`Pool.Launch`**, kind **`server`**, **`Spec.URL`** / **`Snapshot.URL`**, **`Spec.NoTimeout`** - no hard limit unless the call names one). **`Pool.Adopt`** takes over a foreground command that outlived its timeout instead of killing it. **`Pool.CanWake`** says whether this process subscribed a waker (**`WakeWatcherKey`**), so **`run_command`** and **`spawn_agent`** promise a **`notify_on_finish`** wake only where one will happen, and **`Pool.MarkWokeAgent`** records on the row (**`woke_agent`**, persisted) that a task's end did start a turn, which is what keeps the bell on a finished card in the Tasks drawer and **`woke the agent`** in **`/tasks`**. Guide: **`docs/features/background-tasks.md`**. |
 | `internal/subagents` | Subagent definitions (markdown + YAML frontmatter from **`subagents.dirs`**, built-ins **`general`** and **`explore`**), canonical **scopes**, the **trust receipts** for project-scope files (**`trust.go`**; policy **`subagents.project_trust`**, receipts in **`<home>/subagents-trust.json`**), the process-wide **`Limiter`**, and the catalog (**`coddy agents list`**, **`GET /coddy/subagents`** with the bounds each definition declares, the prompt block; the web UI lists it read-only under **Settings → Subagents**). The runtime that spawns a child is **`internal/agent/subagent.go`**; child sessions are owned by **`internal/session`**, which stores each one inside the bundle of the session that spawned it (**`<parent>/subagents/<child>/`**) under an ordinary **`sess_`** id. Guide: **`docs/features/subagents.md`**. |
 | `internal/hooks` | Operator lifecycle hooks: definition files in Claude Code's shape (**`definition.go`**, **`matcher.go`** with tool-name aliases), the loader with canonical **scopes** (**`loader.go`**; policy **`hooks.project_trust`**), the **trust receipts** for project-scope files (**`trust.go`**; **`<home>/hooks-trust.json`**, keyed by canonical workspace, file and digest; surfaces **`coddy hooks list|trust|untrust`**, **`GET /coddy/hooks`**, **`POST /coddy/hooks/trust|untrust`**), the **catalog** (**`catalog.go`**), and the **runner** (**`runner.go`**: stdin JSON payload, exit-code and JSON answer, timeouts and process groups through **`internal/platform`**). **`internal/agent/hooks.go`** wires `PreToolUse` / `PostToolUse` / `PostToolUseFailure` into **`executeToolCall`**, `UserPromptSubmit` and `Stop` into the loop, `PreCompact` / `PostCompact` into **`CompactSession`**, `SubagentStart` / `SubagentStop` into the spawn runtime and `Notification` into the permission gate; **`internal/session/hooks.go`** fires `SessionStart` from the manager and keeps its context on the session. **`hooktest`** re-executes a test binary as the hook process. Guide: **`docs/features/hooks.md`**, design: **`docs/plans/hooks.md`**. |
 | `internal/session` | Session manager, Filesystem persistence, Acp hooks, rules catalog, and the **provider usage** cache and schedule (**`provider_usage.go`**: the account quota behind a session's model, fetched by **`internal/llm/neuraldeep_usage.go`** from the hub's `GET /v1/limits`, published as **`provider_usage`** at session ready and from every turn's release, served over **`GET /coddy/providers/{name}/usage`** and the events stream). Design: **`docs/plans/neuraldeep-usage.md`**. |
