@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coddy и другие агентные среды — сравнение 2026 года</title>
+  <meta name="description" content="Сравнение Coddy с 19 другими агентными средами: установка, интерфейсы, расширяемость, контекст и безопасность." />
+  <meta name="theme-color" content="#9333ea" />
+  <link rel="canonical" href="https://coddy.dev/ru/compare/" />
+  <link rel="alternate" hreflang="en" href="https://coddy.dev/compare/" />
+  <link rel="alternate" hreflang="ru" href="https://coddy.dev/ru/compare/" />
+  <link rel="alternate" hreflang="x-default" href="https://coddy.dev/compare/" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <meta name="author" content="Coddy Project" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Coddy Agent" />
+  <meta property="og:locale" content="ru_RU" />
+  <meta property="og:title" content="Coddy и другие агентные среды — сравнение 2026 года" />
+  <meta property="og:description" content="Сравнение Coddy с 19 другими агентными средами: установка, интерфейсы, расширяемость, контекст и безопасность." />
+  <meta property="og:url" content="https://coddy.dev/ru/compare/" />
+  <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content="Coddy Agent — универсальная платформа для агентов" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Coddy и другие агентные среды — сравнение 2026 года" />
+  <meta name="twitter:description" content="Сравнение Coddy с 19 другими агентными средами: установка, интерфейсы, расширяемость, контекст и безопасность." />
+  <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
+  <link rel="icon" href="/assets/coddy-favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/assets/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+  <link rel="stylesheet" href="/styles.css?v=27" />
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": "https://coddy.dev/ru/compare/#webpage",
+  "url": "https://coddy.dev/ru/compare/",
+  "name": "Coddy и другие агентные среды — сравнение 2026 года",
+  "description": "Сравнение Coddy с 19 другими агентными средами: установка, интерфейсы, расширяемость, контекст и безопасность.",
+  "inLanguage": "ru",
+  "isPartOf": {
+    "@id": "https://coddy.dev/#website"
+  }
+}
+  </script>
+</head>
+<body>
+  <div class="nav-scrim" id="nav-scrim" hidden></div>
+  <header class="site-header">
+    <div class="site-header-inner shell-width">
+      <a class="logo" href="/ru/" aria-label="Coddy — главная">
+        <img class="logo-wordmark" src="/assets/coddy-logo-wordmark.svg" width="188" height="56" alt="Coddy agent" />
+      </a>
+      <nav class="nav-drawer" id="site-nav" aria-label="Меню сайта" aria-hidden="true">
+        <a class="nav-drawer-link" href="/ru/#install">Установка</a>
+        <a class="nav-drawer-link" href="/ru/#demos">Демо</a>
+        <a class="nav-drawer-link" href="/ru/#features">Возможности</a>
+        <a class="nav-drawer-link" href="/ru/compare/" aria-current="page">Сравнение</a>
+        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Документация</a>
+        <span class="lang-switch" aria-label="Язык">
+          <a href="/compare/" lang="en" hreflang="en">EN</a>
+          <span aria-hidden="true">/</span>
+          <a href="/ru/compare/" lang="ru" hreflang="ru" aria-current="page">RU</a>
+        </span>
+        <a
+          class="release-pill nav-release"
+          id="release-pill"
+          href="https://github.com/coddy-project/coddy-agent/releases/latest"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Последний релиз на GitHub"
+        >
+          <svg class="release-pill-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+          <span class="visually-hidden">Последний релиз на GitHub </span>
+          <span class="release-pill-version" id="release-pill-version">v1.0.8</span>
+        </a>
+      </nav>
+      <button
+        type="button"
+        class="nav-burger"
+        aria-expanded="false"
+        aria-controls="site-nav"
+        aria-label="Открыть меню"
+      >
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+  <main class="shell">
+
+    <nav class="crumbs" aria-label="Навигационная цепочка">
+      <a href="/ru/">Coddy Agent</a> / <span aria-current="page">Сравнение</span>
+    </nav>
+
+    <section class="page-hero">
+      <h1>Coddy и другие агентные среды в 2026 году</h1>
+      <p class="tagline">
+        Двадцать агентных сред рядом: на чём они написаны, через какие интерфейсы работают, как расширяются, что делают с длинной сессией и что мешает им выполнять нежелательные действия. Coddy — одна строка среди девятнадцати других, включая его слабые стороны.
+      </p>
+      <p class="page-meta">
+        Составлено в сентябре 2026 года. Сведения о Coddy проверены по исходникам версии v1.0.8, об остальных проектах — по их репозиториям, документации и актуальным обзорам. Строки Koda и Drift добавлены 12 сентября 2026 года.
+        <a href="#sources">Источники приведены ниже.</a>
+      </p>
+    </section>
+
+    <section id="numbers">
+      <h2>Coddy в цифрах</h2>
+      <div class="stat-row">
+        <div class="glass stat">
+          <span class="stat-value">1 бинарник</span>
+          <span class="stat-label">Статический Go, без среды выполнения, подходит для distroless</span>
+        </div>
+        <div class="glass stat">
+          <span class="stat-value">4 интерфейса</span>
+          <span class="stat-label">Терминал, редактор по ACP, веб-интерфейс, Telegram</span>
+        </div>
+        <div class="glass stat">
+          <span class="stat-value">288 сценариев</span>
+          <span class="stat-label">Спецификации Gherkin в 59 файлах функций</span>
+        </div>
+        <div class="glass stat">
+          <span class="stat-value">17 вариантов сборки</span>
+          <span class="stat-label">Все сочетания тегов сборки проходят тесты</span>
+        </div>
+      </div>
+      <p class="cmp-note">
+        За этими цифрами: 79 тыс. строк Go, 71 тыс. строк тестов в 254 файлах, 1583 тестовые функции и встроенное SPA из 49 тыс. строк TypeScript. Подсчёт для v1.0.8.
+      </p>
+    </section>
+
+    <section id="what-is-coddy">
+      <h2>Что такое Coddy — кратко</h2>
+      <div class="prose">
+        <p>
+          Coddy называет себя <strong>платформой для агентов</strong> не случайно. Основа объединяет протоколы — сервер ACP JSON-RPC, менеджер сессий, конфигурацию и MCP — с циклом ReAct поверх сменяемых провайдеров LLM. Агент для программирования — один из профилей с собственными инструкциями и набором инструментов. Измените их, и та же основа станет другим агентом.
+        </p>
+        <p>
+          Это влияет на развёртывание: один статический Go-бинарник помещается в <code>scratch</code> или
+          <code>distroless</code> без системной оболочки. Инструменты <code>grep</code> и <code>glob</code> используют системный ripgrep, если он есть, иначе переходят на встроенную реализацию Go. Поэтому агент работает даже в контейнере без дополнительных программ.
+        </p>
+        <p>
+          Все точки входа используют общую <code>$CODDY_HOME</code>: <code>coddy acp</code> для редакторов, обычный
+          <code>coddy</code> для терминальной консоли и <code>coddy serve</code> для REST-шлюза, встроенного веб-интерфейса и мессенджеров в одном процессе. Начатая в терминале сессия открывается в браузере и продолжается в редакторе, потому что её данные хранятся в одном месте на диске. Кроме того, <code>--remote</code>
+          подключает консоль или ACP к удалённому серверу.
+        </p>
+        <p>
+          Несколько механизмов заслуживают отдельного упоминания: в других системах они встречаются редко. <strong>Удаление устаревших результатов</strong>
+          заменяет устаревший вывод <code>read</code> и <code>grep</code> заглушками в контексте модели, а <code>keep_result</code> позволяет модели закрепить нужные данные. Встроенный <strong>ограничитель циклов</strong> останавливает повторяющийся поток и не допускает повторного запуска инструмента с идентичными аргументами. При ограничении частоты запросов обёртка выдаёт типизированную ошибку
+          <code>QuotaResetError</code>, а с <code>agent.wait_for_limit_reset</code> ход ждёт восстановления квоты и повторяет тот же вызов. <strong>Самонастройка</strong> даёт агенту поэтапные команды для собственного YAML в стиле UCI. Файл меняется только после подтверждённого вами коммита, который проверяет данные, создаёт снимок и применяет настройки без перезапуска.
+        </p>
+      </div>
+    </section>
+
+    <section id="field">
+      <h2>Как устроен рынок</h2>
+      <div class="prose">
+        <p>
+          К середине 2026 года выделились четыре группы. Их прямое сравнение без учёта назначения может вводить в заблуждение.
+        </p>
+        <p>
+          <strong>CLI разработчиков моделей</strong> — Claude Code, Codex CLI, Antigravity CLI, Grok Build, Qwen Code, Kimi CLI. Их создают поставщики моделей; эти инструменты задают стандарты (<code>AGENTS.md</code>, MCP, навыки) и обычно связаны с подпиской.
+        </p>
+        <p>
+          <strong>Открытые универсальные платформы</strong> — OpenCode, Pi, OMP, DeepSeek Harness, Crush, Reasonix, CodeWhale, Goose, Aider, Cline, OpenHands, Continue и Coddy. Именно здесь особенно заметна конкуренция возможностей.
+        </p>
+        <p>
+          <strong>Шлюзы персональных помощников</strong> — OpenClaw, Hermes Agent и множество подобных проектов. Для персонального агента сначала важны каналы связи, очереди, сессии и память; модель подключается к этому ядру.
+        </p>
+        <p>
+          <strong>Коммерческие платформы</strong> — Amp, Cursor CLI, Factory Droid, Devin. Они предлагают командные процессы, параллельную работу и интеграцию с трекерами задач.
+        </p>
+        <p>
+          12 сентября в таблицы добавились два продукта российского рынка из разных групп.
+          <strong>Koda</strong> — закрытый продукт по подписке от бывшей команды GigaCode: плагин IDE на основе Continue, CLI на основе Gemini CLI, настольное приложение, управляющее CLI через ACP, и удалённый доступ через Telegram. <strong>Drift</strong> — персональный агент NeuralDeep в составе подписки на платформу: размещённый сервис с ботом Telegram, веб-приложением и API, совместимым с OpenAI. Каждому пользователю выделяется отдельный Docker-контейнер; открытие исходного кода анонсировано на этот год.
+        </p>
+        <p>
+          На события года повлияли два случая. 18 июня Google отключила Gemini CLI для личных аккаунтов и перевела пользователей на закрытый Antigravity CLI на Go: это нарушило работу некоторых CI-процессов и сократило бесплатный лимит примерно с тысячи до двадцати запросов в день. В марте произошла утечка исходников Claude Code, после чего появилась независимая реализация Claw Code на Python и Rust, быстро набравшая звёзды на GitHub. Вторая история не меняет техническое сравнение, но объясняет скачки популярности в 2026 году.
+        </p>
+      </div>
+    </section>
+
+    <section id="tables">
+      <h2>Таблицы</h2>
+      <p class="cmp-caption">
+        Пять взглядов на одни и те же двадцать платформ. Если проект не документирует свойство, в ячейке указано «нет данных». На узких экранах таблицы прокручиваются по горизонтали.
+      </p>
+      <div class="cmp-block">
+        <h3 id="table-foundation">Основа и распространение</h3>
+        <p class="cmp-caption">Язык реализации, лицензия и способ установки каждого проекта.</p>
+        <div class="cmp-scroll bleed" tabindex="0" role="region" aria-labelledby="table-foundation">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Агентная среда</th>
+                <th scope="col">Разработчик</th>
+                <th scope="col">Язык</th>
+                <th scope="col">Лицензия</th>
+                <th scope="col">Распространение</th>
+                <th scope="col">Звёзды, сентябрь 2026</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td>Coddy Project</td>
+                <td>Go</td>
+                <td>MIT</td>
+                <td>один статический бинарник, теги сборки, distroless</td>
+                <td>~0.14k</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>Anthropic</td>
+                <td>TypeScript</td>
+                <td>исходники доступны</td>
+                <td>npm, установщики, настольное и веб-приложения</td>
+                <td>~144k</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>OpenAI</td>
+                <td>Rust</td>
+                <td>Apache-2.0</td>
+                <td>бинарник, npm, brew</td>
+                <td>~122k</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>SST</td>
+                <td>TypeScript</td>
+                <td>MIT</td>
+                <td>npm, brew, scoop, AUR, Nix</td>
+                <td>~206k</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>earendil-works</td>
+                <td>TypeScript</td>
+                <td>MIT</td>
+                <td>npm (SDK и CLI)</td>
+                <td>~103k</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>can1357, Stencil Labs</td>
+                <td>Rust + TypeScript</td>
+                <td>MIT</td>
+                <td>bun, brew, Nix, скрипт</td>
+                <td>~30k</td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>DeepSeek</td>
+                <td>TypeScript</td>
+                <td>MIT</td>
+                <td>npx, сборка через pnpm</td>
+                <td>~203-215k</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>сообщество, П. Штайнбергер</td>
+                <td>TypeScript</td>
+                <td>MIT</td>
+                <td>npm, скрипт, Docker</td>
+                <td>~375-389k</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>Nous Research</td>
+                <td>Python + Node</td>
+                <td>MIT</td>
+                <td>скрипт (Python 3.11+, Node, ripgrep, ffmpeg)</td>
+                <td>~243k</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>AAIF, Linux Foundation</td>
+                <td>Rust</td>
+                <td>Apache-2.0</td>
+                <td>бинарник, настольное приложение</td>
+                <td>~54k</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>Paul Gauthier</td>
+                <td>Python</td>
+                <td>Apache-2.0</td>
+                <td>pip</td>
+                <td>~49k</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>Cline</td>
+                <td>TypeScript</td>
+                <td>Apache-2.0</td>
+                <td>расширение IDE, CLI, бинарники</td>
+                <td>~68k</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>All Hands AI</td>
+                <td>Python</td>
+                <td>MIT</td>
+                <td>pip, Docker</td>
+                <td>~86k</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>Charmbracelet</td>
+                <td>Go</td>
+                <td>FSL-1.1-MIT</td>
+                <td>бинарник, brew, npm</td>
+                <td>~28k</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>сообщество</td>
+                <td>Go</td>
+                <td>MIT</td>
+                <td>один бинарник, <code>CGO_ENABLED=0</code></td>
+                <td>~35k</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>сообщество</td>
+                <td>Rust</td>
+                <td>MIT</td>
+                <td>бинарник</td>
+                <td>~41k</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>xAI</td>
+                <td>Rust</td>
+                <td>Apache-2.0</td>
+                <td>бинарник</td>
+                <td>~26k</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>Google</td>
+                <td>Go</td>
+                <td>проприетарная</td>
+                <td>бинарник</td>
+                <td>нет публичного репозитория</td>
+              </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td>Koda, бывшая команда GigaCode</td>
+                <td>TypeScript</td>
+                <td>проприетарная, основана на форках Gemini CLI и Continue под Apache-2.0</td>
+                <td>npm CLI, плагины VS Code и JetBrains, установщики настольного приложения</td>
+                <td>нет публичного репозитория</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>NeuralDeep, В. Ковальский</td>
+                <td>Python</td>
+                <td>проприетарный SaaS, объявлено об открытии кода</td>
+                <td>размещённый сервис по подписке NeuralDeep, установка не требуется</td>
+                <td>нет публичного репозитория</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cmp-block">
+        <h3 id="table-surfaces">Интерфейсы</h3>
+        <p class="cmp-caption">Через какие интерфейсы можно работать с агентом и используют ли они общие сессии.</p>
+        <div class="cmp-scroll bleed" tabindex="0" role="region" aria-labelledby="table-surfaces">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Агентная среда</th>
+                <th scope="col">Терминал</th>
+                <th scope="col">Редактор (ACP)</th>
+                <th scope="col">HTTP и веб-интерфейс</th>
+                <th scope="col">Настольное приложение</th>
+                <th scope="col">Мессенджеры</th>
+                <th scope="col">Без интерфейса / CI</th>
+                <th scope="col">Удалённый доступ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td>TUI</td>
+                <td>сервер ACP</td>
+                <td>встроенное SPA</td>
+                <td>нет</td>
+                <td>Telegram, можно расширять</td>
+                <td><code>coddy -p</code>, REST</td>
+                <td><code>--remote</code></td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>да</td>
+                <td>через адаптер</td>
+                <td>отдельное веб-приложение</td>
+                <td>да</td>
+                <td>тег Slack</td>
+                <td><code>-p</code>, SDK</td>
+                <td>облако</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>да</td>
+                <td>через адаптер</td>
+                <td>отдельный облачный продукт</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td><code>codex exec</code></td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>да</td>
+                <td>встроено</td>
+                <td>сервер и совместный доступ</td>
+                <td>да</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>сервер</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>да</td>
+                <td>RPC</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>вывод/JSON, SDK</td>
+                <td>RPC</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>да</td>
+                <td><code>omp acp</code></td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td><code>omp -p</code>, RPC, SDK</td>
+                <td>ретранслятор <code>/collab</code></td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>ориентирован на веб, <code>dsh web</code></td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>без интерфейса</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>шлюз</td>
+                <td>да</td>
+                <td>более 25 каналов</td>
+                <td>да</td>
+                <td>шлюз</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>нет</td>
+                <td>8 каналов</td>
+                <td>да</td>
+                <td>Modal, Daytona, SSH</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>да</td>
+                <td>встроено</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>нет</td>
+                <td>рецепты</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>через скрипты</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>CLI</td>
+                <td>расширение IDE</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>Slack, Linear</td>
+                <td>SDK</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>да</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>частично</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>да</td>
+                <td>ACP</td>
+                <td>панель управления</td>
+                <td>предрелизная версия</td>
+                <td>QQ</td>
+                <td>да</td>
+                <td>общий локальный движок</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td><code>codewhale exec</code></td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>да</td>
+                <td>ACP</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>да</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>облако</td>
+              </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td>TUI на основе Gemini CLI</td>
+                <td><code>koda --acp</code>, плюс встроенные плагины VS Code и JetBrains</td>
+                <td>нет, API закрыт</td>
+                <td>Koda Desktop (бета) управляет CLI через ACP</td>
+                <td>удалённое управление CLI и плагином через Telegram</td>
+                <td><code>koda -p</code></td>
+                <td>только удалённое управление через Telegram</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>нет</td>
+                <td>нет</td>
+                <td>веб-приложение и API, совместимый с OpenAI</td>
+                <td>нет</td>
+                <td>бот Telegram с общей историей в вебе, Битрикс24</td>
+                <td>API, размещённые агенты с запуском через вебхук</td>
+                <td>размещённый сервис, все компоненты удалённые</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cmp-block">
+        <h3 id="table-extensibility">Расширяемость</h3>
+        <p class="cmp-caption">Как сообщить агенту сведения о проекте и добавить новые возможности.</p>
+        <div class="cmp-scroll bleed" tabindex="0" role="region" aria-labelledby="table-extensibility">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Агентная среда</th>
+                <th scope="col">MCP</th>
+                <th scope="col">Навыки</th>
+                <th scope="col">Субагенты</th>
+                <th scope="col">Хуки</th>
+                <th scope="col">Правила / AGENTS.md</th>
+                <th scope="col">Плагины</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td>3 протокола, 3 уровня конфигурации</td>
+                <td><code>SKILL.md</code>, skills.sh, стандарт agents</td>
+                <td>да, права могут только сужаться</td>
+                <td>11 событий в формате Claude Code</td>
+                <td><code>.cursor</code>, <code>.claude</code>, <code>.codex</code>, <code>.coddy</code>, <code>AGENTS.md</code></td>
+                <td>каталоги навыков</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>да</td>
+                <td>да, исходный формат</td>
+                <td>да</td>
+                <td>да, исходный формат</td>
+                <td><code>CLAUDE.md</code>, <code>AGENTS.md</code></td>
+                <td>да, версионируемые наборы</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>клиент и сервер</td>
+                <td>собственных нет</td>
+                <td>нет</td>
+                <td>да</td>
+                <td><code>AGENTS.md</code>, исходный формат</td>
+                <td>профили</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>да</td>
+                <td>собственных нет</td>
+                <td>build, plan, general</td>
+                <td>нет</td>
+                <td><code>AGENTS.md</code></td>
+                <td>да</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>да</td>
+                <td>через код приложения</td>
+                <td>через SDK</td>
+                <td>нет</td>
+                <td>минимально</td>
+                <td>npm-пакеты</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>да, читает настройки других инструментов</td>
+                <td><code>manage_skill</code></td>
+                <td>да, параллельно, типизированные результаты</td>
+                <td>правила для потоков</td>
+                <td>читает форматы 7 экосистем</td>
+                <td>расширения TypeScript</td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>да</td>
+                <td>плагин</td>
+                <td>плагин и делегирование Claude Code и Codex</td>
+                <td>плагин (циклы)</td>
+                <td>нет данных</td>
+                <td>всё реализовано плагинами</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>да</td>
+                <td>собственная система с выборочным добавлением в контекст</td>
+                <td>да</td>
+                <td>да</td>
+                <td>нет данных</td>
+                <td>ClawHub</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>да</td>
+                <td>agentskills.io, собственные навыки</td>
+                <td>да, изолированы</td>
+                <td>нет данных</td>
+                <td><code>SOUL.md</code>, <code>MEMORY.md</code>, <code>USER.md</code></td>
+                <td>Skills Hub</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>более 70 расширений</td>
+                <td>рецепты YAML</td>
+                <td>да, отдельные процессы</td>
+                <td>нет</td>
+                <td><code>.goosehints</code></td>
+                <td>расширения</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>частично</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>файлы соглашений</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>параллельные агенты</td>
+                <td>нет</td>
+                <td>правила Cline</td>
+                <td>каталог</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>да</td>
+                <td>микроагенты</td>
+                <td>да</td>
+                <td>нет</td>
+                <td>микроагенты</td>
+                <td>да</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td><code>CRUSH.md</code></td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>stdio, SSE, HTTP</td>
+                <td>сценарии Markdown</td>
+                <td>нет данных</td>
+                <td>да, для инструментов и событий</td>
+                <td><code>.reasonix/</code></td>
+                <td>Extension Protocol v1</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>группы ролей</td>
+                <td>нет</td>
+                <td>нет данных</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>параллельно в рабочих деревьях Git</td>
+                <td>нет</td>
+                <td><code>AGENTS.md</code></td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>несколько агентов, подробностей нет</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td>да, в CLI, плагине и настольном приложении</td>
+                <td><code>SKILL.md</code> в <code>~/.koda/skills</code> и <code>.koda/skills</code>, каталог KodaSkills</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td><code>KODA.md</code> или <code>AGENTS.md</code>, <code>.kodarules</code>, правила в <code>config.yaml</code></td>
+                <td>расширения CLI: MCP-серверы, файлы контекста, команды</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>встроенный Google Workspace, удалённые серверы HTTP и SSE для каждого запроса API</td>
+                <td><code>SKILL.md</code>, предустановленные навыки документов Anthropic, skills.sh, встроенные навыки через API</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>свои инструкции и проекты для чатов, ничего из репозитория</td>
+                <td>размещённые агенты без кода с запуском по таймеру и вебхуку</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cmp-block">
+        <h3 id="table-context">Контекст, память и автономность</h3>
+        <p class="cmp-caption">Что происходит с длинной сессией и сколько работы агент выполняет самостоятельно.</p>
+        <div class="cmp-scroll bleed" tabindex="0" role="region" aria-labelledby="table-context">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Агентная среда</th>
+                <th scope="col">Сжатие контекста</th>
+                <th scope="col">Удаление устаревших результатов</th>
+                <th scope="col">Долговременная память</th>
+                <th scope="col">Планировщик</th>
+                <th scope="col">Фоновые задачи</th>
+                <th scope="col">Снимки состояния</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td><code>/compact</code> плюс автоматическое при 80%</td>
+                <td>да, с <code>keep_result</code> закреплением</td>
+                <td>помощник по памяти, отдельный проход</td>
+                <td>cron внутри бинарника</td>
+                <td>да, подхватывает долгие задачи переднего плана</td>
+                <td>снимки конфигурации, ветви сессий</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>автоматически</td>
+                <td>частично</td>
+                <td>память в файлах</td>
+                <td>планировщик задач</td>
+                <td>да</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>автоматически</td>
+                <td>нет</td>
+                <td><code>AGENTS.md</code></td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>автоматически</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>через приложение</td>
+                <td>нет</td>
+                <td>через приложение</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>повтор сессии</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>snapcompact</td>
+                <td>нет данных</td>
+                <td>retain/recall, SQLite, Hindsight</td>
+                <td>нет</td>
+                <td>параллельные субагенты</td>
+                <td>предпросмотр правок</td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>плагин</td>
+                <td>нет данных</td>
+                <td>плагин хранилища</td>
+                <td>плагин планировщика</td>
+                <td>плагин циклов</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>навыки и локальный рабочий каталог</td>
+                <td>да</td>
+                <td>да</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>цикл самоулучшения, FTS5, Honcho</td>
+                <td>встроенный cron</td>
+                <td>да</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td><code>goose schedule</code></td>
+                <td>да</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>карта репозитория</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>коммиты Git</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>параллельные агенты</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>микроагенты</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>очистка перед сжатием</td>
+                <td>да, для сохранения префиксного кеша</td>
+                <td>фрагменты, закреплённые в префиксе</td>
+                <td>нет</td>
+                <td>да</td>
+                <td>после каждого хода</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>снимки рабочего каталога</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>нет</td>
+                <td>параллельная работа в рабочих деревьях</td>
+                <td>рабочее дерево</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td><code>/compress</code> в CLI автоматически при 75% и <code>/summarize</code> в плагине</td>
+                <td>нет</td>
+                <td><code>/memory</code> в <code>KODA.md</code></td>
+                <td>запланированные задачи в настольном приложении: от 1 минуты до 7 дней</td>
+                <td>только запланированные запуски</td>
+                <td>теневой Git-репозиторий с <code>/restore</code>, включается вручную</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>автоматическое смысловое резюме средней части истории</td>
+                <td>нет</td>
+                <td><code>MEMORY.md</code> для каждого пользователя, редактирование через API, поиск по прошлым чатам</td>
+                <td>cron и разовые задачи, упреждающие запуски</td>
+                <td>задачи продолжаются при разрыве соединения</td>
+                <td>версии каждого файла глубиной до десяти</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cmp-block">
+        <h3 id="table-security">Безопасность и доверие</h3>
+        <p class="cmp-caption">Что мешает агенту или только что клонированному репозиторию выполнять нежелательные действия.</p>
+        <div class="cmp-scroll bleed" tabindex="0" role="region" aria-labelledby="table-security">
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th scope="col">Агентная среда</th>
+                <th scope="col">Изоляция</th>
+                <th scope="col">Разрешения</th>
+                <th scope="col">Доверие к файлам проекта</th>
+                <th scope="col">Ограничения субагентов</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="is-coddy">
+                <th scope="row">Coddy</th>
+                <td>контейнер, distroless, корневая ФС только для чтения</td>
+                <td>диалог, разрешение для программы с защитой от спецсимволов оболочки</td>
+                <td>подтверждения MCP, субагентов и хуков, привязанные к хешу файла</td>
+                <td>права могут только сужаться</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td>встроена</td>
+                <td>разрешения, автоматический режим</td>
+                <td>доверие к каталогу</td>
+                <td>да</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex CLI</th>
+                <td>на уровне ядра (Landlock, seccomp, Seatbelt)</td>
+                <td>политика подтверждений</td>
+                <td>доверие к каталогу</td>
+                <td>нет субагентов</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenCode</th>
+                <td>нет</td>
+                <td>режим plan блокирует правки, bash запрашивает разрешение</td>
+                <td>нет</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">Pi</th>
+                <td>Gondolin, Docker, OpenShell</td>
+                <td>через приложение</td>
+                <td>нет</td>
+                <td>через приложение</td>
+              </tr>
+              <tr>
+                <th scope="row">OMP (oh-my-pi)</th>
+                <td>изоляция рабочего каталога субагента</td>
+                <td>да</td>
+                <td>читает настройки других инструментов без проверки доверия</td>
+                <td>да</td>
+              </tr>
+              <tr>
+                <th scope="row">DeepSeek Harness</th>
+                <td>плагин изоляции</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenClaw</th>
+                <td>по умолчанию отсутствует</td>
+                <td>да</td>
+                <td>навыки ClawHub</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes Agent</th>
+                <td>Docker, Singularity, Modal, Daytona, Vercel</td>
+                <td>да</td>
+                <td>нет данных</td>
+                <td>изоляция процессов</td>
+              </tr>
+              <tr>
+                <th scope="row">Goose</th>
+                <td>нет</td>
+                <td>да</td>
+                <td>нет</td>
+                <td>отдельные процессы</td>
+              </tr>
+              <tr>
+                <th scope="row">Aider</th>
+                <td>нет</td>
+                <td>подтверждение правок</td>
+                <td>нет</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Cline</th>
+                <td>нет</td>
+                <td>да</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">OpenHands</th>
+                <td>требуется Docker</td>
+                <td>да</td>
+                <td>нет</td>
+                <td>да</td>
+              </tr>
+              <tr>
+                <th scope="row">Crush</th>
+                <td>нет</td>
+                <td>да</td>
+                <td>нет</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Reasonix</th>
+                <td>изоляция рабочего каталога</td>
+                <td>список разрешённых команд для каждого каталога</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">CodeWhale</th>
+                <td>нет</td>
+                <td>три режима подтверждения</td>
+                <td>нет</td>
+                <td>нет</td>
+              </tr>
+              <tr>
+                <th scope="row">Grok Build</th>
+                <td>рабочее дерево</td>
+                <td>да</td>
+                <td>нет данных</td>
+                <td>рабочее дерево</td>
+              </tr>
+              <tr>
+                <th scope="row">Antigravity CLI</th>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+                <td>нет данных</td>
+              </tr>
+              <tr>
+                <th scope="row">Koda (Kodacode)</th>
+                <td>Docker, Podman или Seatbelt, включается вручную</td>
+                <td>режимы default, auto-edit, yolo и plan; разрешение или запрет один раз либо на всю задачу</td>
+                <td>доверие к каталогу, по умолчанию выключено</td>
+                <td>нет субагентов</td>
+              </tr>
+              <tr>
+                <th scope="row">Drift (NeuralDeep)</th>
+                <td>Docker-контейнер для каждого пользователя, отдельные том и сеть</td>
+                <td>блокировка команд по шаблонам, без подтверждения каждого действия</td>
+                <td>не применяется: файлы из репозитория не загружаются</td>
+                <td>нет субагентов</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="cmp-note">
+        Количество звёзд указано приблизительно. Разные каталоги могут расходиться на десятки тысяч: снимки сделаны в разные дни, а в 2026 году популярность этих проектов росла скачками.
+      </p>
+    </section>
+
+    <section id="verdict">
+      <h2>Преимущества и ограничения Coddy</h2>
+      <div class="verdict-grid">
+        <div class="glass verdict">
+          <h3>Сильные стороны</h3>
+          <ul>
+            <li>
+              <b>Возможности в одном бинарнике</b>
+              Шесть из двадцати проектов поставляются одним статическим файлом без среды выполнения. Только Coddy включает в этот же файл веб-интерфейс, планировщик, долговременную память и шлюз мессенджера, включаемые тегами сборки.
+            </li>
+            <li>
+              <b>Множество интерфейсов с общими сессиями</b>
+              Reasonix тоже предлагает четыре интерфейса, но вместо шлюза мессенджера использует канал QQ. Koda работает в терминале, редакторах, настольном приложении и Telegram, однако её плагин и CLI — разные форки с отдельными сессиями. У персональных шлюзов больше каналов связи, но слабее средства разработки и нет ACP.
+            </li>
+            <li>
+              <b>Самонастройка</b>
+              Ни одна другая платформа из списка не предоставляет типизированные поэтапные правки собственного YAML с проверкой, снимком, применением без перезапуска и откатом.
+            </li>
+            <li>
+              <b>Доверие к файлам из репозитория</b>
+              MCP-серверы, определения субагентов и файлы хуков проходят единый механизм подтверждения, привязанный к рабочему каталогу, файлу и его хешу. После изменения файла Coddy спрашивает снова. Claude Code доверяет по имени, Codex — по каталогу, а у Koda унаследованная от Gemini CLI проверка доверия к каталогу по умолчанию выключена.
+            </li>
+            <li>
+              <b>Совместимость с существующими форматами</b>
+              Правила Cursor и Claude Code, субагенты и <code>hooks.json</code>, в стиле Cursor
+              <code>mcp.json</code>, <code>AGENTS.md</code> и навыки по стандарту agents загружаются без преобразования. Сопоставимую совместимость предлагает только OMP.
+            </li>
+            <li>
+              <b>Удаление результатов с возможностью закрепления</b>
+              Модель может помечать данные, которые нужно оставить в контексте. Среди рассмотренных проектов это есть только у Coddy и Reasonix, причём у Reasonix для другой цели.
+            </li>
+          </ul>
+        </div>
+        <div class="glass verdict">
+          <h3>Недостатки</h3>
+          <ul>
+            <li>
+              <b>Нет изоляции на уровне ядра</b>
+              Защиту дают запросы разрешений, режимы и контейнер с файловой системой только для чтения. Codex CLI применяет Landlock, seccomp и Seatbelt прямо в процессе — это существенно при работе с чужим кодом. Koda сохранила необязательную изоляцию Gemini CLI через Docker, Podman или Seatbelt, а Drift выделяет каждому пользователю отдельный контейнер в размещённом сервисе.
+            </li>
+            <li>
+              <b>Нет LSP и DAP</b>
+              OMP использует языковой сервер при каждом изменении и управляет отладчиками; OpenCode поддерживает LSP примерно для двадцати языков. Coddy работает с файлами как с текстом, поэтому переименование по всему проекту выполняется через поиск.
+            </li>
+            <li>
+              <b>Обычный формат правок</b>
+              Формат hashline в OMP привязывает патч к хешу содержимого: по сравнению с заменой строк он сокращает число выходных токенов примерно на 61% и повышает надёжность слабых моделей. Coddy использует обычные <code>edit</code>
+              и <code>apply_patch</code>.
+            </li>
+            <li>
+              <b>Нет снимков рабочего каталога</b>
+              Reasonix делает снимок на каждом ходе, CodeWhale сохраняет рабочий каталог, Grok Build изолирует запуски в рабочих деревьях, а Koda сохраняет теневой Git-репозиторий Gemini CLI с помощью <code>/restore</code>. Coddy откатывает конфигурацию и создаёт ветви сессий, но не восстанавливает файлы.
+            </li>
+            <li>
+              <b>Нет режима параллельного распределения задач</b>
+              Субагенты работают, но нет встроенного процесса вида «распределить задачу между N рабочими деревьями и объединить результаты», как в Grok Build и OMP.
+            </li>
+            <li>
+              <b>Размер экосистемы</b>
+              Аудитория на три порядка меньше, чем у OpenCode. Именно пользователи первыми находят ошибки, пишут навыки и обнаруживают крайние случаи. Поддержка навыков и правил других инструментов частично помогает, но сопоставимого каталога плагинов пока нет.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="pick">
+      <h2>Что выбрать</h2>
+      <div class="prose">
+        <p>
+          <strong>Выбирайте Coddy,</strong> если агент должен работать в контейнере без оболочки, одна сессия должна открываться в терминале, редакторе, браузере и Telegram, повторяющимся задачам нужен встроенный планировщик, а в репозиториях уже есть правила Cursor или Claude Code.
+        </p>
+        <p>
+          <strong>Выбирайте другое решение,</strong> если работаете с большим проектом и нужны быстрые правки с учётом символов: здесь OMP или OpenCode предлагают больше. Для запуска незнакомого кода сильнее изоляция Codex CLI. Для персонального помощника в мессенджерах подходят OpenClaw или Hermes.
+        </p>
+        <p>
+          Если важны оплата в рублях и доступ без VPN, рассмотрите Koda и Drift. Koda предлагает IDE и терминал по подписке со своими моделями. Drift — размещённый персональный агент в Telegram с изоляцией, планировщиком и памятью; он не работает с вашим репозиторием.
+        </p>
+      </div>
+    </section>
+
+    <section id="install-cta">
+      <div class="glass callout">
+        <p>
+          <b>Попробуйте Coddy.</b> Одна команда установит бинарник, создаст
+          <code>~/.coddy/config.yaml</code> и добавит <code>coddy</code> в PATH. Используйте свой ключ или локальную модель.
+        </p>
+        <div class="callout-actions">
+          <a class="btn" href="/ru/#install">Установить Coddy</a>
+          <a class="btn btn--ghost" href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">Исходный код на GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="sources">
+      <h2>Методика и источники</h2>
+      <div class="prose">
+        <p>
+          Сведения о Coddy взяты непосредственно из
+          <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">его репозитория</a>
+          версии v1.0.8: README, <code>docs/architecture.md</code>, пакеты агента, инструментов, LLM и разрешений, а также спецификации <code>features/</code> . Перед публикацией был собран полный бинарник и запущена вся матрица тестов.
+        </p>
+        <p>
+          Сведения об остальных проектах взяты из их репозиториев, документации и обзоров, актуальных в сентябре 2026 года. Данные о Koda получены из открытой документации и npm-пакета CLI, о Drift — из документации и объявлений NeuralDeep. Публичных репозиториев у них нет.
+        </p>
+      </div>
+      <ul class="src-list">
+        <li><a href="https://thenewstack.io/openclaw-hermes-agent-harness/" target="_blank" rel="noopener noreferrer">The New Stack: OpenClaw и Hermes о понятии агента</a></li>
+        <li><a href="https://claw4science.org/blog/agent-harness-three-way" target="_blank" rel="noopener noreferrer">Сравнение OpenClaw, Hermes и Pi</a></li>
+        <li><a href="https://pinggy.io/blog/best_open_source_cli_coding_agents/" target="_blank" rel="noopener noreferrer">Pinggy: лучшие открытые CLI-агенты для программирования в 2026 году</a></li>
+        <li><a href="https://github.com/bradagi/awesome-cli-coding-agents" target="_blank" rel="noopener noreferrer">awesome-cli-coding-agents: каталог более 120 инструментов</a></li>
+        <li><a href="https://github.com/can1357/oh-my-pi" target="_blank" rel="noopener noreferrer">OMP (oh-my-pi)</a> и <a href="https://omp.sh/" target="_blank" rel="noopener noreferrer">omp.sh</a></li>
+        <li><a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener noreferrer">DeepSeek Harness</a></li>
+        <li><a href="https://github.com/sst/opencode" target="_blank" rel="noopener noreferrer">OpenCode</a></li>
+        <li><a href="https://github.com/badlogic/pi-mono" target="_blank" rel="noopener noreferrer">Pi</a></li>
+        <li><a href="https://github.com/nousresearch/hermes-agent" target="_blank" rel="noopener noreferrer">Hermes Agent</a></li>
+        <li><a href="https://github.com/openclaw/openclaw" target="_blank" rel="noopener noreferrer">OpenClaw</a></li>
+        <li><a href="https://github.com/esengine/DeepSeek-Reasonix" target="_blank" rel="noopener noreferrer">Reasonix</a></li>
+        <li><a href="https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/" target="_blank" rel="noopener noreferrer">Google о переходе с Gemini CLI на Antigravity CLI</a></li>
+        <li><a href="https://zed.dev/acp" target="_blank" rel="noopener noreferrer">Zed: каталог агентов ACP</a></li>
+        <li><a href="https://deepwiki.com/block/goose/4.1.5-scheduler-and-recurring-tasks" target="_blank" rel="noopener noreferrer">Goose: рецепты и планировщик</a></li>
+        <li><a href="https://devthrottle.com/coding-agents/amp" target="_blank" rel="noopener noreferrer">Обзор Amp от Sourcegraph</a></li>
+        <li><a href="https://docs.kodacode.ru/" target="_blank" rel="noopener noreferrer">Документация Koda: CLI, плагин IDE и настольное приложение</a></li>
+        <li><a href="https://docs.kodacode.ru/basics/legal/foss.html" target="_blank" rel="noopener noreferrer">Уведомления Koda об открытом коде с упоминанием Gemini CLI и Continue</a></li>
+        <li><a href="https://www.npmjs.com/package/@kodadev/koda-cli" target="_blank" rel="noopener noreferrer">Koda CLI на npm</a> и <a href="https://github.com/XCode-NLP/KodaSkills" target="_blank" rel="noopener noreferrer">KodaSkills: каталог навыков</a></li>
+        <li><a href="https://neuraldeep.ru/docs" target="_blank" rel="noopener noreferrer">Документация NeuralDeep, включая Drift и его API</a></li>
+        <li><a href="https://drift.neuraldeep.ru/" target="_blank" rel="noopener noreferrer">Drift</a> и <a href="https://t.me/neuraldeep/2131" target="_blank" rel="noopener noreferrer">объявление о нём в мае 2026 года</a></li>
+        <li><a href="https://neuraldeep.ru/russian-agents" target="_blank" rel="noopener noreferrer">NeuralDeep о российских агентах для программирования, включая Koda и Coddy</a></li>
+      </ul>
+      <p class="cmp-note">
+        Заметили ошибку или устаревшие сведения о своём проекте?
+        <a href="https://github.com/coddy-project/coddy-project.github.io/issues" target="_blank" rel="noopener noreferrer">Создайте обращение</a>
+        , и мы исправим строку.
+      </p>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="shell-width">
+      <p class="footer-links">
+        <a href="/ru/">Главная</a>
+        <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Документация</a>
+        <a href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Релизы</a>
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Лицензия MIT</a>
+        <a href="/llms.txt">llms.txt</a>
+      </p>
+      <p>
+        Coddy Project ·
+        <a href="https://github.com/coddy-project" target="_blank" rel="noopener noreferrer">github.com/coddy-project</a>
+      </p>
+    </div>
+  </footer>
+  <script src="/nav.js?v=3" defer></script>
+</body>
+</html>

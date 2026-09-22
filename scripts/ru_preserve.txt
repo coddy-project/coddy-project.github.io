@@ -1,0 +1,89 @@
+# Names, commands, paths and numbers intentionally kept as written in English.
+/
+/acp-harness
+/console-tui
+/distroless-ready
+/go-binary
+/on-prem-llms
+/subagents
+/swarm
+2:22
+2:57
+3:46
+:
+Aider
+All Hands AI
+Anthropic
+Antigravity CLI
+CLI
+Charmbracelet
+Claude Code
+ClawHub
+Cline
+Coddy
+Coddy Project
+CodeWhale
+Codex CLI
+Crush
+DeepSeek
+DeepSeek Harness
+Docker, Singularity, Modal, Daytona, Vercel
+Dockerfile
+Drift
+Drift (NeuralDeep)
+EN
+Extension Protocol v1
+FSL-1.1-MIT
+Google
+Goose
+Grok Build
+Hermes Agent
+Koda
+Koda (Kodacode)
+Nous Research
+OMP (oh-my-pi)
+OpenAI
+OpenClaw
+OpenCode
+OpenHands
+Paul Gauthier
+Pi
+Python + Node
+QQ
+RU
+Reasonix
+Rust + TypeScript
+SST
+Skills Hub
+can1357, Stencil Labs
+coddy serve
+coddy.dev/compare/
+docker run
+docker-compose.dev.yml
+docker-compose.yml
+docs/homebrew.md
+docs/install.md
+earendil-works
+omp.sh
+pip
+pip, Docker
+v1.0.1
+v1.0.8
+xAI
+~0.14k
+~103k
+~122k
+~144k
+~203-215k
+~206k
+~243k
+~26k
+~28k
+~30k
+~35k
+~375-389k
+~41k
+~49k
+~54k
+~68k
+~86k
