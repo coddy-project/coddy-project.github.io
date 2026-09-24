@@ -207,6 +207,12 @@ source ~/.zshrc   # or open a new terminal
 coddy -v
 ```
 
+The script installs no systemd unit. On Linux, to keep **`coddy serve`** running as a service of
+your account, run **`coddy serve install`** once the configuration has a provider key: it writes
+**`~/.config/systemd/user/coddy.service`** for the binary the script installed, enables it and
+starts it in **`~/Coddy`**. The script ends by saying so. See
+[the service guide](../operate/serve.md#as-a-systemd-user-service-on-linux).
+
 ## Linux packages (deb, rpm)
 
 Every release publishes a **`.deb`** and an **`.rpm`** for **x86_64** and **arm64** beside the
@@ -245,13 +251,17 @@ sha256sum -c --ignore-missing SHA256SUMS
 | **`/usr/share/man/man1/coddy.1.gz`** | **`man coddy`** |
 | **`/usr/share/bash-completion/completions/coddy`** | bash completion |
 | **`/usr/share/zsh/site-functions/_coddy`** | zsh completion |
+| **`/usr/lib/systemd/user/coddy.service`** | systemd user unit for **`coddy serve`**, installed and **not enabled** |
 | **`/usr/share/doc/coddy/config.example.yaml`** | starting point for **`~/.coddy/config.yaml`** |
 | **`/usr/share/doc/coddy/LICENSE`**, **`copyright`** | licence |
 
-That is the whole package: a binary and its documentation. No service, no system account, nothing
-under **`/etc`**. Configuration, sessions, skills and credentials stay in the invoking user's
-**`~/.coddy`**, so one installed package serves every user on the machine, each with their own
-state, and what to run - the console, the HTTP gateway, an editor over ACP - stays your decision.
+The package enables the unit for nobody, and there is no system service, no system account and
+nothing under **`/etc`**. Configuration, sessions, skills and credentials stay in the invoking
+user's **`~/.coddy`**, so one installed package serves every user on the machine, each with their
+own state, and what to run - the console, the HTTP gateway, an editor over ACP, a service - stays
+each user's decision. The message printed at installation says the unit is there and not enabled;
+**`coddy serve install`**, run as the user the service is for, enables and starts it (see
+[the service guide](../operate/serve.md#as-a-systemd-user-service-on-linux)).
 
 ### First run
 
@@ -271,12 +281,21 @@ replacing a packaged file (see [update.md](update.md#installations-owned-by-a-pa
 ```bash
 sudo apt-get install ./coddy_<newer>_linux_amd64.deb   # or dnf install ./...rpm
 sudo coddy update -y                                   # downloads and installs the package
+coddy serve install                                    # if you run the service: restart it on the new binary
 ```
 
+A running service keeps the binary it started with until it restarts, which is what the last line
+does; the upgrade prints the same reminder.
+
 ```bash
+coddy serve uninstall        # first, as each user that enabled the service
 sudo apt-get remove coddy    # or: sudo dnf remove coddy
-rm -rf ~/.coddy              # only if you also want the sessions and config gone
+rm -rf ~/.coddy ~/Coddy      # only if you also want the sessions, config and workspace gone
 ```
+
+The package removal cannot reach into each account's **`~/.config`**, so it leaves an enabled
+service enabled and prints the commands that clear it
+([Removing the service](../operate/serve.md#removing-the-service)).
 
 There is no apt or dnf repository to subscribe to: the packages are release assets, so a new version
 arrives when you install the newer file or run **`sudo coddy update`**, not from a background
@@ -329,12 +348,15 @@ coddy -v
 # edit ~/.coddy/config.yaml
 coddy serve            # in this terminal
 coddy serve --daemon   # in the background, restarted if it dies
+coddy serve install    # Linux: as a systemd user service
 ```
 
-The packages install no service unit, because Coddy's state is per-user under
-**`~/.coddy`**. **`coddy serve --daemon`** is the built-in way to keep it running without
-one; under a supervisor that already owns process lifetimes (`systemd`, Docker) use the
-foreground form and let that supervisor restart it. See [the daemon guide](../operate/serve.md).
+On Linux with systemd, **`coddy serve install`** runs it as a user service of your account instead:
+it enables the unit a package installed, or writes one for a binary the install script put in
+place, and starts it working in **`~/Coddy`**. **`coddy serve uninstall`** takes it away again. See
+[the service guide](../operate/serve.md#as-a-systemd-user-service-on-linux) for the log, keeping it
+running after logout and removing it. **`coddy serve --daemon`** is the route where there is no
+systemd.
 
 ## Windows
 
@@ -1162,6 +1184,14 @@ The Linux and macOS archives carry **`coddy.1`**, **`coddy.bash`** and **`coddy.
 
 Nothing is created: a file that was never installed (**`--no-shell-setup`**, a binary copied by hand) is left alone, and an executable outside a **`bin`** directory - a build tree, a bare download - has no **`share`** directory to pair with. A release from before the archives carried those files leaves the installed copies as they are and says so. A file it cannot write is reported after the binary is installed, and the command exits non-zero.
 
+## A server that is already running
+
+**`coddy update`** replaces the file on disk. A **`coddy serve`** that is already running keeps the
+binary it started with until it restarts: the systemd user service restarts with
+**`coddy serve install`** (it also points a unit it wrote at a binary that moved, see
+[the service guide](../operate/serve.md#as-a-systemd-user-service-on-linux)), and a daemon with
+**`coddy serve restart`**. A package upgrade prints the same reminder.
+
 ## Installations owned by a package manager
 
 A **`coddy`** that **`apt`** or **`dnf`** put on disk is listed in the package database, file by file. Overwriting **`/usr/bin/coddy`** in place would leave that database describing a build that is gone, the next **`apt upgrade`** or **`dnf reinstall`** would quietly put the old version back, and **`dpkg --verify`** would report a checksum mismatch nobody asked for. So **`coddy update`** does not replace a packaged executable. It asks **`dpkg-query -S`** and **`rpm -qf`** who owns the file it is about to write and takes one of two other routes:
@@ -1783,7 +1813,7 @@ coddy serve --dry-run         # binds each listen address once and releases it
 coddy serve -P 12346          # or httpserver.port in the file
 ```
 
-For access from other machines bind wider and require a token: `coddy serve -H 0.0.0.0 --auth-token <secret>` (also `CODDY_HTTP_TOKEN` or `httpserver.auth_token`); without a token the process warns that it is reachable without authentication. A listen address is the one setting a running process cannot adopt: under `--daemon` the worker restarts on the new address by itself (exit status 75 asks the dispatcher for a replacement), in the foreground restart it yourself. Under `--daemon` a port that is held is reported in the terminal that typed the command and retried until it frees. See [coddy serve and the daemon](../operate/serve.md) and [HTTP API](../reference/http-api.md#cli-flags).
+For access from other machines bind wider and require a token: `coddy serve -H 0.0.0.0 --auth-token <secret>` (also `CODDY_HTTP_TOKEN` or `httpserver.auth_token`); without a token the process warns that it is reachable without authentication. A listen address is the one setting a running process cannot adopt: under `--daemon` the worker restarts on the new address by itself (exit status 75 asks the dispatcher for a replacement), and so does the systemd user service of `coddy serve install`; in the foreground restart it yourself. Under `--daemon` a port that is held is reported in the terminal that typed the command and retried until it frees. See [coddy serve and the daemon](../operate/serve.md) and [HTTP API](../reference/http-api.md#cli-flags).
 
 ## A surface is missing from the build
 
@@ -6790,7 +6820,141 @@ coddy serve
 The process holds the terminal, prints what it started, and stops on Ctrl-C. This is the
 form to use under `systemd`, `supervisord`, Docker, or anything else that already owns
 process lifetimes - those supervisors restart the process themselves, and stacking a
-second one under them only hides failures from the first.
+second one under them only hides failures from the first. On Linux, `coddy serve install`
+sets up that systemd unit for you, the packaged one or one it writes (next section).
+
+## As a systemd user service on Linux
+
+```bash
+coddy serve install                      # once, as the user the service is for
+journalctl --user -u coddy.service -f    # its log
+coddy serve uninstall                    # take it away again
+```
+
+On Linux with systemd, `coddy serve` can run as a *user* service: it belongs to one
+account, runs with that account's permissions and its `~/.coddy`, comes back after a
+crash and, with [lingering](#after-logout-and-at-boot), keeps running after logout and
+starts at boot. `coddy serve install` puts it in place and `coddy serve uninstall` takes it
+away. Both run as the user the service is for, never under `sudo`.
+
+On macOS and Windows there is no systemd, and both commands say so; `coddy serve --daemon`
+is the route there. On Linux, what `install` has to do depends on how Coddy was installed:
+
+| Installed with | The unit | What `install` does with it |
+|---|---|---|
+| the `.deb` or `.rpm` | `/usr/lib/systemd/user/coddy.service`, installed and **not enabled** | enables it for your account |
+| the install script, a release archive, Homebrew on Linux, a local build | none | writes `~/.config/systemd/user/coddy.service` for the binary you ran `install` with, then enables it |
+
+The package enables the unit for nobody: which accounts on a machine run a server is
+for each of them to decide, and the message printed at installation says so. The
+install script installs no unit and ends by pointing at `coddy serve install` the same
+way.
+
+Either way, `install`:
+
+1. checks `~/.coddy/config.yaml` the way [`--test-config`](../reference/cli.md) does, and
+   stops on an error;
+2. refuses while a `coddy serve --daemon` runs for the same home, because both would bind
+   the same port;
+3. puts the unit in place (above), plus a drop-in
+   `~/.config/systemd/user/coddy.service.d/coddy-install.conf` with the `PATH` of the shell
+   you ran it from (a shell with no `PATH` keeps the drop-in an earlier run wrote);
+4. creates `~/Coddy`;
+5. runs `systemctl --user daemon-reload`, `enable` and `restart`, waits two seconds, and
+   reports whether the service stayed up, with the command that shows its log.
+
+Running `install` again is safe, and it is how the service picks up a change: after
+`coddy update` or a package upgrade, after the binary moved, after your `PATH` changed.
+It rewrites what it wrote, restarts the service, and never overwrites a unit or a drop-in
+it did not write.
+
+### What the service runs with
+
+- **Working directory `~/Coddy`.** The working directory of `coddy serve` is the
+  workspace of every session opened without one: a web UI chat started before a folder
+  was picked, a scheduler job, a Telegram conversation. The service gets a folder of its
+  own, so what the agent writes lands there and not next to the configuration and the
+  provider keys in `~/.coddy`. The unit creates the folder when it is missing. A session
+  opened on a project folder works in that folder as usual.
+- **The agent home `~/.coddy`.** The service reads `~/.coddy/config.yaml` and
+  `~/.coddy/.env`. The user manager does not inherit your shell's environment, so a
+  `CODDY_HOME` exported in `.bashrc` does not reach it; `install` says so when it sees one.
+- **The `PATH` of your shell.** A user manager starts services with a bare system
+  `PATH`, and an agent that cannot find the `go`, `node` or `python` your terminal finds
+  fails at the first build. The drop-in hands the service the absolute entries of the
+  `PATH` `install` ran with.
+- **The journal.** Output goes to `journalctl --user -u coddy.service`, and to a file as
+  well when `logger.file` says so.
+- **Restarts.** `Restart=on-failure` brings back a process that crashed. A configuration
+  change that moves a listen address - the web UI port, changed from its own settings
+  screen - ends the process with status 75, and systemd starts it again on the new
+  address: the unit sets `CODDY_SERVE_ROLE=service`, which tells `coddy serve` that
+  something will ([Restarting itself](#restarting-itself)).
+- **Stopping.** systemd gives `coddy serve` 40 seconds after `SIGTERM` to finish a turn
+  in flight, then kills it.
+
+Anything else - another working directory, more environment, a flag - goes into a
+drop-in of your own, which `install` and `uninstall` leave alone:
+
+```bash
+systemctl --user edit coddy.service
+```
+
+### After logout and at boot
+
+A user manager runs while its user has a session, so the service stops when you log out
+of the last one and starts again at the next login. To keep it running without a session
+and start it at boot, an administrator enables lingering for the account once:
+
+```bash
+sudo loginctl enable-linger <user>
+```
+
+`install` prints that line when lingering is off. Coddy never changes it.
+
+### Controlling the service
+
+systemd owns the service. The `coddy serve status | stop | restart` verbs belong to
+`--daemon`, and when they find the systemd service instead they say so:
+
+```bash
+systemctl --user status coddy.service
+systemctl --user restart coddy.service
+systemctl --user stop coddy.service       # until the next login, or the next boot
+```
+
+Do not run `coddy serve --daemon` for the same account next to it: both would bind the
+same port. `install` refuses while the daemon runs, and `--daemon` over `~/.coddy` refuses
+while the service runs (over another home it only warns, since that one may listen
+elsewhere). The daemon verbs also mention a service that is enabled but stopped, which
+comes back at the next login.
+
+`install` and `uninstall` talk to the user manager of the account over its bus. A shell
+opened with `su` or `sudo -u` keeps the session of the caller, so the manager is not
+reachable from it and both commands say so; log in as the user (ssh, a desktop session,
+`machinectl shell <user>@`) instead.
+
+### Removing the service
+
+```bash
+coddy serve uninstall
+```
+
+stops and disables `coddy.service`, removes the unit and the drop-in `install` wrote, and
+reloads the user manager. The packaged unit stays where the package put it, disabled. A
+unit or a drop-in you wrote yourself is disabled and kept. `~/.coddy` (configuration,
+sessions) and `~/Coddy` (workspace) are not touched.
+
+Run it before removing the `.deb` or `.rpm`. The package removal takes the unit file away
+but cannot reach into each account's `~/.config`, so an account that enabled the service
+keeps it enabled, and the service keeps running the deleted binary until it stops.
+`coddy serve uninstall` from another installation of Coddy still clears it; without one,
+the removal prints what does, to run as that user:
+
+```bash
+systemctl --user disable --now coddy.service
+rm -f ~/.config/systemd/user/coddy.service.d/coddy-install.conf
+```
 
 ## In the background
 
@@ -6934,20 +7098,25 @@ the very server whose settings screen they are typing into.
 
 The exit status for that request is **75** (`EX_TEMPFAIL`), so a supervisor that knows
 nothing about Coddy reads it the way it was meant: this run is over, another one is
-worth starting. Under `systemd` that is `RestartForceExitStatus=75` alongside the
-ordinary `Restart=on-failure`.
+worth starting. A foreground `coddy serve` only exits for it when it is told something
+will start it again, through `CODDY_SERVE_ROLE=service` in its environment; otherwise it
+logs that a restart is due and keeps the old listener. The unit `coddy serve install` uses
+sets that variable, plus `SuccessExitStatus=75` and `RestartForceExitStatus=75`, so the
+restart is not recorded as a failure. A unit or a supervisor of your own needs the
+variable too.
 
 ## Which form to use
 
 | Situation | Form |
 |-----------|------|
-| a laptop, a dev box, a shell on a server | `coddy serve --daemon` |
-| `systemd`, `supervisord`, `runit` | `coddy serve` in the foreground, and let them restart it |
+| Linux with systemd, a server that should outlive your login | `coddy serve install` (a systemd user service) |
+| a laptop, a dev box, a shell on a machine without systemd | `coddy serve --daemon` |
+| `supervisord`, `runit` | `coddy serve` in the foreground with `CODDY_SERVE_ROLE=service`, and let them restart it |
 | Docker, Kubernetes | `coddy serve` in the foreground as PID 1; the orchestrator restarts the container |
 
-The packages ship no service unit on purpose: Coddy's state is per-user under
-`~/.coddy`, so a system daemon would need a home and a configuration nobody can edit.
-See [installation](../getting-started/install.md).
+The packages ship a user unit that they do not enable, and no system unit: Coddy's state
+is per-user under `~/.coddy`, so a system daemon would need a home and a configuration
+nobody can edit. See [installation](../getting-started/install.md).
 
 
 # Operate / Remote mode
@@ -11397,6 +11566,11 @@ Usage:
         the swarm relay, the cron scheduler)
   coddy serve -d | --daemon (the same, in the background under a dispatcher
         that starts it again if it dies)
+  coddy serve install (Linux: run coddy serve as a systemd user service in
+        ~/Coddy - installs the unit when the package did not, enables and
+        starts it)
+  coddy serve uninstall (stop and disable that service and remove the unit
+        that install wrote; ~/.coddy and ~/Coddy are kept)
   coddy serve status | stop | restart [--home DIR]
   coddy serve set-password [--user NAME] [--config PATH] [--home DIR] (write the web
         UI sign-in account into config.yaml; the password is read from the
@@ -11589,6 +11763,18 @@ Usage of serve (runs every subsystem enabled in config.yaml):
   -t	alias of --test-config
   -test-config
     	check config.yaml against the schema and the loader's rules, print every problem with its line and how to fix it, then exit without starting anything
+```
+
+### coddy serve install
+
+```text
+Usage: coddy serve install (check ~/.coddy/config.yaml, install the systemd user unit for this binary when the package did not, enable coddy.service and start it working in ~/Coddy)
+```
+
+### coddy serve uninstall
+
+```text
+Usage: coddy serve uninstall (stop and disable coddy.service and remove the unit that install wrote; ~/.coddy and ~/Coddy are kept)
 ```
 
 ### coddy serve status | stop | restart
@@ -12380,7 +12566,7 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | `CODDY_SWARM_TOKEN` | `external/swarm/serve.go`, read in `cmd/coddy/serve.go` | The bearer token clients present to the relay when `--swarm-auth-token` is absent; `swarm.auth_token` comes after both. | [Swarm](../operate/swarm.md#security), [config.yaml reference](../reference/config.md#related-environment-variables) |
 | `CODDY_SWARM_PAIRING_TOKEN` | `external/swarm/serve.go`, read in `cmd/coddy/serve.go` | The credential a node presents to register when `--swarm-pairing-token` is absent; appended to `swarm.pairing_tokens` on every reload. | [Swarm](../operate/swarm.md#security), [config.yaml reference](../reference/config.md#related-environment-variables) |
 | `CODDY_TELEGRAM_API_BASE` | `internal/config/gateway.go`, read in `external/gateway/telegram/bot.go` and `internal/dryrun/network.go` | The Bot API origin the Telegram gateway and the `--dry-run` probe talk to instead of `https://api.telegram.org`: a self-hosted Bot API server, or the offline stand `cmd/tgfake`. | [Telegram gateway](../surfaces/gateway.md#debugging-against-a-fake-bot-api), [Configuration](../getting-started/configuration.md#dry-run-probing-what-the-file-points-at) |
-| `CODDY_SERVE_ROLE` | `internal/serve/daemon.go` | Set by `coddy serve --daemon` on the processes it re-executes, to `dispatcher` or `worker`, so each half knows which one it is. Not meant to be set by hand. | [coddy serve and the daemon](../operate/serve.md#in-the-background) |
+| `CODDY_SERVE_ROLE` | `internal/serve/daemon.go` | Set by `coddy serve --daemon` on the processes it re-executes, to `dispatcher` or `worker`, so each half knows which one it is. `service` tells a foreground `coddy serve` that a service manager starts it again, so a configuration change that moves a listen address ends it with status 75 instead of waiting for a manual restart; the systemd unit of `coddy serve install` sets it, and a supervisor of your own may. Do not set `dispatcher` or `worker` by hand. | [Restarting itself](../operate/serve.md#restarting-itself) |
 
 ## Updates
 
@@ -15591,14 +15777,21 @@ make rpm PKG_TAGS="http cli"      # lean binary, no npm step
 
 The recipe is **`packaging/nfpm.yaml`**, driven by **`scripts/build-packages.sh`**, which stages the
 man page (**`packaging/man/coddy.1`**), the shell completions (**`packaging/completions/`**),
+the systemd user unit (**`packaging/systemd/coddy.service`**), the maintainer scripts
+(**`packaging/scripts/postinstall.sh`**, **`preremove.sh`**),
 **`config.example.yaml`** and **`LICENSE`** into one directory and runs
 [nfpm](https://nfpm.goreleaser.com/) over it. nfpm is not a module dependency: the script uses the
 **`nfpm`** on **`PATH`** when there is one and otherwise fetches the pinned version with
 **`go run`**, so there is nothing to install first.
 
-The package installs a binary and its documentation and nothing else - no service, no system
-account, no files under **`/etc`** - because Coddy's state lives in the invoking user's
-**`~/.coddy`**.
+The user unit is installed but not enabled, and the post-install message says so; each user who
+wants the service runs **`coddy serve install`**. No system service, system account or files under
+**`/etc`** are created, because each user keeps state under **`~/.coddy`**. The unit is not
+written by hand: **`serve.PackagedUnitFile()`** (**`internal/serve/systemd.go`**) renders it, the
+same function that writes the unit for a script install, and **`TestPackagedUnitIsTheRenderedOne`**
+fails until **`packaging/systemd/coddy.service`** matches it byte for byte. The **Distribution
+packages** CI job then checks that both package formats carry that file and the maintainer
+scripts.
 
 Version strings are normalised for the two formats by **`scripts/package-version.sh`** - rpm forbids
 **`-`** in a version and dpkg reads the last one as the start of the Debian revision, so
@@ -18208,7 +18401,7 @@ Short map for automation-friendly contributors.
 |------|------------------|
 | `cmd/coddy` | CLI entry (bare `coddy` console, `cli`, `acp`, **`serve`**, `sessions`, `skills`, `plugin`, `mcp`, `providers login`, `rules list`, `update`), plus **`-t` / `--test-config`** on the console, `acp` and `serve`: the config check in **`internal/config/check.go`** (schema stage in **`schema.go`** over the embedded **`config.schema.json`**, then the loader's rules), reported as `file:line:col` with a fix line, exit 1 on errors, nothing written; and **`--dry-run`** on the same three, which runs that check and then **`internal/dryrun`**. |
 | `internal/dryrun` | The **`--dry-run`** probes over a loaded config: **`Prepare`** (the static check, then **`config.LoadReadOnly`** and a **`config.Locator`** so every finding carries its line), **`Run`** (paths in **`paths.go`**, LLM providers through **`llm.ListModels`** with the configured models checked against the list in **`providers.go`**, listen addresses, the Telegram token, remote MCP servers, configured remotes and the `--remote` target, swarm joins and upstreams in **`network.go`**), and the checklist **`Report`** (`ok` / `warning` / `error` / `skipped` per config path, exit 1 on errors; alone the flag prints problems and the status line, with **`--test-config`** the config report and every probe). Global `mcp_servers` only: project-local `.coddy/mcp.json` stays behind the trust gate. `coddy serve` hands it the subsystems **`serve.Resolve`** enabled and their addresses (**`cmd/coddy/dryrun.go`**). |
-| `internal/serve` | What **`coddy serve`** is: the **`Runtime`** every subsystem shares (paths, logger, one session store and one **`session.Manager`**, the turn-mirror slot, and the surfaces that offered to show a detached subagent's permission prompt - the HTTP server, a Telegram bot - which are all asked at once, the first answer winning, and the process **background waker** (**`wake.go`**: a finished **`notify_on_finish`** task's turn goes to the surface that offered it first by rank - the Telegram chat bound to the session, then the HTTP server - or runs through the manager when neither is up), the **`Supervisor`** that runs them (**`subsystem.go`**: a **`Subsystem`** descriptor per surface with its **`enable`** key, its build tag and its **`Available`** flag, so an enabled surface the binary cannot run is refused by name, plus **`Fingerprint`** for what can be rebuilt in place and **`RestartKey`** for what only a fresh process can adopt; **`supervisor.go`**: one goroutine per surface with panic recovery, a diff applied on every config reload - start, stop or rebuild only what moved - **`ErrRestartRequested`** when a **`RestartKey`** moves under a **`Restartable`** process, and shutdown in reverse declaration order so intake stops before the API), and the **background dispatcher** (**`dispatcher.go`**: the restart policy and the **`Record`** at **`<home>/serve.json`**; **`daemon.go`**: **`StartDetached`**, **`RunDispatcher`**, the worker process and the **`CODDY_SERVE_ROLE`** split, exit status **`ExitRestart`** = 75). Untagged: it names no tagged package, and the surfaces reach it through **`Available`** consts and stubs. Guide: **`docs/operate/serve.md`**. |
+| `internal/serve` | What **`coddy serve`** is: the **`Runtime`** every subsystem shares (paths, logger, one session store and one **`session.Manager`**, the turn-mirror slot, and the surfaces that offered to show a detached subagent's permission prompt - the HTTP server, a Telegram bot - which are all asked at once, the first answer winning, and the process **background waker** (**`wake.go`**: a finished **`notify_on_finish`** task's turn goes to the surface that offered it first by rank - the Telegram chat bound to the session, then the HTTP server - or runs through the manager when neither is up), the **`Supervisor`** that runs them (**`subsystem.go`**: a **`Subsystem`** descriptor per surface with its **`enable`** key, its build tag and its **`Available`** flag, so an enabled surface the binary cannot run is refused by name, plus **`Fingerprint`** for what can be rebuilt in place and **`RestartKey`** for what only a fresh process can adopt; **`supervisor.go`**: one goroutine per surface with panic recovery, a diff applied on every config reload - start, stop or rebuild only what moved - **`ErrRestartRequested`** when a **`RestartKey`** moves under a **`Restartable`** process, and shutdown in reverse declaration order so intake stops before the API), and the **background dispatcher** (**`dispatcher.go`**: the restart policy and the **`Record`** at **`<home>/serve.json`**; **`daemon.go`**: **`StartDetached`**, **`RunDispatcher`**, the worker process and the **`CODDY_SERVE_ROLE`** split, exit status **`ExitRestart`** = 75), and the **systemd user service** (**`systemd.go`**: **`UserService`** behind **`coddy serve install`** / **`uninstall`**, the unit renderer shared with the package, the **`PATH`** drop-in, the role **`service`** the unit sets so a listen-address change exits 75 under systemd too). Untagged: it names no tagged package, and the surfaces reach it through **`Available`** consts and stubs. Guide: **`docs/operate/serve.md`**. |
 | `internal/agent` | ReAct orchestration, MCP/tool wiring, and the opt-in wait for a hit usage limit (**`limit_wait.go`**: a **`llm.QuotaResetError`** from the resilient wrapper makes a top-level turn wait for the reset under **`agent.wait_for_limit_reset`**, sending **`provider_usage`** updates with **`resuming`** every 20 s, then re-issue the same call). |
 | `internal/mcp` | MCP transports, merged server list, and the **workspace trust gate** for project-local **`.coddy/mcp.json`** (**`trust.go`**, **`gate.go`**; policy **`mcp.project_trust`**, approvals in **`<home>/mcp-trust.json`**). Guide: **`docs/features/mcp.md`**. |
 | `internal/remote` | Go client for a remote `coddy serve` server: SSE frames back into ACP updates, `/coddy` REST, permission/question answers, and the permission prompts of background subagents the server announces on its events stream (**`detached_prompts.go`**). Powers `--remote` on the console and `coddy acp`. Guide: **`docs/surfaces/console.md`** (Remote mode), **`docs/plans/remote-control.md`**. |
@@ -18226,7 +18419,7 @@ Short map for automation-friendly contributors.
 | `external/swarm` | The relay **`coddy serve`** runs under **`swarm.enable`**, built with **`tags=swarm`** (part of **`FULL_TAGS`**, so the release binaries, image and packages carry it): the stateless relay - lease registry, per-node mount, aggregated sessions, ring-aware topology, and the reverse HTTP/2 tunnel for nodes that can only dial out. Shared vocabulary and the join client live untagged in **`internal/swarm`**, so **`coddy serve`** can join a relay without the tag. Guide: **`docs/operate/swarm.md`**. |
 | `external/gateway` | Messenger gateway (**`-tags gateway.telegram`** or **`-tags gateway`**), started by **`coddy serve`** under **`gateways.telegram.enable`**: Telegram bot adapter, session store, proxy support. Chat turns run through the shared manager and are mirrored into the HTTP relay, so a conversation is live in the web UI; what the messenger needs is said twice and kept out of the transcript both times - a system prompt block for the turn (**`prompt.go`**, carried by **`session.PromptRunOpts.SurfaceSystemPrompt`**) and the outbound rendering of the answer (**`markdown.go`**); the poller stops intake before generation on shutdown, so a restart from a settings change does not truncate an answer. Full guide: **`docs/surfaces/gateway.md`**, rules: **`.cursor/rules/gateway.mdc`**. |
 | `internal/tgfake`, `cmd/tgfake` | The offline stand for the Telegram gateway: a fake Bot API server (every method the adapter calls, long-polled `getUpdates`, the `/sim/*` injection API, a chat page) plus **`llmstub`**, a scripted OpenAI-compatible model behind **`--llm`**. Untagged and free of Telegram library types, so the gateway's tests run it on httptest (**`features/gateway_telegram_polling.feature`**) and **`go run ./cmd/tgfake --llm`** serves it on a port; **`coddy serve`** is pointed at it with **`CODDY_TELEGRAM_API_BASE`** (**`config.TelegramAPIBaseEnv`**, honoured by the bot and the **`--dry-run`** probe alike). Runner: **`examples/gateway/tg_e2e_offline.sh`**. Guide: **`docs/surfaces/gateway.md`** (Debugging against a fake Bot API). |
-| `packaging` | Distribution package sources: the **nfpm** recipe (**`nfpm.yaml`**) for the Linux **`.deb`** and **`.rpm`**, the Homebrew **cask** template (**`homebrew/coddy.rb.tmpl`**, prebuilt macOS archives) and **formula** template (**`homebrew/coddy-formula.rb.tmpl`**, built from source - the artefact **homebrew/core** takes), the man page (**`man/coddy.1`**), bash and zsh completions, and the post-install script. A package installs a binary and its documentation and nothing else - **no service, no system account, no `/etc`** - because Coddy's state lives in the invoking user's **`~/.coddy`**. Built by **`scripts/build-packages.sh`**, **`scripts/build-homebrew-cask.sh`** and **`scripts/build-homebrew-formula.sh`** (**`make deb`**, **`make rpm`**, **`make brew`**, **`make brew-formula`**); **`scripts/check-homebrew-submission.sh`** (**`make brew-check`**) is the preflight for the homebrew/core submission. Guides: **`docs/getting-started/install.md`**, **`docs/getting-started/homebrew.md`** (which Homebrew repository takes what, and the submission path), **`docs/contributing/build.md`** (Distribution packages), **`docs/getting-started/update.md`** (installations owned by a package manager). |
+| `packaging` | Distribution package sources: the **nfpm** recipe (**`nfpm.yaml`**) for the Linux **`.deb`** and **`.rpm`**, the **systemd user unit** (**`systemd/coddy.service`**, installed and not enabled, rendered by **`serve.PackagedUnitFile()`** and held to it by a test), the Homebrew **cask** template (**`homebrew/coddy.rb.tmpl`**, prebuilt macOS archives) and **formula** template (**`homebrew/coddy-formula.rb.tmpl`**, built from source - the artefact **homebrew/core** takes), the man page (**`man/coddy.1`**), bash and zsh completions, and the maintainer scripts (**`scripts/postinstall.sh`**, **`scripts/preremove.sh`**: what the user has to do next, the unit not enabled included). The package enables nothing and creates **no system service, system account or `/etc` files**; Coddy's state lives in the invoking user's **`~/.coddy`**, and **`coddy serve install`** (**`internal/serve/systemd.go`**) enables the unit for one account, or writes one under **`~/.config/systemd/user`** for a binary the install script put in place. Built by **`scripts/build-packages.sh`**, **`scripts/build-homebrew-cask.sh`** and **`scripts/build-homebrew-formula.sh`** (**`make deb`**, **`make rpm`**, **`make brew`**, **`make brew-formula`**); **`scripts/check-homebrew-submission.sh`** (**`make brew-check`**) is the preflight for the homebrew/core submission. Guides: **`docs/getting-started/install.md`**, **`docs/getting-started/homebrew.md`** (which Homebrew repository takes what, and the submission path), **`docs/contributing/build.md`** (Distribution packages), **`docs/getting-started/update.md`** (installations owned by a package manager). |
 | `internal/docsgen`, `cmd/docsgen` | The documentation generator and checker behind **`make docs`** / **`make docs-check`**: the hub and the llms files from **`docs/nav.yaml`**, the config field tables from the schema and **`config.DocDefaults`**, the CLI reference from the `--help` screens, the assets inventory, the relative-link and anchor check. Every tree walk asks git what it excludes and skips it (**`gitignore.go`**), so local scratch under **`docs/`** is never reported as a page missing from the map; without git nothing is filtered. |
 
 ## Builds
@@ -18303,7 +18496,7 @@ Codex code review reads this section and applies it to changed files. Keep entri
 
 - Do not add, rename or remove a CLI subcommand, a **`serve`** verb or a flag without updating **`packaging/man/coddy.1`** and **`packaging/completions/coddy.bash`** / **`coddy.zsh`** in the same change (and **`topLevelCommands`** in **`cmd/coddy/usage_test.go`** for a command). Every install route ships those files as the documentation of the command set - the release archive through **`install.sh`**, the Homebrew cask and **`coddy update`**, the packages, the formula - and nothing generates them: the test holds the commands and the `serve` verbs to **`printUsage`**, flags are kept in step by hand. Workflow step 11 in **`.claude/rules/workflow.md`**.
 - Do not move **`/usr/bin/coddy`** or add a second packaged copy of the binary. **`coddy update`** asks **`dpkg-query -S`** / **`rpm -qf`** who owns the executable it is about to replace, and a packaged file that no database claims would be silently overwritten. Safe path: keep the single **`contents`** entry in **`packaging/nfpm.yaml`**.
-- Do not add a service unit, a system account, or files under **`/etc`** to a package. Coddy's state is per-user under **`~/.coddy`**; a packaged daemon would need a home of its own and a config nobody can edit. The package installs the binary, the man page, the completions and the licence, and the user decides what to run.
+- Keep the packaged service an opt-in **systemd user unit** that the package installs and never enables. Do not add a system service, a system account or files under **`/etc`**, and do not enable, start or disable the unit from a maintainer script. Coddy's state is per-user under **`~/.coddy`**, and each user decides with **`coddy serve install`** / **`coddy serve uninstall`**. The unit is rendered by **`serve.PackagedUnitFile()`**: change the renderer and regenerate **`packaging/systemd/coddy.service`**, never the file alone.
 - Do not add a file to the release **`.tar.gz`** layout without checking the Homebrew cask: **`packaging/homebrew/coddy.rb.tmpl`** links artefacts out of that archive by name.
 - Do not move the man page or the completions inside the repository without updating **`packaging/homebrew/coddy-formula.rb.tmpl`**. The formula installs them from their source paths, and a from-source build is the only packaging route that reads the tree rather than a staged archive. Its **`test do`** block is coupled the same way: it asserts on the output of **`coddy -v`**, **`coddy sessions list`** (the **`SESSION_ID`** header) and **`coddy skills list`** (the **`Search roots:`** line), and once the formula is in homebrew/core those strings are checked by Homebrew's CI, not ours.
 - Do not conflate the two Homebrew artefacts. The **cask** installs prebuilt macOS archives and is upgraded with **`brew upgrade --cask coddy`** out of a **`Caskroom`**; the **formula** builds from source and is upgraded with **`brew upgrade coddy`** out of a **`Cellar`**. **`internal/update`** reads which of the two owns the running executable off its path, so a change to that detection has to keep both hints correct - the wrong flag fails on the user's machine.
