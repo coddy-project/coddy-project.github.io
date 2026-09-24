@@ -310,3 +310,20 @@ if [ -n "$RC_FILE" ]; then
 else
   log "next: set API keys in ${CONFIG}, then: coddy serve"
 fi
+
+# The script installs no systemd unit: whether this account runs a server is
+# the user's call. A release that knows `coddy serve install` is told about it,
+# since that command writes the unit for the binary installed above.
+# The usage text is read whole: grep -q closing the pipe early would fail the
+# pipeline under pipefail.
+case "$("$DEST" --help 2>&1 || true)" in
+  *"serve install"*) HAS_SERVE_INSTALL=1 ;;
+  *) HAS_SERVE_INSTALL=0 ;;
+esac
+if [ "$OS" = Linux ] && [ "$HAS_SERVE_INSTALL" -eq 1 ] && command -v systemctl >/dev/null 2>&1; then
+  log "systemd: no service was installed. To run coddy serve as a user service of this account"
+  log "(working in ~/Coddy, back after a crash), run: coddy serve install    (coddy serve uninstall removes it)"
+  if [ "$CODDY_HOME" != "${HOME}/.coddy" ]; then
+    log "note: the service reads ${HOME}/.coddy, not ${CODDY_HOME}"
+  fi
+fi
