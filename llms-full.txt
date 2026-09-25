@@ -8866,7 +8866,9 @@ On each `session/prompt` the agent:
 1. Scans `skills.dirs` for the session cwd and `CODDY_HOME`.
 2. All loaded (and enabled) skills are always active — their bodies are available as slash commands and injected on demand.
 3. Builds the **`{{.Skills}}`** system-prompt block: the slash-command catalog listing all skills, plus the full body of any always-active or glob-matched skill whose name is **not** already in the catalog.
-4. At LLM call time, if the last user message contains `/name` invocations, each matched skill's body is **prepended to the user message** before it is sent to the model. This augmentation happens only inside the LLM request — it is **not stored in session history** and is **not visible in the chat transcript**.
+4. Looks for `/name` invocations in the text the user typed and **appends each matched skill's body to the user message**, as a `<coddy_attachment path="skill:name" kind="skill">` element after the typed text. The message goes into **session history with the body in it**, so later turns replay the same bytes: the provider's cached prefix holds, and the model keeps the instructions it was given until a compaction folds the message into its summary ([Mentions and the prompt cache](mentions.md#mentions-and-the-prompt-cache)). The transcript shows the message as typed, because the web UI drops `kind="skill"` elements, and so does the history replay a reopened console or an ACP editor receives. A follow-up queued during a turn gets its skill bodies the same way.
+
+A body the model loads itself with the `load_skill` tool (offered while `skills.auto_discovery` is on) comes back as the result of that call and stays in session history like any other tool result.
 
 ACP clients receive `available_commands_update` after `session/new` and `session/load`. The HTTP UI queries `GET /coddy/slash-commands` for autocomplete.
 
@@ -12689,7 +12691,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/re
 
 # Slash commands
 
-The built-in commands on each surface and how skills become commands. A slash command is one of five things: a settings command (`/model`, `/reasoning`, `/think`, `/nothink`, `/agent`, `/plan`, `/ask`, `/permissions`), which the session manager takes off the start of a prompt on every surface and applies before any turn starts; a client-side command of the console, which never leaves the terminal; a deterministic built-in (`/compact`, `/export`, `/plugin`), which the agent recognises before the prompt becomes a message and runs without a turn of the model; a Telegram bot command, handled by the adapter; or a skill, whose body is prepended to the message for the model. The first four run whatever the session mode is, because they are operator input rather than tool calls.
+The built-in commands on each surface and how skills become commands. A slash command is one of five things: a settings command (`/model`, `/reasoning`, `/think`, `/nothink`, `/agent`, `/plan`, `/ask`, `/permissions`), which the session manager takes off the start of a prompt on every surface and applies before any turn starts; a client-side command of the console, which never leaves the terminal; a deterministic built-in (`/compact`, `/export`, `/plugin`), which the agent recognises before the prompt becomes a message and runs without a turn of the model; a Telegram bot command, handled by the adapter; or a skill, whose body the agent writes into the message that invokes it, as an attachment after the typed text. The first four run whatever the session mode is, because they are operator input rather than tool calls.
 
 ## The commands
 
@@ -12715,7 +12717,7 @@ The built-in commands on each surface and how skills become commands. A slash co
 | `/start`, `/help` | Telegram | The greeting and the command list of the bot. | [Telegram gateway](../surfaces/gateway.md#commands) |
 | `/context` | Telegram | The context window usage of the chat's session by category. | [Telegram gateway](../surfaces/gateway.md#commands) |
 | `/clear` | Telegram | Starts a new session for the chat; the old one stays on disk, and `/resume` brings it back. | [Telegram gateway](../surfaces/gateway.md#session-lifecycle) |
-| `/<skill>` | console, web UI, ACP editors, `POST /v1/responses` | Runs a skill: the full `SKILL.md` body is prepended to the message the model receives for this turn. | [Skills](../features/skills.md#how-skills-are-applied) |
+| `/<skill>` | console, web UI, ACP editors, `POST /v1/responses` | Runs a skill: the full `SKILL.md` body is written into the message that invokes it, as an attachment after the typed text, and later turns replay it. | [Skills](../features/skills.md#how-skills-are-applied) |
 
 Three boundaries follow from the code:
 
@@ -16691,7 +16693,7 @@ messages: [
 1. BUILD_MESSAGES
    - Load applicable skills and project rules for current context (separate prompt sections)
    - Build system prompt (template + TemplateData incl. TodoList snapshot)
-   - For the last user message, detect `/name` invocations: prepend each matched skill's body to the message content before the LLM call. This augmentation is ephemeral — not persisted to session history, not shown in the chat transcript.
+   - Skill bodies are already in the history: on Run entry, before the user turn is persisted, Run appends the body of each skill the typed text invokes as `/name` to that message as a `<coddy_attachment kind="skill">` element (`invokedSkillBlocks`), so later requests replay the same bytes and the prefix cache holds. Surfaces leave the element out of the transcript (`mention.ForDisplay`, `stripCoddyAttachments.ts`); queued follow-ups get their skill bodies the same way.
    - Prepend system to session history (user turn already persisted on Run entry)
 
 2. LLM_CALL
