@@ -1,0 +1,590 @@
+# English text from the static pages, tab, Russian translation.
+Coddy Agent - general-purpose agent in one Go binary	Coddy Agent — универсальный агент в одном Go-бинарнике
+Coddy vs other agent harnesses - 2026 comparison	Coddy и другие агентные среды — сравнение 2026 года
+Install	Установка
+Demo	Демо
+Features	Возможности
+Compare	Сравнение
+Docs	Документация
+Home	Главная
+Releases	Релизы
+MIT License	Лицензия MIT
+GitHub, latest release	Последний релиз на GitHub
+Copy	Копировать
+Script	Скрипт
+View install script	Посмотреть скрипт установки
+Release assets	Файлы релиза
+Linux	Linux
+macOS	macOS
+Windows	Windows
+Docker	Docker
+Compose	Compose
+Debian / Ubuntu	Debian / Ubuntu
+Fedora / RHEL	Fedora / RHEL
+Homebrew	Homebrew
+Coddy Agent	Coddy Agent
+Coddy Project ·	Coddy Project ·
+GitHub	GitHub
+llms.txt	llms.txt
+github.com/coddy-project	github.com/coddy-project
+↗	↗
+.	.
+,	,
+and	и
+no	нет
+yes	да
+no data	нет данных
+partial	частично
+auto	автоматически
+plugin	плагин
+binary	бинарник
+community	сообщество
+proprietary	проприетарная
+cloud	облако
+server	сервер
+gateway	шлюз
+native	встроено
+desktop	настольное приложение
+headless	без интерфейса
+TUI	TUI
+ACP	ACP
+RPC	RPC
+SDK	SDK
+MIT	MIT
+Apache-2.0	Apache-2.0
+TypeScript	TypeScript
+Rust	Rust
+Go	Go
+Python	Python
+Run a general-purpose agent	Запустите универсального агента
+from one static binary	из одного статического бинарника
+Coddy is an agent harness: a ReAct loop with filesystem and shell tools, MCP, project rules, skills, subagents, hooks, background tasks, and long-term memory. Drive it from a terminal, a browser, your editor over ACP, or Telegram; run it as a service with a cron scheduler, a swarm relay for a fleet of nodes, and remote control from anywhere. Built for containers and your own API keys.	Coddy — платформа для агентов: цикл ReAct с инструментами для файлов и командной строки, MCP, правилами проекта, навыками, субагентами, хуками, фоновыми задачами и долговременной памятью. Работайте через терминал, браузер, редактор по ACP или Telegram. Запускайте как сервис с планировщиком cron, ретранслятором для группы узлов и удалённым управлением. Подходит для контейнеров и ваших собственных ключей API.
+Quick install	Быстрая установка
+Puts the latest release binary on your PATH and creates	Добавляет бинарник последнего релиза в PATH и создаёт
+from the example when it is missing.	на основе примера, если файла ещё нет.
+Swap	Замените
+for	на
+on 64-bit ARM, or pick a file from the	для 64-битной ARM или выберите файл в
+latest release	последнем релизе
+. The package brings	. Пакет устанавливает
+and the shell completions, no service and no system account, and	и автодополнение команд. Сервис и системная учётная запись не создаются; команда
+defers to the package manager.	передаёт обновление пакетному менеджеру.
+openSUSE takes the same file with	В openSUSE этот же файл устанавливается через
+. Swap	. Замените
+About the cask	О Homebrew-пакете
+Every release publishes the cask beside its archives. It adds	Каждый релиз публикует Homebrew-пакет вместе с архивами. Он добавляет
+and the shell completions, and	и автодополнение команд, а
+hands over to	передаёт обновление команде
+. If macOS blocks the first run, clear the quarantine flag with	. Если macOS блокирует первый запуск, снимите флаг карантина командой
+Run it in PowerShell. Puts the latest release binary on your PATH and creates	Запустите команду в PowerShell. Она добавит бинарник последнего релиза в PATH и создаст
+Docker guide	Руководство по Docker
+Compose file in the repo	Compose-файл в репозитории
+Opens the web UI on	Открывает веб-интерфейс по адресу
+localhost:12345	localhost:12345
+. The agent works in the mounted	. Агент работает в подключённом каталоге
+; sessions, skills and config live in the second mount. The image is built for	; сессии, навыки и конфигурация находятся во втором томе. Образ собирается для
+and published to the GitHub Container Registry, no login needed to pull. Pin a release instead of	и публикуется в GitHub Container Registry — для загрузки вход не нужен. Вместо
+, for example	можно закрепить версию релиза, например
+Save it as	Сохраните файл как
+and run	и выполните
+. In the repository:	. В репозитории есть:
+for the published image and	для опубликованного образа и
+to build from source with your own tags.	для сборки из исходников со своими тегами.
+Then set a provider key in	Затем укажите ключ провайдера в
+the terminal console	терминальную консоль
+the web UI	веб-интерфейс
+an editor client over ACP	клиент редактора по ACP
+upgrade later	обновление в будущем
+Other install methods and details:	Другие способы установки и подробности:
+· Homebrew by name is still on its way, see	· Установка Homebrew по имени пока готовится, см.
+See it in action	Посмотрите, как это работает
+Web UI	Веб-интерфейс
+Terminal	Терминал
+Editor (ACP)	Редактор (ACP)
+The same agent served by	Тот же агент, запущенный через
+: streamed tool calls, a permission card with a real diff, session history, seven themes, and an environment switch that points the UI at a remote server.	: потоковый вывод вызовов инструментов, запрос разрешения с настоящим diff, история сессий, семь тем и переключатель окружения для подключения к удалённому серверу.
+Bare	Обычный запуск
+in a terminal: pick a model with	в терминале: выберите модель через
+, approve edits and commands as the agent works, resume with	, подтверждайте правки и команды во время работы агента, возобновляйте сессию через
+, drive a remote server with	, подключайтесь к удалённому серверу через
+Zed launches	Zed запускает
+for the workspace, and coddy's own modes, models and permission policy show up in the editor's agent panel; its skills arrive as slash commands. One entry in Zed's	для рабочего каталога. Режимы, модели и политика разрешений Coddy отображаются в панели агента редактора, а навыки доступны как слеш-команды. Достаточно одной записи в
+What is Coddy	Что такое Coddy
+Coddy started as a coding agent and grew into a	Coddy начинался как агент для программирования и вырос в
+general-purpose harness	универсальную платформу для агентов
+: Cursor-style rules and skills on disk,	: правила и навыки в стиле Cursor на диске, режимы
+modes, tool permissions, streaming output, and sessions you can resume from a terminal, an IDE, a browser, Telegram, or automation - the same	, разрешения инструментов, потоковый вывод и сессии, которые можно продолжить из терминала, IDE, браузера, Telegram или автоматизации. Один и тот же каталог
+bundle whichever surface opens it.	используется независимо от интерфейса.
+Ship it as a single binary in	Разверните один бинарник в образе
+distroless	distroless
+or	или
+from-scratch	с нуля
+images, or run a	или запустите
+fleet of containers	группу контейнеров
+with your orchestrator defining CPU, memory, and mounts - one agent per task, full control of each instance, and one swarm relay that lists and reaches every node.	под управлением оркестратора, задающего CPU, память и тома: отдельный агент для каждой задачи, полный контроль над каждым экземпляром и один ретранслятор, связывающий все узлы.
+Agent core	Основа агента
+ReAct loop	Цикл ReAct
+Reasoning, tool calls, and observations in a loop, with runaway-loop guards on repeated output and repeated tool calls.	Рассуждения, вызовы инструментов и наблюдения в цикле; защита останавливает повторяющийся вывод и одинаковые вызовы инструментов.
+Subagents	Субагенты
+delegates a bounded task to a child agent with its own context and session. Markdown definitions that can only narrow the parent's tools.	передаёт ограниченную задачу дочернему агенту с отдельным контекстом и сессией. Определения в Markdown могут только сужать доступ к инструментам родителя.
+Hooks	Хуки
+Your own commands at every lifecycle point, in Claude Code's	Ваши команды на каждом этапе жизненного цикла в формате Claude Code
+shape. A hook can deny, approve or rewrite a tool call before it runs.	. Хук может отклонить, разрешить или изменить вызов инструмента до его выполнения.
+Background tasks	Фоновые задачи
+Long commands run detached with	Долгие команды запускаются в фоне через
+. A Tasks panel tracks them against the model's own estimate; the agent collects output later.	. Панель задач отслеживает их относительно оценки модели; агент забирает результат позже.
+Compaction	Сжатие контекста
+plus automatic summarization at a context threshold. The recent turns stay verbatim and the full transcript stays on disk.	и автоматическое резюмирование при заполнении контекста. Последние сообщения сохраняются без изменений, а полная история остаётся на диске.
+Long-term memory	Долговременная память
+Optional memory copilot that recalls across sessions, with per-session memory routes on the HTTP surface.	Необязательный помощник по памяти извлекает сведения из прошлых сессий; HTTP API предоставляет маршруты памяти для каждой сессии.
+Where you run it	Где работать с агентом
+Console	Консоль
+on a terminal. Streaming transcript, tool boxes, permission modals,	в терминале: потоковая история, блоки инструментов, окна разрешений,
+for a local shell the model never sees,	для локальной оболочки, недоступной модели,
+to resume,	для продолжения сессии,
+for one-shot output.	для однократного вывода.
+Embedded SPA at	Встроенное SPA по адресу
+with the	с
+tags. Chat, sessions, plan documents, Tasks and scheduler drawers, the swarm map, live settings.	тегами. Чат, сессии, планы, панели задач и планировщика, карта узлов и настройки в реальном времени.
+over stdio. Sessions, modes, permissions, and streaming updates for Zed, Obsidian, VS Code, or your own script.	через stdio: сессии, режимы, разрешения и потоковые обновления для Zed, Obsidian, VS Code или вашего скрипта.
+HTTP API	HTTP API
+OpenAI-compatible gateway on	Совместимый с OpenAI шлюз по адресу
+, models, Swagger at	, модели, Swagger по адресу
+Telegram gateway	Шлюз Telegram
+Bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.	Адаптер бота с отдельными сессиями для пользователей, режимами изоляции групп, списком прав администратора и форматированными сообщениями. Можно расширить на другие мессенджеры.
+Sessions	Сессии
+Bundles on disk under	Наборы данных на диске в
+, resumed from any surface. Edit a message to branch the conversation,	, доступные из любого интерфейса. Отредактируйте сообщение, чтобы создать ветку диалога; экспортируйте
+to Markdown, HTML or JSON.	в Markdown, HTML или JSON.
+Operate it	Управление
+One process for every subsystem	Один процесс для всех подсистем, которые
+enables.	включает.
+keeps it in the background with	оставляет его работать в фоне через
+, and	и
+, and an edited config reaches it without a restart.	; изменения конфигурации применяются без перезапуска.
+Swarm	Рой узлов
+A relay lists and reaches many nodes, mounts their sessions into one list and routes across rings. Nodes that can only dial out join through a reverse tunnel.	Ретранслятор связывает несколько узлов, собирает их сессии в общий список и маршрутизирует запросы между кольцами. Узлы, способные только к исходящему соединению, подключаются через обратный туннель.
+Remote control	Удалённое управление
+Point the console or	Подключите консоль или
+at a running server with	к работающему серверу через
+, or switch the web UI between local and remote from the composer.	или переключите веб-интерфейс между локальным и удалённым сервером в поле ввода.
+Scheduler	Планировщик
+Cron jobs with a UI drawer and agent tools, so recurring work runs without a session open.	Задачи cron с панелью управления и инструментами агента: повторяющаяся работа запускается без открытой сессии.
+Config check and dry run	Проверка конфигурации и пробный запуск
+validates	проверяет
+against the embedded schema with	по встроенной схеме с
+and a fix line.	и подсказкой для исправления.
+probes paths, providers, models, ports, MCP servers and remotes before anything starts.	проверяет пути, провайдеров, модели, порты, MCP-серверы и удалённые подключения до запуска.
+Docker and distroless	Docker и distroless
+Published images on	Образы публикуются в
+for amd64 and arm64, or drop the static binary into a scratch image with a read-only rootfs.	для amd64 и arm64. Статический бинарник также можно поместить в минимальный образ с файловой системой только для чтения.
+Project context and control	Контекст проекта и контроль
+Rules	Правила
+Auto-discovers	Автоматически находит
+under the session cwd.	внутри рабочего каталога сессии.
+, and nested	и вложенные
+Skills	Навыки
+Slash commands from	Слеш-команды из
+packs in	наборов в
+. Install from registries with	. Устанавливайте из каталогов через
+or from Settings → Skills.	или в меню «Настройки → Навыки».
+MCP servers	MCP-серверы
+Connect MCP servers over stdio, streamable HTTP and SSE, from config,	Подключайте MCP-серверы через stdio, потоковый HTTP и SSE из конфигурации,
+files or the editor. Their tool definitions merge into the agent and plan loops.	файлов или редактора. Их инструменты доступны агенту и режиму планирования.
+Three modes	Три режима
+runs the full toolset,	использует все инструменты,
+writes plan documents only,	создаёт только планы,
+is read-only research with web search.	ищет информацию в режиме только для чтения с веб-поиском.
+Permissions and trust	Разрешения и доверие
+Edits and commands ask before they run, and a grant can widen to a whole program. Project-local MCP servers, hooks and subagent files need an explicit approval first.	Правки и команды запрашивают разрешение перед выполнением; его можно выдать для всей программы. MCP-серверы, хуки и файлы субагентов из проекта также требуют явного подтверждения.
+Self-configuration	Самонастройка
+The agent edits its own YAML through staged	Агент редактирует собственный YAML через подготовленные команды
+commands. Nothing lands until a commit you approve, which validates and hot-reloads.	. Изменения вступают в силу только после подтверждённого вами коммита, проверки и перезагрузки конфигурации.
+Models, tools and appearance	Модели, инструменты и внешний вид
+Any provider	Любой провайдер
+OpenAI, Anthropic, Ollama, NeuralDeep, any OpenAI-compatible API, plus ChatGPT sign-in through the Codex backend. Your keys, your endpoints.	OpenAI, Anthropic, Ollama, NeuralDeep, любой API, совместимый с OpenAI, и вход через ChatGPT с помощью Codex backend. Ваши ключи и адреса серверов.
+Reasoning levels	Уровни рассуждения
+A composer dropdown picks the effort for reasoning models, mapped to OpenAI	В поле ввода можно выбрать усилие для рассуждающих моделей, соответствующее параметру OpenAI
+or Anthropic thinking budgets.	или бюджету рассуждений Anthropic.
+Multimodal	Мультимодальность
+Attach images and files in the composer when the model supports it. Assets are saved to the session directory and injected into the agent context.	Прикрепляйте изображения и файлы, если модель их поддерживает. Они сохраняются в каталоге сессии и добавляются в контекст агента.
+Usage and limits	Расход и лимиты
+The quota behind the current model in the console footer and the web UI, for providers that publish one. A turn that hits a limit can wait for the reset and resume by itself.	Квота текущей модели отображается внизу консоли и в веб-интерфейсе, если провайдер её сообщает. При достижении лимита запрос может дождаться сброса и продолжиться автоматически.
+SSH commands	Команды SSH
+reaches remote hosts over pure-Go SSH, authenticating from your SSH agent or	подключается к удалённым хостам по SSH на Go, используя SSH-агент или ключи
+keys.	.
+Themes and language	Темы и язык
+Seven web UI themes and an English or Russian interface, switched in Settings → Appearance without touching the config.	Семь тем веб-интерфейса и переключение между английским и русским языками в настройках внешнего вида без изменения конфигурации.
+How Coddy compares	Сравнение Coddy
+Coddy vs the 2026 agent harnesses	Coddy и другие агентные среды в 2026 году
+Twenty harnesses read side by side in September 2026 - Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build, Antigravity CLI, Koda, Drift and Coddy - across delivery, surfaces, extensibility, context handling and the trust model.	Сравнение двадцати агентных сред по состоянию на сентябрь 2026 года: Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build, Antigravity CLI, Koda, Drift и Coddy. Рассмотрены установка, интерфейсы, расширяемость, работа с контекстом и модель доверия.
+Six of twenty	Шесть из двадцати
+ship as one static file with no runtime. Only Coddy also carries a web UI, a scheduler, memory and a messenger gateway inside it.	поставляются одним статическим файлом без среды выполнения. Только Coddy включает в тот же файл веб-интерфейс, планировщик, память и шлюз мессенджера.
+Nobody else	Никто другой
+in the set lets the agent stage edits to its own YAML with validation, a snapshot and a rollback.	из списка не позволяет агенту готовить изменения собственного YAML с проверкой, снимком и откатом.
+Where it loses:	Где Coddy уступает:
+no kernel sandbox like Codex CLI, no LSP or DAP like OMP, no workspace checkpoints like Reasonix.	нет изоляции на уровне ядра, как в Codex CLI, нет LSP или DAP, как в OMP, и нет снимков рабочего каталога, как в Reasonix.
+Read the full comparison with all five tables	Читайте полное сравнение с пятью таблицами
+Questions	Вопросы
+What is Coddy Agent?	Что такое Coddy Agent?
+Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram, on one machine or across a swarm of them.	Coddy Agent — универсальный ИИ-агент с открытым исходным кодом под лицензией MIT, поставляемый одним статическим Go-бинарником. Он выполняет цикл ReAct с инструментами для файлов и командной строки, MCP-серверами, правилами проекта, навыками, субагентами, хуками, фоновыми задачами, планировщиком cron и долговременной памятью. Один и тот же агент доступен через терминал, браузер, редактор по ACP или Telegram, на одном компьютере или в группе узлов.
+Which LLM providers and models does Coddy work with?	С какими провайдерами и моделями работает Coddy?
+Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, always with your own keys and endpoints. ChatGPT sign-in works through the Codex backend. Models are declared in	Любой API, совместимый с OpenAI, а также Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep или ваш собственный шлюз, с вашими ключами и адресами серверов. Вход через ChatGPT работает через Codex backend. Модели задаются в
+and switched per session.	и переключаются для каждой сессии.
+How do I install Coddy?	Как установить Coddy?
+Linux and macOS:	Linux и macOS:
+. Windows:	. Windows:
+. The script downloads the latest release binary, puts it on your PATH, and creates	. Скрипт скачивает бинарник последнего релиза, добавляет его в PATH и создаёт
+from the example. On Linux you can instead install the	на основе примера. В Linux также можно установить пакет
+published with every release (	, публикуемый с каждым релизом (
+), and on macOS the Homebrew cask straight from the release (	), а в macOS — Homebrew-пакет непосредственно из релиза (
+); both register Coddy with your package manager and add the man page and shell completions. Docker:	). Оба способа регистрируют Coddy в пакетном менеджере и добавляют man-страницу и автодополнение. Docker:
+opens the web UI on	открывает веб-интерфейс по адресу
+, and the Docker tab of the install block also carries a	; на вкладке Docker также есть
+to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub.	для копирования. Многоархитектурные образы (amd64, arm64) опубликованы в GitHub Container Registry.
+upgrades an existing install.	обновляет существующую установку.
+Can Coddy run on-premises with local models?	Можно ли запускать Coddy локально с локальными моделями?
+Yes. Point a model entry at a local OpenAI-compatible server such as Ollama, llama.cpp, or vLLM and no prompt leaves your network. The binary is static, so it also runs in distroless or from-scratch containers with a read-only root filesystem, one agent per task.	Да. Укажите для модели локальный сервер, совместимый с OpenAI, например Ollama, llama.cpp или vLLM: запросы не покинут вашу сеть. Статический бинарник работает и в контейнерах distroless или минимальных образах с файловой системой только для чтения — по одному агенту на задачу.
+Which editors and clients can host Coddy?	В каких редакторах и клиентах работает Coddy?
+speaks the Agent Client Protocol over stdio, so Zed, Obsidian, VS Code, or your own script get sessions, modes, permissions, streaming updates, and skills as slash commands.	использует Agent Client Protocol через stdio, поэтому Zed, Obsidian, VS Code или ваш скрипт получают сессии, режимы, разрешения, потоковые обновления и навыки как слеш-команды.
+runs everything else in one process - the OpenAI-compatible REST API with the embedded web UI, the Telegram gateway, the swarm relay, the cron scheduler - and starts whichever of them	запускает остальные компоненты в одном процессе: REST API, совместимый с OpenAI, встроенный веб-интерфейс, шлюз Telegram, ретранслятор узлов и планировщик cron. Он включает те из них, которые разрешены в
+enables. They share one set of sessions, so a conversation started in a chat is live in the web UI and can be continued in either.	. Они используют общие сессии, поэтому разговор, начатый в чате, виден в веб-интерфейсе и может быть продолжен там или в чате.
+How do I run Coddy on more than one machine?	Как запустить Coddy на нескольких компьютерах?
+Run	Запустите
+on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel. The console,	на каждом компьютере и включите ретранслятор узлов на одном из них: он объединит сессии, будет маршрутизировать запросы и подключит узлы, доступные только через исходящее соединение, по обратному туннелю. Консоль,
+, and the web UI can also drive a single remote server with	и веб-интерфейс также могут работать с отдельным удалённым сервером через
+keeps a server running in the background with	оставляет сервер работать в фоне через
+How is Coddy different from other coding agents?	Чем Coddy отличается от других агентов для программирования?
+It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and	Coddy не привязан к провайдеру и рассчитан на собственный сервер: один бинарник под лицензией MIT без зависимостей от среды выполнения, ваши ключи или локальные модели и общие сессии для терминала, веб-интерфейса, редактора, Telegram и планировщика. Он читает правила и навыки в стиле Cursor, а также
+from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at	из репозитория, поэтому подходит проектам, уже настроенным для других агентов. Сравнение с девятнадцатью другими платформами опубликовано по адресу
+Comparison	Сравнение
+Twenty harnesses side by side. What they are written in, where you can talk to them, how you extend them, what they do to a long session, and what stops them from running something you did not ask for. Coddy is one row among nineteen others, including the places where it loses.	Двадцать агентных сред рядом: на чём они написаны, через какие интерфейсы работают, как расширяются, что делают с длинной сессией и что мешает им выполнять нежелательные действия. Coddy — одна строка среди девятнадцати других, включая его слабые стороны.
+Compiled September 2026. Coddy read straight from its own source at v1.0.8; every other project from its repository, docs and current reviews. The Koda and Drift rows were added on 12 September 2026.	Составлено в сентябре 2026 года. Сведения о Coddy проверены по исходникам версии v1.0.8, об остальных проектах — по их репозиториям, документации и актуальным обзорам. Строки Koda и Drift добавлены 12 сентября 2026 года.
+Sources at the bottom.	Источники приведены ниже.
+Coddy at a glance	Coddy в цифрах
+1 binary	1 бинарник
+Static Go, no runtime, distroless-ready	Статический Go, без среды выполнения, подходит для distroless
+4 surfaces	4 интерфейса
+Terminal, editor over ACP, web UI, Telegram	Терминал, редактор по ACP, веб-интерфейс, Telegram
+288 scenarios	288 сценариев
+Gherkin specs across 59 feature files	Спецификации Gherkin в 59 файлах функций
+17 tag builds	17 вариантов сборки
+Test matrix green on every build-tag combination	Все сочетания тегов сборки проходят тесты
+Behind those numbers: 79k lines of Go, 71k lines of tests in 254 files, 1583 test functions, and an embedded SPA of 49k lines of TypeScript. Counted on v1.0.8.	За этими цифрами: 79 тыс. строк Go, 71 тыс. строк тестов в 254 файлах, 1583 тестовые функции и встроенное SPA из 49 тыс. строк TypeScript. Подсчёт для v1.0.8.
+What Coddy is, in one section	Что такое Coddy — кратко
+Coddy calls itself a	Coddy называет себя
+harness	платформой для агентов
+and means it. The core is protocol plumbing - an ACP JSON-RPC server, a session manager, configuration, MCP wiring - plus a ReAct loop over swappable LLM providers. The coding agent is a product profile on top, assembled from prompts and a default toolset. Change the prompt and the toolset and the same core becomes a different agent.	не случайно. Основа объединяет протоколы — сервер ACP JSON-RPC, менеджер сессий, конфигурацию и MCP — с циклом ReAct поверх сменяемых провайдеров LLM. Агент для программирования — один из профилей с собственными инструкциями и набором инструментов. Измените их, и та же основа станет другим агентом.
+The practical consequence is delivery. One static Go binary drops into	Это влияет на развёртывание: один статический Go-бинарник помещается в
+with no system shell. The	без системной оболочки. Инструменты
+tools use system ripgrep when it exists and fall back to built-in Go implementations when it does not, so the agent still works in a container that holds nothing but the agent.	используют системный ripgrep, если он есть, иначе переходят на встроенную реализацию Go. Поэтому агент работает даже в контейнере без дополнительных программ.
+Every entry point shares one	Все точки входа используют общую
+: 	:
+for editors, bare	для редакторов, обычный
+for the terminal console, and	для терминальной консоли и
+for the REST gateway, the embedded web UI and the messengers, in one process. A session started in the terminal opens in a browser and continues in an editor, because the session bundle lives in one place on disk. On top of that,	для REST-шлюза, встроенного веб-интерфейса и мессенджеров в одном процессе. Начатая в терминале сессия открывается в браузере и продолжается в редакторе, потому что её данные хранятся в одном месте на диске. Кроме того,
+points the console or ACP at a running server elsewhere.	подключает консоль или ACP к удалённому серверу.
+A few mechanisms are worth naming because they rarely show up elsewhere.	Несколько механизмов заслуживают отдельного упоминания: в других системах они встречаются редко.
+Result eviction	Удаление устаревших результатов
+collapses stale	заменяет устаревший вывод
+output into placeholders in the projection sent to the model, while	заглушками в контексте модели, а
+lets the model pin what it still needs. The	позволяет модели закрепить нужные данные. Встроенный
+loop guard	ограничитель циклов
+cuts a stream that degenerates into repetition and stops re-running a tool called with byte-identical arguments. On a rate limit the resilient wrapper raises a typed	останавливает повторяющийся поток и не допускает повторного запуска инструмента с идентичными аргументами. При ограничении частоты запросов обёртка выдаёт типизированную ошибку
+, and with	, а с
+the turn sleeps until the quota returns and then replays the very same call.	ход ждёт восстановления квоты и повторяет тот же вызов.
+gives the agent staged, uci-style commands over its own YAML, where nothing touches the file until a commit you approve, which validates, snapshots and hot-reloads.	даёт агенту поэтапные команды для собственного YAML в стиле UCI. Файл меняется только после подтверждённого вами коммита, который проверяет данные, создаёт снимок и применяет настройки без перезапуска.
+How the field splits	Как устроен рынок
+By mid-2026 the genre had separated into four camps, and comparing them on one set of axes only confuses things.	К середине 2026 года выделились четыре группы. Их прямое сравнение без учёта назначения может вводить в заблуждение.
+Lab CLIs	CLI разработчиков моделей
+- Claude Code, Codex CLI, Antigravity CLI, Grok Build, Qwen Code, Kimi CLI. Built by the model vendors, they set the conventions (	— Claude Code, Codex CLI, Antigravity CLI, Grok Build, Qwen Code, Kimi CLI. Их создают поставщики моделей; эти инструменты задают стандарты (
+, MCP, skills) and live next to a subscription.	, MCP, навыки) и обычно связаны с подпиской.
+General-purpose open harnesses	Открытые универсальные платформы
+- OpenCode, Pi, OMP, DeepSeek Harness, Crush, Reasonix, CodeWhale, Goose, Aider, Cline, OpenHands, Continue and Coddy. This is where the feature race actually happens.	— OpenCode, Pi, OMP, DeepSeek Harness, Crush, Reasonix, CodeWhale, Goose, Aider, Cline, OpenHands, Continue и Coddy. Именно здесь особенно заметна конкуренция возможностей.
+Personal assistant gateways	Шлюзы персональных помощников
+- OpenClaw, Hermes Agent and a swarm of clones. Their premise is that a personal agent hits the gateway problem before it hits the model problem, so the first thing they build is a process owning channels, queues, sessions and memory, with the model attached to the side.	— OpenClaw, Hermes Agent и множество подобных проектов. Для персонального агента сначала важны каналы связи, очереди, сессии и память; модель подключается к этому ядру.
+Commercial platforms	Коммерческие платформы
+- Amp, Cursor CLI, Factory Droid, Devin. They sell team workflows, parallelism and tracker integrations.	— Amp, Cursor CLI, Factory Droid, Devin. Они предлагают командные процессы, параллельную работу и интеграцию с трекерами задач.
+Two rows from the Russian market joined the tables on 12 September, one on each side of that split.	12 сентября в таблицы добавились два продукта российского рынка из разных групп.
+is a closed subscription product from the former GigaCode team: an IDE plugin forked from Continue, a CLI forked from Gemini CLI that its own desktop app drives over ACP, and a Telegram remote for both.	— закрытый продукт по подписке от бывшей команды GigaCode: плагин IDE на основе Continue, CLI на основе Gemini CLI, настольное приложение, управляющее CLI через ACP, и удалённый доступ через Telegram.
+is the personal agent NeuralDeep bundles with its hub subscription: a hosted service with a Telegram bot, a web app and an OpenAI-compatible API, every user in a Docker container of their own, and an open-source release announced for this year.	— персональный агент NeuralDeep в составе подписки на платформу: размещённый сервис с ботом Telegram, веб-приложением и API, совместимым с OpenAI. Каждому пользователю выделяется отдельный Docker-контейнер; открытие исходного кода анонсировано на этот год.
+Two events shaped the year. Google switched Gemini CLI off for individual accounts on 18 June and moved everyone to the closed, Go-based Antigravity CLI, breaking CI pipelines on the way and cutting the free tier from a thousand requests a day to roughly twenty. And in March the Claude Code sources leaked, which produced Claw Code, a clean-room rewrite in Python and Rust that set a GitHub record for star velocity. The second story does not affect the technical picture, but it explains why 2026 star counts jump around so much.	На события года повлияли два случая. 18 июня Google отключила Gemini CLI для личных аккаунтов и перевела пользователей на закрытый Antigravity CLI на Go: это нарушило работу некоторых CI-процессов и сократило бесплатный лимит примерно с тысячи до двадцати запросов в день. В марте произошла утечка исходников Claude Code, после чего появилась независимая реализация Claw Code на Python и Rust, быстро набравшая звёзды на GitHub. Вторая история не меняет техническое сравнение, но объясняет скачки популярности в 2026 году.
+The tables	Таблицы
+Five views over the same twenty harnesses. Cells read "no data" where a project does not document the answer; guessing would be worse than an honest gap. Tables scroll sideways on narrow screens.	Пять взглядов на одни и те же двадцать платформ. Если проект не документирует свойство, в ячейке указано «нет данных». На узких экранах таблицы прокручиваются по горизонтали.
+Foundation and delivery	Основа и распространение
+What each harness is written in, how it is licensed, and how it reaches your machine.	Язык реализации, лицензия и способ установки каждого проекта.
+Surfaces	Интерфейсы
+Where you can actually talk to the agent, and whether those entry points share one set of sessions.	Через какие интерфейсы можно работать с агентом и используют ли они общие сессии.
+Extensibility	Расширяемость
+How you teach a harness about your project and plug new capabilities into it.	Как сообщить агенту сведения о проекте и добавить новые возможности.
+Context, memory and autonomy	Контекст, память и автономность
+What happens to a long session, and how much work a harness can carry without you watching.	Что происходит с длинной сессией и сколько работы агент выполняет самостоятельно.
+Security and trust	Безопасность и доверие
+What stops an agent, or a repository you just cloned, from doing something you did not ask for.	Что мешает агенту или только что клонированному репозиторию выполнять нежелательные действия.
+Star counts are orders of magnitude. Directories disagree by tens of thousands because the snapshots were taken on different days, and this field grew in jumps through 2026.	Количество звёзд указано приблизительно. Разные каталоги могут расходиться на десятки тысяч: снимки сделаны в разные дни, а в 2026 году популярность этих проектов росла скачками.
+Where Coddy wins, where it lags	Преимущества и ограничения Coddy
+Strengths	Сильные стороны
+Density per binary	Возможности в одном бинарнике
+Six of the twenty ship as one static file with no runtime. Only Coddy also carries the web UI, the scheduler, long-term memory and a messenger gateway inside that same file, switched on with build tags.	Шесть из двадцати проектов поставляются одним статическим файлом без среды выполнения. Только Coddy включает в этот же файл веб-интерфейс, планировщик, долговременную память и шлюз мессенджера, включаемые тегами сборки.
+Breadth of surfaces over shared state	Множество интерфейсов с общими сессиями
+Reasonix matches the four-surface layout, but trades the messenger gateway for a QQ channel. Koda reaches a terminal, editors, a desktop app and Telegram too, but its plugin and its CLI are two different forks with separate sessions. Gateway assistants have more channels and weaker coding, and no ACP.	Reasonix тоже предлагает четыре интерфейса, но вместо шлюза мессенджера использует канал QQ. Koda работает в терминале, редакторах, настольном приложении и Telegram, однако её плагин и CLI — разные форки с отдельными сессиями. У персональных шлюзов больше каналов связи, но слабее средства разработки и нет ACP.
+No other harness in this set exposes typed, staged edits to its own YAML with validation, a snapshot, hot reload and a rollback.	Ни одна другая платформа из списка не предоставляет типизированные поэтапные правки собственного YAML с проверкой, снимком, применением без перезапуска и откатом.
+Trust for files that arrive with a checkout	Доверие к файлам из репозитория
+MCP servers, subagent definitions and hook files all pass one receipt mechanism bound to the workspace, the file and its digest. Rewrite the declaration and Coddy asks again. Claude Code gates by name, Codex by folder, and Koda inherits Gemini CLI's folder trust with the feature switched off.	MCP-серверы, определения субагентов и файлы хуков проходят единый механизм подтверждения, привязанный к рабочему каталогу, файлу и его хешу. После изменения файла Coddy спрашивает снова. Claude Code доверяет по имени, Codex — по каталогу, а у Koda унаследованная от Gemini CLI проверка доверия к каталогу по умолчанию выключена.
+Compatibility instead of a private format	Совместимость с существующими форматами
+Cursor rules, Claude Code rules, subagents and	Правила Cursor и Claude Code, субагенты и
+, Cursor-style	, в стиле Cursor
+and agents-standard skills all load as they are. Only OMP does something comparable.	и навыки по стандарту agents загружаются без преобразования. Сопоставимую совместимость предлагает только OMP.
+Result eviction with explicit pins	Удаление результатов с возможностью закрепления
+A model that marks what to keep in context, found here only in Coddy and Reasonix, and in Reasonix it serves a different goal.	Модель может помечать данные, которые нужно оставить в контексте. Среди рассмотренных проектов это есть только у Coddy и Reasonix, причём у Reasonix для другой цели.
+Gaps	Недостатки
+No kernel-level sandbox	Нет изоляции на уровне ядра
+Protection comes from the permission gate, the modes, and a container with a read-only rootfs. Codex CLI enforces Landlock, seccomp and Seatbelt in the process itself, which matters more than any dialog when the code is not yours. Koda keeps Gemini CLI's optional Docker, Podman or Seatbelt sandbox, and Drift runs every user in a container of their own on its hosted side.	Защиту дают запросы разрешений, режимы и контейнер с файловой системой только для чтения. Codex CLI применяет Landlock, seccomp и Seatbelt прямо в процессе — это существенно при работе с чужим кодом. Koda сохранила необязательную изоляцию Gemini CLI через Docker, Podman или Seatbelt, а Drift выделяет каждому пользователю отдельный контейнер в размещённом сервисе.
+No LSP, no DAP	Нет LSP и DAP
+OMP wires a language server into every edit and drives real debuggers; OpenCode ships LSP for twenty-odd languages. Coddy treats files as text, so a project-wide rename goes through grep.	OMP использует языковой сервер при каждом изменении и управляет отладчиками; OpenCode поддерживает LSP примерно для двадцати языков. Coddy работает с файлами как с текстом, поэтому переименование по всему проекту выполняется через поиск.
+Plain edit format	Обычный формат правок
+OMP's hashline anchors a patch to a content hash, cutting output tokens by about 61% against string replacement and lifting patch success sharply on weaker models. Coddy uses ordinary	Формат hashline в OMP привязывает патч к хешу содержимого: по сравнению с заменой строк он сокращает число выходных токенов примерно на 61% и повышает надёжность слабых моделей. Coddy использует обычные
+. 	.
+No workspace checkpoints	Нет снимков рабочего каталога
+Reasonix snapshots every turn, CodeWhale snapshots the workspace, Grok Build isolates runs in worktrees, Koda keeps Gemini CLI's shadow git repository behind	Reasonix делает снимок на каждом ходе, CodeWhale сохраняет рабочий каталог, Grok Build изолирует запуски в рабочих деревьях, а Koda сохраняет теневой Git-репозиторий Gemini CLI с помощью
+. Coddy rolls back configuration and branches sessions, but not files.	. Coddy откатывает конфигурацию и создаёт ветви сессий, но не восстанавливает файлы.
+No fan-out mode	Нет режима параллельного распределения задач
+Subagents run, but there is no built-in "split this across N worktrees and merge the results" workflow of the kind Grok Build and OMP ship.	Субагенты работают, но нет встроенного процесса вида «распределить задачу между N рабочими деревьями и объединить результаты», как в Grok Build и OMP.
+Ecosystem size	Размер экосистемы
+Three orders of magnitude fewer people than OpenCode, and those are the people who file bugs, write skills and hit the edge cases first. Reading other tools' skills and rules softens this; a plugin registry of comparable size is not coming.	Аудитория на три порядка меньше, чем у OpenCode. Именно пользователи первыми находят ошибки, пишут навыки и обнаруживают крайние случаи. Поддержка навыков и правил других инструментов частично помогает, но сопоставимого каталога плагинов пока нет.
+When to pick which	Что выбрать
+Choose Coddy	Выбирайте Coddy,
+when the agent has to live inside a container with no shell, when one session must open from a terminal, an editor, a browser and Telegram, when recurring work needs a scheduler with no external cron, and when your repositories already carry Cursor or Claude Code rules you would rather not rewrite.	если агент должен работать в контейнере без оболочки, одна сессия должна открываться в терминале, редакторе, браузере и Telegram, повторяющимся задачам нужен встроенный планировщик, а в репозиториях уже есть правила Cursor или Claude Code.
+Choose something else	Выбирайте другое решение,
+when the day is spent on a large codebase with a strong model and you want fast, symbol-aware edits - OMP or OpenCode give more there. Running unfamiliar code from an unfamiliar repository is safer under Codex CLI and its sandbox. For a personal assistant that lives in messengers, OpenClaw or Hermes are built for exactly that.	если работаете с большим проектом и нужны быстрые правки с учётом символов: здесь OMP или OpenCode предлагают больше. Для запуска незнакомого кода сильнее изоляция Codex CLI. Для персонального помощника в мессенджерах подходят OpenClaw или Hermes.
+A stack paid in roubles and reachable without a VPN is a separate question. Koda covers the IDE and the terminal on a subscription with its own models; Drift is a personal agent in Telegram with a sandbox, a scheduler and a memory, hosted for you and never pointed at your repository.	Если важны оплата в рублях и доступ без VPN, рассмотрите Koda и Drift. Koda предлагает IDE и терминал по подписке со своими моделями. Drift — размещённый персональный агент в Telegram с изоляцией, планировщиком и памятью; он не работает с вашим репозиторием.
+Try the row you just read about.	Попробуйте Coddy.
+One command installs the binary, writes	Одна команда установит бинарник, создаст
+and puts	и добавит
+on your PATH. Bring your own key, or point it at a local model.	в PATH. Используйте свой ключ или локальную модель.
+Install Coddy	Установить Coddy
+Source on GitHub	Исходный код на GitHub
+Method and sources	Методика и источники
+Coddy was read directly from	Сведения о Coddy взяты непосредственно из
+its own repository	его репозитория
+at v1.0.8 - the README,	версии v1.0.8: README,
+, the agent, tools, LLM and permission packages, and the	, пакеты агента, инструментов, LLM и разрешений, а также спецификации
+specifications. The full binary was built and the whole test matrix was run before publishing these claims.	. Перед публикацией был собран полный бинарник и запущена вся матрица тестов.
+Every other project comes from its own repository, its documentation, and reviews current in September 2026. Koda was read from its public documentation and the npm package of its CLI, Drift from NeuralDeep's documentation and announcements; neither has a public repository.	Сведения об остальных проектах взяты из их репозиториев, документации и обзоров, актуальных в сентябре 2026 года. Данные о Koda получены из открытой документации и npm-пакета CLI, о Drift — из документации и объявлений NeuralDeep. Публичных репозиториев у них нет.
+The New Stack, OpenClaw and Hermes on what an agent is	The New Stack: OpenClaw и Hermes о понятии агента
+OpenClaw vs Hermes vs Pi, three-way comparison	Сравнение OpenClaw, Hermes и Pi
+Pinggy, best open-source CLI coding agents in 2026	Pinggy: лучшие открытые CLI-агенты для программирования в 2026 году
+awesome-cli-coding-agents, a directory of 120+ tools	awesome-cli-coding-agents: каталог более 120 инструментов
+Google on moving from Gemini CLI to Antigravity CLI	Google о переходе с Gemini CLI на Antigravity CLI
+Zed, the ACP agent registry	Zed: каталог агентов ACP
+Goose, recipes and the scheduler	Goose: рецепты и планировщик
+Amp by Sourcegraph, review	Обзор Amp от Sourcegraph
+Koda documentation: CLI, IDE plugin and desktop app	Документация Koda: CLI, плагин IDE и настольное приложение
+Koda open-source notices, naming Gemini CLI and Continue	Уведомления Koda об открытом коде с упоминанием Gemini CLI и Continue
+Koda CLI on npm	Koda CLI на npm
+KodaSkills, its skill catalog	KodaSkills: каталог навыков
+NeuralDeep documentation, including Drift and its API	Документация NeuralDeep, включая Drift и его API
+its announcement, May 2026	объявление о нём в мае 2026 года
+NeuralDeep on Russian coding agents, Koda and Coddy among them	NeuralDeep о российских агентах для программирования, включая Koda и Coddy
+Spotted something wrong or out of date about your project?	Заметили ошибку или устаревшие сведения о своём проекте?
+Open an issue	Создайте обращение
+and the row gets fixed.	, и мы исправим строку.
+Harness	Агентная среда
+Maintainer	Разработчик
+Language	Язык
+License	Лицензия
+Delivery	Распространение
+Stars, Sep 2026	Звёзды, сентябрь 2026
+one static binary, build tags, distroless	один статический бинарник, теги сборки, distroless
+source-available	исходники доступны
+npm, installers, desktop, web	npm, установщики, настольное и веб-приложения
+binary, npm, brew	бинарник, npm, brew
+npm, brew, scoop, AUR, Nix	npm, brew, scoop, AUR, Nix
+npm (SDK and CLI)	npm (SDK и CLI)
+bun, brew, Nix, script	bun, brew, Nix, скрипт
+npx, pnpm build	npx, сборка через pnpm
+npm, script, Docker	npm, скрипт, Docker
+script (Python 3.11+, Node, ripgrep, ffmpeg)	скрипт (Python 3.11+, Node, ripgrep, ffmpeg)
+binary, desktop app	бинарник, настольное приложение
+IDE extension, CLI, binaries	расширение IDE, CLI, бинарники
+binary, brew, npm	бинарник, brew, npm
+one binary,	один бинарник,
+no public repo	нет публичного репозитория
+proprietary, on Apache-2.0 forks of Gemini CLI and Continue	проприетарная, основана на форках Gemini CLI и Continue под Apache-2.0
+npm CLI, VS Code and JetBrains plugins, desktop installers	npm CLI, плагины VS Code и JetBrains, установщики настольного приложения
+proprietary SaaS, open-sourcing announced	проприетарный SaaS, объявлено об открытии кода
+hosted, bundled with a NeuralDeep subscription, nothing to install	размещённый сервис по подписке NeuralDeep, установка не требуется
+community, P. Steinberger	сообщество, П. Штайнбергер
+AAIF, Linux Foundation	AAIF, Linux Foundation
+Koda, ex-GigaCode team	Koda, бывшая команда GigaCode
+NeuralDeep, V. Kovalskii	NeuralDeep, В. Ковальский
+HTTP + web UI	HTTP и веб-интерфейс
+Desktop	Настольное приложение
+Messengers	Мессенджеры
+Headless / CI	Без интерфейса / CI
+Remote	Удалённый доступ
+ACP server	сервер ACP
+embedded SPA	встроенное SPA
+Telegram, extensible	Telegram, можно расширять
+, REST	, REST
+via adapter	через адаптер
+separate web app	отдельное веб-приложение
+Slack tag	тег Slack
+, SDK	, SDK
+cloud product, separate	отдельный облачный продукт
+server plus sharing	сервер и совместный доступ
+print/JSON, SDK	вывод/JSON, SDK
+, RPC, SDK	, RPC, SDK
+relay	ретранслятор
+web-first,	ориентирован на веб,
+25+ channels	более 25 каналов
+8 channels	8 каналов
+Modal, Daytona, SSH	Modal, Daytona, SSH
+recipes	рецепты
+scripted	через скрипты
+IDE extension	расширение IDE
+Slack, Linear	Slack, Linear
+dashboard	панель управления
+prerelease	предрелизная версия
+shared local engine	общий локальный движок
+TUI, Gemini CLI lineage	TUI на основе Gemini CLI
+, plus native VS Code and JetBrains plugins	, плюс встроенные плагины VS Code и JetBrains
+no, the API is closed	нет, API закрыт
+Koda Desktop, beta, drives the CLI over ACP	Koda Desktop (бета) управляет CLI через ACP
+Telegram remote for the CLI and the plugin	удалённое управление CLI и плагином через Telegram
+Telegram remote only	только удалённое управление через Telegram
+web app plus an OpenAI-compatible API	веб-приложение и API, совместимый с OpenAI
+Telegram bot mirrored with the web, Bitrix24	бот Telegram с общей историей в вебе, Битрикс24
+API, webhook-triggered hosted agents	API, размещённые агенты с запуском через вебхук
+hosted, everything is remote	размещённый сервис, все компоненты удалённые
+MCP	MCP
+Rules / AGENTS.md	Правила / AGENTS.md
+Plugins	Плагины
+3 transports, 3 config levels	3 протокола, 3 уровня конфигурации
+, skills.sh, agents standard	, skills.sh, стандарт agents
+yes, capabilities only narrow	да, права могут только сужаться
+11 events, Claude Code format	11 событий в формате Claude Code
+skill marketplaces	каталоги навыков
+yes, origin of the format	да, исходный формат
+yes, versioned bundles	да, версионируемые наборы
+client and server	клиент и сервер
+none of its own	собственных нет
+, origin	, исходный формат
+profiles	профили
+build, plan, general	build, plan, general
+through app code	через код приложения
+through the SDK	через SDK
+minimal	минимально
+npm packages	npm-пакеты
+yes, inherits other tools' configs	да, читает настройки других инструментов
+yes, parallel, typed results	да, параллельно, типизированные результаты
+stream rules	правила для потоков
+inherits 7 ecosystems	читает форматы 7 экосистем
+TypeScript extensions	расширения TypeScript
+plugin, plus delegation to Claude Code and Codex	плагин и делегирование Claude Code и Codex
+plugin (loops)	плагин (циклы)
+everything is a plugin	всё реализовано плагинами
+own system, selective injection	собственная система с выборочным добавлением в контекст
+agentskills.io, self-authored	agentskills.io, собственные навыки
+yes, isolated	да, изолированы
+70+ extensions	более 70 расширений
+YAML recipes	рецепты YAML
+yes, separate processes	да, отдельные процессы
+extensions	расширения
+conventions files	файлы соглашений
+parallel agents	параллельные агенты
+Cline rules	правила Cline
+marketplace	каталог
+microagents	микроагенты
+stdio, SSE, HTTP	stdio, SSE, HTTP
+markdown playbooks	сценарии Markdown
+yes, on tools and events	да, для инструментов и событий
+role fleets	группы ролей
+parallel, on git worktrees	параллельно в рабочих деревьях Git
+multi-agent, no data	несколько агентов, подробностей нет
+yes, in the CLI, the plugin and the desktop	да, в CLI, плагине и настольном приложении
+in	в
+, KodaSkills catalog	, каталог KodaSkills
+, rules in	, правила в
+CLI extensions: MCP servers, context files, commands	расширения CLI: MCP-серверы, файлы контекста, команды
+Google Workspace built in, remote HTTP and SSE servers per API request	встроенный Google Workspace, удалённые серверы HTTP и SSE для каждого запроса API
+, Anthropic document skills preinstalled, skills.sh, inline skills over the API	, предустановленные навыки документов Anthropic, skills.sh, встроенные навыки через API
+custom instructions and per-chat projects, nothing from a repository	свои инструкции и проекты для чатов, ничего из репозитория
+no-code hosted agents on timer and webhook triggers	размещённые агенты без кода с запуском по таймеру и вебхуку
+Checkpoints	Снимки состояния
+plus auto at 80%	плюс автоматическое при 80%
+yes, with	да, с
+pins	закреплением
+memory copilot, separate pass	помощник по памяти, отдельный проход
+cron inside the binary	cron внутри бинарника
+yes, adopts timed-out foreground work	да, подхватывает долгие задачи переднего плана
+config snapshots, session branches	снимки конфигурации, ветви сессий
+file-based memory	память в файлах
+task scheduler	планировщик задач
+through the app	через приложение
+session replay	повтор сессии
+snapcompact	snapcompact
+retain/recall, SQLite, Hindsight	retain/recall, SQLite, Hindsight
+parallel subagents	параллельные субагенты
+edit previews	предпросмотр правок
+storage plugin	плагин хранилища
+scheduling plugin	плагин планировщика
+loops plugin	плагин циклов
+skills and local workspace	навыки и локальный рабочий каталог
+self-improving loop, FTS5, Honcho	цикл самоулучшения, FTS5, Honcho
+built-in cron	встроенный cron
+repomap	карта репозитория
+git commits	коммиты Git
+pruning before compaction	очистка перед сжатием
+yes, to protect the prefix cache	да, для сохранения префиксного кеша
+fragments pinned in the prefix	фрагменты, закреплённые в префиксе
+per turn	после каждого хода
+workspace snapshots	снимки рабочего каталога
+worktree parallelism	параллельная работа в рабочих деревьях
+worktree	рабочее дерево
+in the CLI, auto at 75% and	в CLI автоматически при 75% и
+in the plugin	в плагине
+into	в
+desktop scheduled tasks, 1 minute to 7 days	запланированные задачи в настольном приложении: от 1 минуты до 7 дней
+scheduled runs only	только запланированные запуски
+shadow git repository with	теневой Git-репозиторий с
+, opt-in	, включается вручную
+auto, semantic summary of the middle of the history	автоматическое смысловое резюме средней части истории
+per user, editable over the API, recall over past chats	для каждого пользователя, редактирование через API, поиск по прошлым чатам
+cron and one-off tasks, proactive runs	cron и разовые задачи, упреждающие запуски
+runs survive a dropped connection	задачи продолжаются при разрыве соединения
+per-file versions, ten deep	версии каждого файла глубиной до десяти
+Sandbox	Изоляция
+Permissions	Разрешения
+Trust for project files	Доверие к файлам проекта
+Subagent limits	Ограничения субагентов
+container, distroless, read-only rootfs	контейнер, distroless, корневая ФС только для чтения
+dialog, program-wide grants guarded against shell metacharacters	диалог, разрешение для программы с защитой от спецсимволов оболочки
+digest-bound receipts for MCP, subagents and hooks	подтверждения MCP, субагентов и хуков, привязанные к хешу файла
+capabilities only narrow	права могут только сужаться
+built in	встроена
+permissions, auto mode	разрешения, автоматический режим
+folder trust	доверие к каталогу
+kernel level (Landlock, seccomp, Seatbelt)	на уровне ядра (Landlock, seccomp, Seatbelt)
+approval policy	политика подтверждений
+no subagents	нет субагентов
+plan blocks edits, asks before bash	режим plan блокирует правки, bash запрашивает разрешение
+Gondolin, Docker, OpenShell	Gondolin, Docker, OpenShell
+subagent workspace isolation	изоляция рабочего каталога субагента
+inherits other tools' configs with no gate	читает настройки других инструментов без проверки доверия
+sandbox plugin	плагин изоляции
+none by default	по умолчанию отсутствует
+ClawHub skills	навыки ClawHub
+process isolation	изоляция процессов
+separate processes	отдельные процессы
+edit confirmation	подтверждение правок
+Docker required	требуется Docker
+workspace sandbox	изоляция рабочего каталога
+per-workspace command allowlist	список разрешённых команд для каждого каталога
+three approval modes	три режима подтверждения
+Docker, Podman or Seatbelt, opt-in	Docker, Podman или Seatbelt, включается вручную
+default, auto-edit, yolo and plan modes; allow or deny once or for the task	режимы default, auto-edit, yolo и plan; разрешение или запрет один раз либо на всю задачу
+folder trust, off by default	доверие к каталогу, по умолчанию выключено
+Docker container per user, isolated volume and network	Docker-контейнер для каждого пользователя, отдельные том и сеть
+blocked command patterns, no per-action approval	блокировка команд по шаблонам, без подтверждения каждого действия
+n/a, nothing loads from a checkout	не применяется: файлы из репозитория не загружаются

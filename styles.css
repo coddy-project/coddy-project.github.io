@@ -137,6 +137,31 @@ a:hover {
   text-decoration: none;
 }
 
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.lang-switch a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.lang-switch a:hover,
+.lang-switch a[aria-current="page"] {
+  color: var(--accent-soft);
+}
+
+.lang-switch a:focus-visible {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .logo {
   flex-shrink: 0;
   line-height: 0;
@@ -1068,6 +1093,12 @@ a.feature-link:focus-visible code {
   .nav-drawer-link:hover {
     background: rgba(147, 51, 234, 0.18);
     color: #f3e8ff;
+  }
+
+  .lang-switch {
+    justify-content: flex-start;
+    padding: 12px 16px;
+    font-size: 1rem;
   }
 
   .nav-drawer .release-pill {

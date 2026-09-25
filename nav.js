@@ -3,6 +3,9 @@
 // latest tag from the GitHub API. Loaded by every page so the header behaves
 // the same on the landing page and on /compare/.
 (function () {
+  var isRussian = document.documentElement.lang === "ru";
+  var openMenuLabel = isRussian ? "Открыть меню" : "Open menu";
+  var closeMenuLabel = isRussian ? "Закрыть меню" : "Close menu";
   var burger = document.querySelector(".nav-burger");
   var drawer = document.getElementById("site-nav");
   var scrim = document.getElementById("nav-scrim");
@@ -86,12 +89,12 @@
       document.body.classList.remove("nav-open");
       document.documentElement.classList.remove("nav-scroll-lock");
       burger.setAttribute("aria-expanded", "false");
-      burger.setAttribute("aria-label", "Open menu");
+      burger.setAttribute("aria-label", openMenuLabel);
       drawer.setAttribute("aria-hidden", "false");
       return;
     }
     burger.setAttribute("aria-expanded", open ? "true" : "false");
-    burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    burger.setAttribute("aria-label", open ? closeMenuLabel : openMenuLabel);
     if (open) {
       captureNavScrollY();
       lockPageScroll(true);
@@ -177,6 +180,18 @@
   window.addEventListener("hashchange", function () {
     scrollToSection(location.hash, "smooth");
   });
+
+  // Each translated page keeps the same section IDs. Preserve the section
+  // while switching language, without making the links depend on JavaScript.
+  function syncLanguageLinks() {
+    Array.prototype.slice.call(document.querySelectorAll(".lang-switch a")).forEach(function (link) {
+      var base = link.getAttribute("data-base-href") || link.getAttribute("href");
+      link.setAttribute("data-base-href", base);
+      link.setAttribute("href", base + (location.hash || ""));
+    });
+  }
+  syncLanguageLinks();
+  window.addEventListener("hashchange", syncLanguageLinks);
 
   var releaseVersion = document.getElementById("release-pill-version");
   if (releaseVersion && window.fetch) {
