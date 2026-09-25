@@ -3773,7 +3773,7 @@ Slash commands: the settings commands `/model`, `/reasoning` (`/effort`),
 `/think`, `/nothink`, `/agent`, `/plan`, `/ask` and `/permissions`, each with
 `--once` or `--count=N` for the next turns only
 ([Session settings](../features/session-settings.md)); client-side `/resume`,
-`/new`, `/theme`, `/hotkeys`, `/queue`, `/usage`, `/tasks`, `/docs`, `/quit`; server-driven `/compact`, `/export`,
+`/new`, `/theme`, `/hotkeys`, `/queue`, `/usage`, `/tasks`, `/mcp`, `/docs`, `/quit`; server-driven `/compact`, `/export`,
 `/plugin`, and every loaded skill (from the ACP available-commands catalog).
 A bare `/model`, `/reasoning` or `/permissions` opens its picker; with a value
 the command is applied by the session manager, which answers with a notice
@@ -3808,6 +3808,17 @@ cooldown or a wallet, and a source with nothing to report prints `quota
 unavailable` rather than inventing numbers. Under `--remote` the
 server's own key is read, so a `key rejected` line there is informational
 (sign in on the server).
+
+`/mcp` opens a server list with scope, status and tool count. Enter opens a
+server's controls for enable/disable, project trust and individual tools.
+For a project declaration the console displays its command or URL before
+approval; disabling it stores a switch under the operator's home instead of
+editing the checkout. The same menu works over `--remote` through the MCP
+management routes.
+
+![The console /mcp server list with a disabled global server and an untrusted project server](../assets/mcp/mcp-console-dark-1280.png)
+
+*`/mcp` shows both scopes and the trust state before opening a server's controls.*
 
 `/tasks` opens the background tasks of the session in the place of the editor
 ([Background tasks](../features/background-tasks.md#in-the-console)). The
@@ -5051,6 +5062,7 @@ Wire and draft
 Picker and segmentation
 
 - The **Commands** group lists the built-ins from **`GET /coddy/commands`** with their argument hint (**`.slash-row-hint`**). Picking **`/model`**, **`/reasoning`** or **`/permissions`** opens that composer selector instead of inserting text, and picking **`/agent`**, **`/plan`** or **`/ask`** switches the mode; a settings command typed out with its value is sent as prompt text and applied by the server.
+- Typing **`/mcp`** in the composer opens **Settings → MCP servers** without sending a turn. The command appears beside `/docs` in the local Commands group; it works from the home composer and from a session.
 - Menu visibility and **`prefix`** derive from **`slashMenuDraftAtCaret`** in **`external/ui/src/ui/skills/draftSlash.ts`** (line-start or whitespace before **`/`**, optional suffix, not inside fences or blockquotes).
 - Mirror highlighting uses **`segmentComposerSlashSpans`** in **`external/ui/src/ui/skills/segmentComposerSlashSpans.ts`** (mid-line **`/`** supported; **`x/foo`** is not a command token).
 
@@ -6522,7 +6534,7 @@ In a group the bot **only responds** when explicitly addressed. It will react to
 
 1. A message that **@mentions** the bot (`@coddy_agent_bot hello`)
 2. A **direct reply** to a previous bot message
-3. A bot command (`/clear`, `/resume`, `/model`, `/context`, `/help`, `/start`) or a settings command (`/agent`, `/plan`, `/ask`, `/reasoning`, `/think`, `/nothink`), with or without the mention
+3. A bot command (`/clear`, `/resume`, `/model`, `/mcp`, `/context`, `/help`, `/start`) or a settings command (`/agent`, `/plan`, `/ask`, `/reasoning`, `/think`, `/nothink`), with or without the mention
 
 When `isolation` is `admin`, the bot additionally ignores everyone who is not in the `admins` list.
 
@@ -6533,6 +6545,7 @@ When `isolation` is `admin`, the bot additionally ignores everyone who is not in
 | `/start` | all users | Greeting and quick introduction. |
 | `/help` | all users | Lists all available commands. |
 | `/model [id]` | all permitted users | Bare, opens an inline keyboard to switch the active LLM model (from the configured `models` list); with an id, switches to it at once. |
+| `/mcp` | all permitted users | Lists global and project MCP servers with status and tool count. Buttons enable or disable servers already trusted for the workspace. Project trust must be granted through the CLI, console or web UI. |
 | `/agent`, `/plan`, `/ask` | all permitted users | Switch the session mode. |
 | `/reasoning <level>`, `/think [level]`, `/nothink` | all permitted users | Set the reasoning level, or turn thinking on or off where the model's provider can. Not in the command menu. |
 | `/context` | all permitted users | Displays the current session's context window usage broken down by category (conversation, system prompt, tool definitions, rules, skills, MCP). |
@@ -9686,7 +9699,10 @@ removing their definitions:
 
 - `config.yaml`: `disabled: true` and `disabled_tools: ["tool_a"]` per `mcp_servers` entry
 - `~/.coddy/mcp.json` and `./.coddy/mcp.json`: `"disabled": true` and
-  `"disabledTools": ["tool_a"]` per entry
+  `"disabledTools": ["tool_a"]` per entry when editing the declarations directly
+- For project entries, switches made through `/mcp` or Settings are stored in
+  `<home>/mcp-overrides.json`, keyed by workspace and server. The checkout's
+  `.coddy/mcp.json` stays unchanged; these switches override its defaults.
 
 Disabled servers are not connected for new sessions. Disabled tools (and all tools of a
 disabled server) are hidden from the LLM's tool list and rejected at dispatch. The switches
@@ -9700,8 +9716,23 @@ inventories and toggle endpoints under **`/coddy/mcp*`** (see `docs/reference/ht
 bundled web UI shows them under **Settings -> MCP servers**: status dot per server, a
 `global` / `local` scope badge, expandable tool list with per-tool switches, and a
 Cursor-style JSON editor for mcp.json entries with a scope picker (global writes
-`~/.coddy/mcp.json`, local writes `./.coddy/mcp.json`). Toggles persist into the file that
-defines the server; `config.yaml` entries are toggle-only here and edited in Settings.
+`~/.coddy/mcp.json`, local writes `./.coddy/mcp.json`). Global switches persist
+into their defining file; project switches persist in the operator's home.
+`config.yaml` entries are toggle-only here and edited in Settings.
+
+Type `/mcp` in the web composer to open this Settings section. In the console,
+`/mcp` opens a list of global and project servers with connection status and
+tool counts. Enter opens a server's controls: toggle the server, expand its
+tools and toggle one, or grant/revoke trust for a project declaration. The
+console shows the command or URL again before recording trust. These controls
+also work in `--remote` mode through the server's MCP management routes.
+Telegram `/mcp` lists servers and offers enable/disable buttons only for
+already-trusted entries. Approve project declarations in the console, CLI or
+web UI; a chat cannot grant workspace trust.
+
+![The MCP settings section opened from the web composer's /mcp command](../assets/mcp/mcp-settings-dark-1280.png)
+
+*The web `/mcp` command opens the server controls, including project trust and per-server switches.*
 
 ## MCP calls in the transcript
 
@@ -12689,7 +12720,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/re
 
 # Slash commands
 
-The built-in commands on each surface and how skills become commands. A slash command is one of five things: a settings command (`/model`, `/reasoning`, `/think`, `/nothink`, `/agent`, `/plan`, `/ask`, `/permissions`), which the session manager takes off the start of a prompt on every surface and applies before any turn starts; a client-side command of the console, which never leaves the terminal; a deterministic built-in (`/compact`, `/export`, `/plugin`), which the agent recognises before the prompt becomes a message and runs without a turn of the model; a Telegram bot command, handled by the adapter; or a skill, whose body is prepended to the message for the model. The first four run whatever the session mode is, because they are operator input rather than tool calls.
+The built-in commands on each surface and how skills become commands. A slash command is one of five things: a settings command (`/model`, `/reasoning`, `/think`, `/nothink`, `/agent`, `/plan`, `/ask`, `/permissions`), which the session manager takes off the start of a prompt on every surface and applies before any turn starts; a local surface command (such as `/mcp`), which opens its controls without a model turn; a deterministic built-in (`/compact`, `/export`, `/plugin`), which the agent recognises before the prompt becomes a message and runs without a turn of the model; a Telegram bot command, handled by the adapter; or a skill, whose body is prepended to the message for the model. The first four run whatever the session mode is, because they are operator input rather than tool calls.
 
 ## The commands
 
@@ -12707,6 +12738,7 @@ The built-in commands on each surface and how skills become commands. A slash co
 | `/queue [list\|drop <n>\|clear]` | console | Lists the follow-ups waiting for the running turn, takes one back by its number, or empties the queue. Works against a remote server too. | [Message queue](../features/message-queue.md#in-the-console) |
 | `/usage` | console | Forces a fresh read of the active provider's account usage and prints the breakdown; under `--remote` the server's own key is read. | [Console](../surfaces/console.md#commands-and-keys) |
 | `/tasks` | console | Opens the background tasks of the session in the place of the editor: what runs, what finished, a task's output on **enter**, **s** to stop one. Under `--remote` it lists and stops the processes of the server. | [Background tasks](../features/background-tasks.md#in-the-console) |
+| `/mcp` | console, web UI, Telegram | Console: opens a server list with connection status, tool count, server and tool switches, and project trust controls. Web UI: opens Settings → MCP servers. Telegram: lists servers and offers enable/disable buttons for trusted entries only. | [MCP](../features/mcp.md#management-api-and-ui) |
 | `/docs [words or page]` | console, web UI | Opens Coddy's built-in documentation, the same screen F1 opens: the contents, a search for the words, or a page (`/docs features/mentions#completion`) opened at its section. A page is named by its address or its exact title; any other words are a search. In the web UI the composer runs it in the browser and nothing reaches the agent. `/help` is the same command in the console. | [Built-in documentation](../features/built-in-docs.md#the-console-help) |
 | `/quit`, `/exit` | console | Exits. | [Console](../surfaces/console.md#commands-and-keys) |
 | `/compact [--model <id>] [instructions]` | console, web UI, ACP editors, `POST /v1/responses` | Summarises the older history and keeps the recent turns verbatim; the words after the command steer the summariser, and `--model` names the model that writes this one summary (a `models[].model`, its name without the provider, or a part of one that matches exactly one). Listed only while `compaction.enable` is true; a manual compaction is always forced. | [Context compaction](../features/compaction.md#the-compact-command) |
@@ -12719,18 +12751,18 @@ The built-in commands on each surface and how skills become commands. A slash co
 
 Three boundaries follow from the code:
 
-- the Telegram adapter answers its own seven commands, passes the settings commands but `/permissions` to the session (`isSettingsCommand` in `external/gateway/telegram/bot.go`), and drops any other message that starts with `/`, so `/compact`, `/export` and skills are not reachable there;
+- the Telegram adapter answers its own commands, passes the settings commands but `/permissions` to the session (`isSettingsCommand` in `external/gateway/telegram/bot.go`), and drops any other message that starts with `/`, so `/compact`, `/export` and skills are not reachable there;
 - a subagent never runs a built-in: a child prompt that starts with `/export` is an ordinary task for the child (`internal/agent/react.go`);
-- the console's client-side commands exist only in the console; the settings commands are the same everywhere, because one parser and one setter in the session manager serve every surface.
+- most console client-side commands exist only in the console; `/mcp` also opens the web settings and a Telegram menu. Settings commands are the same everywhere because one parser and one setter in the session manager serve every surface.
 
 ## Where each surface gets its list
 
 | Surface | Source of the list | Notes |
 |---|---|---|
-| Console | A fixed client-side list (`resume`, `new`, `theme`, `hotkeys`, `queue`, `usage`, `tasks`, `docs`, `quit`) merged with the rows the server advertises through the ACP `available_commands_update` notification, the settings commands among them (`slashCatalog` in `external/cli/app.go`). | Typing `/` opens the suggestion menu; Enter on a suggestion applies it and submits in one stroke. |
-| Web UI | Two groups in the composer: the built-ins from `GET /coddy/commands`, loaded once when the composer mounts, and the skills from `GET /coddy/slash-commands`, paged and filtered by `prefix`, scoped to the session workspace through `X-Coddy-Session-ID`. A built-in row carries its `kind` (`setting` or `action`), the argument `hint`, its `aliases`, and for a settings command the `setting` it changes with its `choices` or fixed `value`. | Both lists are re-read when the server announces a configuration reload (`event: config_reloaded` on `GET /coddy/events`), so a skill installed by `/plugin` shows up without a page reload. Picking `/model`, `/reasoning` or `/permissions` opens that selector, picking `/agent`, `/plan` or `/ask` switches the mode, and any other row inserts the plain `/name` token and nothing else. Once `/compact` is typed, the composer completes its `--model` option and the option's value from the configured models ([Composer command options](../surfaces/web-ui.md#composer-command-options)). |
+| Console | A fixed client-side list (`resume`, `new`, `theme`, `hotkeys`, `queue`, `usage`, `tasks`, `mcp`, `docs`, `quit`) merged with the rows the server advertises through the ACP `available_commands_update` notification, the settings commands among them (`slashCatalog` in `external/cli/app.go`). | Typing `/` opens the suggestion menu; Enter on a suggestion applies it and submits in one stroke. |
+| Web UI | Two groups in the composer: built-ins from `GET /coddy/commands` plus local `/docs` and `/mcp`, and skills from `GET /coddy/slash-commands`, paged and filtered by `prefix`, scoped to the session workspace through `X-Coddy-Session-ID`. A server built-in row carries its `kind` (`setting` or `action`), the argument `hint`, its `aliases`, and for a settings command the `setting` it changes with its `choices` or fixed `value`. | Both server lists are re-read when the server announces a configuration reload (`event: config_reloaded` on `GET /coddy/events`). Picking `/model`, `/reasoning` or `/permissions` opens that selector; `/agent`, `/plan` or `/ask` switches the mode; `/mcp` opens Settings → MCP servers. Other rows insert the plain `/name` token. Once `/compact` is typed, the composer completes its `--model` option and the option's value from the configured models ([Composer command options](../surfaces/web-ui.md#composer-command-options)). |
 | ACP editors | `available_commands_update` after `session/new` and `session/load`: the settings commands, then the other built-ins, then the skills sorted by name; rows carry `name` (without the slash), `description` and, for a settings command and for `/compact`, `input.hint` with its argument and flags. A skill named like a built-in or one of its aliases is left out. | The same function, `session.BuiltinCommandRows` in `internal/session/commands.go`, feeds the HTTP endpoint and the notification, so the two never disagree: `compact` only while compaction is enabled, `export` and `plugin` always. |
-| Telegram | `start`, `help`, `model`, `agent`, `plan`, `ask`, `context`, `resume` and `clear`, registered with `setMyCommands` at startup. | They appear in the client's command menu; `/reasoning`, `/think` and `/nothink` work when typed but are not in the menu. |
+| Telegram | `start`, `help`, `model`, `mcp`, `agent`, `plan`, `ask`, `context`, `resume` and `clear`, registered with `setMyCommands` at startup. | They appear in the client's command menu; `/reasoning`, `/think` and `/nothink` work when typed but are not in the menu. |
 
 ## How skills become commands
 
@@ -13266,12 +13298,12 @@ header where the client can set one, since a query token reaches proxy access lo
 | DELETE | **`/coddy/skills/sources?source=<src>`** | Removes **`source`** (matched case-insensitively) from **`skills.sources`** in **config.yaml** and reloads config. Installed skills remain. **`200`** **`{"ok":true,"removed":bool}`**; **`400`** when the **`source`** query parameter is missing. A **`system`** source is refused with **`400`**: it is built into Coddy and is not in the file. |
 | DELETE | **`/coddy/skills/{name}`** | Deletes any on-disk skill by name (its directory, plus its remote provenance entry when synced). Bundled (read-only) skills, and skills outside the configured skill directories, return **`400`**. **`200`** **`{"ok":true}`**. Invalidates the slash-command cache. |
 | GET | **`/coddy/mcp`** | Merged MCP server list from three levels: **`mcp_servers`** in **config.yaml** and the user-global **`<home>/mcp.json`** (both scope **`global`**), plus the project-local **`.coddy/mcp.json`** (scope **`local`**); mcp.json files are Cursor-compatible and later levels override earlier ones by name. JSON **`{"object":"coddy.mcp_list","workspace":"...","project_trust":"ask","items":[...]}`**; each item has **`name`**, **`source`** (**`global`** / **`local`**), **`origin`** (**`config`** / **`home`** / **`project`** — the owning file), **`readonly`** (**`true`** for config.yaml entries), **`transport`**, **`command`**, **`args`**, **`url`**, **`env`**, **`headers`**, **`source_path`**, **`enabled`**, **`status`** (**`connected`** / **`error`** / **`disabled`** / **`unsupported`** / **`needs_approval`** / **`denied`**), **`error`**, **`trusted`**, **`gated`**, **`fingerprint`**, **`tools`** (**`[{name, description, enabled}]`**), **`disabled_tools`**. Enabled servers are probed for tools over their transport (**`stdio`** spawn, **`http`** streamable with legacy-SSE fallback, **`sse`**; connect, **`tools/list`**, close) with results cached until the definition changes; **`?refresh=1`** re-probes. Unknown transport types report **`unsupported`** without probing. A project-local entry that the workspace trust gate holds back is **never probed**: it reports **`needs_approval`** (or **`denied`**) with **`trusted:false`**, no tools, and the declaration an approval would cover. |
-| POST | **`/coddy/mcp/{name}/enable`** | Clears the server's disabled flag, persisting into the file that defines it (**config.yaml** **`disabled`** or **`disabled`** in the owning mcp.json), then reloads config. **`200`** **`{"ok":true}`**; **`400`** for an unknown server. Live sessions pick the change up on their next turn. |
-| POST | **`/coddy/mcp/{name}/disable`** | Sets the server's disabled flag in the owning file. Same responses as **`enable`**. New sessions skip connecting the server; live sessions stop seeing its tools on the next turn. |
-| POST | **`/coddy/mcp/{name}/tools/{tool}/enable`** | Removes **`{tool}`** from the server's disabled-tools list (**`disabled_tools`** in YAML, **`disabledTools`** in the owning mcp.json). **`200`** **`{"ok":true}`**; **`400`** for an unknown server. |
-| POST | **`/coddy/mcp/{name}/tools/{tool}/disable`** | Adds **`{tool}`** to the server's disabled-tools list. The tool is hidden from the agent's tool list and rejected at dispatch. Same responses as the tool **`enable`**. |
+| POST | **`/coddy/mcp/{name}/enable`** | Clears the server's disabled flag. Global entries persist in their defining file; project entries persist in **`<home>/mcp-overrides.json`**, leaving the checkout unchanged. **`200`** **`{"ok":true}`**; **`400`** for an unknown server. Live sessions refresh their MCP clients; an active turn adopts the change when it ends. |
+| POST | **`/coddy/mcp/{name}/disable`** | Sets the server's disabled flag under the same scope rule as **`enable`**. New sessions skip connecting the server; live sessions stop seeing its tools on the next turn. |
+| POST | **`/coddy/mcp/{name}/tools/{tool}/enable`** | Enables **`{tool}`** in the server's effective tool list. Global switches persist in YAML or the global mcp.json; project switches persist in **`<home>/mcp-overrides.json`**. **`200`** **`{"ok":true}`**; **`400`** for an unknown server. |
+| POST | **`/coddy/mcp/{name}/tools/{tool}/disable`** | Disables **`{tool}`** under the same scope rule. The tool is hidden from the agent's tool list and rejected at dispatch. Same responses as the tool **`enable`**. |
 | POST | **`/coddy/mcp/{name}/trust`** | Approves the **current** declaration of a project-local server for the server's workspace, so sessions may start it. The approval is bound to the workspace and to a digest of the command-bearing declaration (transport, command, args, env, url, headers) and is recorded in **`<home>/mcp-trust.json`** with a receipt (env and header **names** only). **`200`** **`{"ok":true,"fingerprint":"sha256:…"}`**; **`400`** for an unknown server, for a **config.yaml** / **`<home>/mcp.json`** entry (those need no approval), or under **`mcp.project_trust: deny`**. Rewriting the entry withdraws the approval. |
-| POST | **`/coddy/mcp/{name}/untrust`** | Withdraws the workspace approval. **`200`** **`{"ok":true,"removed":<bool>}`**. Sessions already holding a connected client keep it; new sessions no longer start the server. |
+| POST | **`/coddy/mcp/{name}/untrust`** | Withdraws the workspace approval. **`200`** **`{"ok":true,"removed":<bool>}`**. Live sessions refresh their configured MCP clients; a turn already in progress keeps its client until it ends. |
 | POST | **`/coddy/mcp/project-trust`** | Sets **`mcp.project_trust`** in **config.yaml** and reloads it. Body **`{"policy":"ask"\|"allow"\|"deny"}`**. **`200`** **`{"ok":true,"project_trust":"…"}`**; **`400`** for an unknown value. The bundled UI edits this in the MCP servers tab, next to the servers it governs. |
 | GET | **`/coddy/subagents`** | Subagent definitions visible from a workspace (**`?cwd=<absolute path>`**, default: the server's default cwd; a relative path is **`400`**): the embedded built-ins (**`general`**, **`explore`**), user-scope files under **`${CODDY_HOME}/agents`**, and project-scope files under the workspace's **`.claude/agents`** and **`.coddy/agents`** (**`subagents.dirs`**, later directories win by name). **`{"object":"coddy.subagent_list","workspace","policy","items":[...]}`** where **`workspace`** is the canonical path receipts are keyed by, **`policy`** the effective **`subagents.project_trust`**, and each item carries **`name`**, **`description`**, **`scope`** (**`builtin`**, **`user`**, **`project`**), **`path`**, **`digest`** (SHA-256 of the definition bytes, the embedded bytes for built-ins), **`model`**, **`mode`**, **`builtin`**, **`hidden`**, the bounds the definition declares - **`tools`**, **`disallowed_tools`**, **`permission_mode`**, **`timeout_seconds`**, **`max_turns`**, **`background`**, and **`role_bytes`** (the size of the role body; the body itself is never served, since a client would render it before anyone approved the file) - and the trust decision for that workspace: **`trust`** (**`trusted`** or **`needs_approval`**) mirrored as the booleans **`trusted`** and **`needs_approval`**. A bound a definition does not declare is absent rather than empty: absent means "inherits". Under **`deny`** project directories are not read at all. Errors on this route and on the trust routes are **`{"error":{"message"}}`** typed **`application/json`**. The bundled UI lists this catalog, read-only, under **Settings → Subagents**. See **`docs/features/subagents.md`**. |
 | POST | **`/coddy/subagents/{name}/trust`** | Approves the **current** content of a project-scope definition for a workspace: records a receipt in **`<home>/subagents-trust.json`** bound to the canonical workspace, the name and the file digest, so **`spawn_agent`** may run it under **`project_trust: ask`**. Rewriting the file withdraws the approval. Optional body **`{"cwd": ...}`** (default: the server's default cwd); **`cwd`** must be the session's **server-side** workspace, the `cwd` field of the **`GET /coddy/sessions`** rows or **`GET /coddy/workspace/context`** with the session header, since receipts are keyed by that path. This route is the approval path for a remote console or ACP client, whose local `coddy agents trust` writes a receipt on the wrong machine. **`200`** **`{"object":"coddy.subagent","item":<catalog entry>}`** with the refreshed entry; **`404`** when no definition of that name is visible from the workspace; **`400`** for a built-in or user-scope definition (nothing to approve), a malformed body, or a relative **`cwd`**. |
