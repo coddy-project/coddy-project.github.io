@@ -1,7 +1,8 @@
 """Build the Russian static pages from the English page structure.
 
 Run ``python scripts/build_ru.py`` after editing the English pages or the
-translations. The generated files are committed so GitHub Pages needs no build.
+translations. The generated files are committed so GitHub Pages needs no build;
+``python -m unittest discover -s scripts`` checks that they are up to date.
 """
 
 from __future__ import annotations
@@ -25,14 +26,17 @@ PAGES = {
     "compare/index.html": "ru/compare/index.html",
 }
 RAW_TAGS = {"script", "style", "pre", "code", "svg"}
+# Marks that close a phrase. A fragment starting with one sits right after the
+# inline element before it, one starting with a word needs a space there.
+CLOSING_PUNCTUATION = tuple(",.;:!?)")
 ATTRIBUTE_TRANSLATIONS = {
     "Coddy agent": "Coddy Agent",
     "Coddy console TUI with the model selector open": "Терминальная консоль Coddy с открытым выбором модели",
-    "Coddy web UI start screen with the model menu open": "Веб-интерфейс Coddy с открытым меню моделей",
+    "Coddy web UI start screen with the model menu open": "Стартовый экран веб-интерфейса Coddy с открытым меню моделей",
     "Zed with the Coddy thread open in the agent panel": "Zed с сессией Coddy в панели агента",
     "Breadcrumb": "Навигационная цепочка",
     "Capabilities": "Возможности",
-    "Coddy agent home": "Coddy — главная",
+    "Coddy agent home": "Главная страница Coddy",
     "Coddy surfaces": "Интерфейсы Coddy",
     "Copy Homebrew install command": "Копировать команду установки Homebrew",
     "Copy compose file": "Копировать Compose-файл",
@@ -40,16 +44,16 @@ ATTRIBUTE_TRANSLATIONS = {
     "Copy docker command": "Копировать команду Docker",
     "Copy install command": "Копировать команду установки",
     "Copy rpm install commands": "Копировать команды установки rpm",
-    "Docker install method": "Способ установки Docker",
+    "Docker install method": "Способ установки через Docker",
     "Install platform": "Платформа установки",
     "Language": "Язык",
-    "Linux install method": "Способ установки Linux",
+    "Linux install method": "Способ установки в Linux",
     "Open menu": "Открыть меню",
     "Play demo: Coddy console TUI, 3:46": "Воспроизвести демо терминальной консоли Coddy, 3:46",
     "Play demo: Coddy inside Zed over ACP, 2:57": "Воспроизвести демо Coddy в Zed через ACP, 2:57",
     "Play demo: Coddy web UI, 2:22": "Воспроизвести демо веб-интерфейса Coddy, 2:22",
     "Site menu": "Меню сайта",
-    "macOS install method": "Способ установки macOS",
+    "macOS install method": "Способ установки в macOS",
     "Latest release on GitHub": "Последний релиз на GitHub",
     "Sitemap": "Карта сайта",
 }
@@ -66,6 +70,7 @@ class TranslateHTML(HTMLParser):
         self.parts: list[str] = []
         self.stack: list[str] = []
         self.untranslated: set[str] = set()
+        self.used: set[str] = set()
 
     def handle_decl(self, decl: str) -> None:
         self.parts.append(f"<!{decl}>")
@@ -112,11 +117,18 @@ class TranslateHTML(HTMLParser):
             self.untranslated.add(source)
             self.parts.append(data)
             return
+        self.used.add(source)
         if translated is None:
             self.parts.append(data)
             return
         leading = re.match(r"\s*", data).group()
         trailing = re.search(r"\s*$", data).group()
+        # Russian word order moves punctuation across an inline element such as
+        # <code>, so the English spacing around the fragment does not always fit.
+        if translated.startswith(CLOSING_PUNCTUATION):
+            leading = ""
+        elif not leading and source.startswith(CLOSING_PUNCTUATION):
+            leading = " "
         self.parts.append(leading + html.escape(translated, quote=False) + trailing)
 
     def handle_entityref(self, name: str) -> None:
@@ -161,13 +173,15 @@ def localize(page: str, source: str) -> str:
     en_path = "/compare/" if is_compare else "/"
     ru_path = "/ru/compare/" if is_compare else "/ru/"
     title = (
-        "Coddy и другие агентные среды — сравнение 2026 года"
-        if is_compare else "Coddy Agent — универсальный агент в одном Go-бинарнике"
+        "Coddy и другие агентные харнесы - сравнение 2026 года"
+        if is_compare else "Coddy Agent - универсальный агент в одном Go-бинарнике"
     )
     description = (
-        "Сравнение Coddy с 19 другими агентными средами: установка, интерфейсы, расширяемость, контекст и безопасность."
+        "Сравнение Coddy с 19 другими агентными харнесами: поставка, интерфейсы, расширяемость, контекст и безопасность."
         if is_compare else
-        "Coddy Agent — универсальный ИИ-агент в одном Go-бинарнике: терминал, веб-интерфейс, ACP, Telegram, планировщик, рой узлов, навыки и собственные ключи API."
+        "Coddy Agent - агентный харнес для distroless: один Go-бинарник с терминальной консолью, ACP для редакторов, "
+        "встроенным веб-интерфейсом, шлюзом Telegram, планировщиком cron, ретранслятором роя и удалённым управлением, "
+        "а также правилами, навыками, субагентами, хуками, MCP и вашими ключами API."
     )
     page = set_meta(page, title=title, description=description, url="https://coddy.dev" + ru_path)
     page = page.replace(f'href="{en_path}" lang="en" hreflang="en" aria-current="page"',
@@ -186,7 +200,7 @@ def localize(page: str, source: str) -> str:
     page = page.replace('btn.textContent = "Copied"', 'btn.textContent = "Скопировано"')
     page = page.replace('btn.textContent = "Copy"', 'btn.textContent = "Копировать"')
     page = page.replace('content="Coddy Agent - distroless-friendly coding agent harness"',
-                        'content="Coddy Agent — универсальная платформа для агентов"')
+                        'content="Coddy Agent - агентный харнес для distroless"')
     # The English JSON-LD is replaced with a locale-accurate WebPage record.
     structured = {
         "@context": "https://schema.org",
@@ -208,17 +222,23 @@ def localize(page: str, source: str) -> str:
     return page
 
 
+def build(source: str) -> tuple[str, set[str]]:
+    """Return the Russian page for an English one and the entries of the
+    translation table and of ru_preserve.txt that it used."""
+    parser = TranslateHTML(source)
+    parser.feed((ROOT / source).read_text(encoding="utf-8"))
+    untranslated = sorted(parser.untranslated)
+    if untranslated:
+        raise ValueError(
+            f"{source}: translate these text fragments or add deliberate names to ru_preserve.txt:\n"
+            + "\n".join("  " + value for value in untranslated)
+        )
+    return localize("".join(parser.parts), source), parser.used
+
+
 def main() -> None:
     for source, target in PAGES.items():
-        parser = TranslateHTML(source)
-        parser.feed((ROOT / source).read_text(encoding="utf-8"))
-        result = localize("".join(parser.parts), source)
-        untranslated = sorted(parser.untranslated)
-        if untranslated:
-            raise ValueError(
-                f"{source}: translate these text fragments or add deliberate names to ru_preserve.txt:\n"
-                + "\n".join("  " + value for value in untranslated)
-            )
+        result, _ = build(source)
         output = ROOT / target
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(result, encoding="utf-8")
