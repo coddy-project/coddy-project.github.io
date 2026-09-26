@@ -1043,16 +1043,17 @@ write `$$` by hand.
 **A save keeps the references.** The loaded configuration holds what a reference resolved to, so the
 Settings UI works with the secret itself and with absolute paths. When it saves, a value written as
 `${VAR}`, `${CODDY_HOME}/...` or `~/...` in the file is written back that way as long as it still
-loads as the value being saved - in a single value (`memory.dir`) and in a list entry (`skills.dirs`,
-`subagents.dirs`, `hooks.files`, `instructions.files`) alike; only a value you changed on the screen
-replaces the reference. A key kept in the environment or in `~/.coddy/.env` therefore never lands in
-`config.yaml` because of an unrelated save, and a save of an untouched form leaves the file as it
-was. The same holds for what the process changes after reading the file: a command-line flag, the
-relay listen address `coddy serve` fills in or a pairing token from the environment is not written
-into `config.yaml` unless you change that value on the screen, and a value another save changed
-after you opened the form is not put back by yours. When the file on disk does not load at the
-moment of the save (a broken hand edit, a deleted file), the save writes the configuration the
-server runs, as it always did.
+loads as the value being saved - in a single value (`memory.dir`) and in a list entry
+(`skills.dirs`, `subagents.dirs`, `hooks.files`, `instructions.files`) alike; only a value you
+changed on the screen replaces the reference. A key kept in the environment or in `~/.coddy/.env`
+therefore never lands in `config.yaml` because of an unrelated save, and a save of an untouched form
+writes every value back the way the file spelled it. The same holds for what the process changes
+after reading the file: a command-line flag, the relay listen address `coddy serve` fills in or a
+pairing token from the environment is not written into `config.yaml` unless you change that value on
+the screen, and a value another save changed after you opened the form is not put back by yours.
+When the file on disk does not load at the moment of the save (a broken hand edit, a deleted file),
+the save writes the configuration the server runs, as it always did. Indentation and blank lines are
+not kept: a save writes the file indented by two spaces, without blank lines between sections.
 
 Two placeholders are not environment variables:
 
@@ -4604,7 +4605,7 @@ Clear the field to use the session model for summarization.
 - A form with no unsaved edits takes a newer copy as it arrives, so a change the agent or another browser made shows up in it. A form that holds unsaved edits keeps them; **Reload** takes what the server has and drops them (a field typed into while Reload is on its way keeps what was typed).
 - A save puts what it wrote into the kept copy at once, so closing and reopening the drawer right after a save shows the saved values even before the server has been read again.
 - **Save all** reports success on the button itself: it turns green for two seconds, without a line of text. A save the server refuses says why in words above the tabs, and the button stays as it was.
-- A save writes into `config.yaml` what changed. A value you did not touch keeps its spelling - `${CODDY_HOME}/memory`, `~/.agents/skills`, `${OPENAI_API_KEY}`, quotes, a list written on one line - a provider or a model entry keeps only the fields it named (a renamed one too), and what the process runs differently from the file (a command-line flag, the relay address `coddy serve` fills in) stays out of it. See [Configuration](../getting-started/configuration.md#environment-variable-references).
+- A save writes into `config.yaml` what changed. A value you did not touch keeps its spelling - `${CODDY_HOME}/memory`, `~/.agents/skills`, `${OPENAI_API_KEY}`, quotes, a list written on one line - a provider or a model entry keeps only the fields it named (a renamed one too), and what the process runs differently from the file (a command-line flag, the relay address `coddy serve` fills in) stays out of it. Indentation and blank lines are not kept: the file comes back indented by two spaces, without blank lines between sections. See [Configuration](../getting-started/configuration.md#environment-variable-references).
 - What you did not touch is measured against what this browser read: the document names the configuration it came from, so when another browser, the agent or a hand edit saved something after you opened the form, your save leaves those values alone and writes only yours. A list you edited is written as you left it.
 - Automated checks: **`Settings.test.tsx`** (a second open drawn from the copy with no request, the skeleton on a wide and on a narrow screen and after a failed first read, a reload reaching an untouched form and never unsaved edits, the green Save button and the error line, a failed save after a green one, edits and a newer copy arriving while a save runs, Logical models opened as a list after a provider, a deep link to a row on the first open, the saved values on a reopen right after a save, edits typed during Reload), **`settingsConfigStore.test.ts`** (one read for every open, the reload notice, answers applied in order, a failed read keeping the copy, a copy older than a failed read read again, the saved document as the copy), **`settingsSaveStateCss.test.ts`** (the green as a state that reduced motion keeps, no success line, the skeleton tinted from the theme's text colour), **`features/config_save_round_trip.feature`** with **`external/httpserver/bdd_config_round_trip_test.go`** (a save without edits leaves the file byte for byte as it was, one edit changes one line, a save from a browser that read the config earlier does not undo another save) and the save tests in **`internal/config/yaml_comments_test.go`**.
 
