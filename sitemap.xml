@@ -4,7 +4,7 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://coddy.dev/</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-27</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://coddy.dev/" />
     <xhtml:link rel="alternate" hreflang="ru" href="https://coddy.dev/ru/" />
     <image:image>
@@ -26,7 +26,7 @@
   </url>
   <url>
     <loc>https://coddy.dev/compare/</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-27</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://coddy.dev/compare/" />
     <xhtml:link rel="alternate" hreflang="ru" href="https://coddy.dev/ru/compare/" />
     <image:image>
@@ -36,22 +36,22 @@
   </url>
   <url>
     <loc>https://coddy.dev/ru/</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-27</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://coddy.dev/" />
     <xhtml:link rel="alternate" hreflang="ru" href="https://coddy.dev/ru/" />
     <image:image>
       <image:loc>https://coddy.dev/assets/og-image.png</image:loc>
-      <image:title>Coddy Agent — универсальный агент в одном Go-бинарнике</image:title>
+      <image:title>Coddy Agent - универсальный агент в одном Go-бинарнике</image:title>
     </image:image>
   </url>
   <url>
     <loc>https://coddy.dev/ru/compare/</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-27</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://coddy.dev/compare/" />
     <xhtml:link rel="alternate" hreflang="ru" href="https://coddy.dev/ru/compare/" />
     <image:image>
       <image:loc>https://coddy.dev/assets/og-image.png</image:loc>
-      <image:title>Coddy и другие агентные среды — сравнение 2026 года</image:title>
+      <image:title>Coddy и другие агентные харнесы - сравнение 2026 года</image:title>
     </image:image>
   </url>
 </urlset>

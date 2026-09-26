@@ -251,13 +251,13 @@
           points the console or ACP at a running server elsewhere.
         </p>
         <p>
-          A few mechanisms are worth naming because they rarely show up elsewhere. <strong>Result eviction</strong>
+          Four mechanisms rarely show up elsewhere. <strong>Result eviction</strong>
           collapses stale <code>read</code> and <code>grep</code> output into placeholders in the projection sent to
           the model, while <code>keep_result</code> lets the model pin what it still needs. The <strong>loop
           guard</strong> cuts a stream that degenerates into repetition and stops re-running a tool called with
           byte-identical arguments. On a rate limit the resilient wrapper raises a typed
           <code>QuotaResetError</code>, and with <code>agent.wait_for_limit_reset</code> the turn sleeps until the
-          quota returns and then replays the very same call. <strong>Self-configuration</strong> gives the agent
+          quota returns and then replays the same call. <strong>Self-configuration</strong> gives the agent
           staged, uci-style commands over its own YAML, where nothing touches the file until a commit you approve,
           which validates, snapshots and hot-reloads.
         </p>
@@ -278,8 +278,7 @@
         </p>
         <p>
           <strong>General-purpose open harnesses</strong> - OpenCode, Pi, OMP, DeepSeek Harness, Crush, Reasonix,
-          CodeWhale, Goose, Aider, Cline, OpenHands, Continue and Coddy. This is where the feature race actually
-          happens.
+          CodeWhale, Goose, Aider, Cline, OpenHands, Continue and Coddy. Most of the feature race happens here.
         </p>
         <p>
           <strong>Personal assistant gateways</strong> - OpenClaw, Hermes Agent and a swarm of clones. Their premise
@@ -497,7 +496,7 @@
       </div>
       <div class="cmp-block">
         <h3 id="table-surfaces">Surfaces</h3>
-        <p class="cmp-caption">Where you can actually talk to the agent, and whether those entry points share one set of sessions.</p>
+        <p class="cmp-caption">Where you can talk to the agent, and whether those entry points share one set of sessions.</p>
         <div class="cmp-scroll bleed" tabindex="0" role="region" aria-labelledby="table-surfaces">
           <table class="cmp-table">
             <thead>
