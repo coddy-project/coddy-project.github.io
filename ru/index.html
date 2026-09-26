@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coddy Agent — универсальный агент в одном Go-бинарнике</title>
+  <meta name="description" content="Coddy Agent — универсальный ИИ-агент в одном Go-бинарнике: терминал, веб-интерфейс, ACP, Telegram, планировщик, рой узлов, навыки и собственные ключи API." />
+  <meta name="theme-color" content="#9333ea" />
+  <link rel="canonical" href="https://coddy.dev/ru/" />
+  <link rel="alternate" hreflang="en" href="https://coddy.dev/" />
+  <link rel="alternate" hreflang="ru" href="https://coddy.dev/ru/" />
+  <link rel="alternate" hreflang="x-default" href="https://coddy.dev/" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="author" content="Coddy Project" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Coddy Agent" />
+  <meta property="og:locale" content="ru_RU" />
+  <meta property="og:title" content="Coddy Agent — универсальный агент в одном Go-бинарнике" />
+  <meta property="og:description" content="Coddy Agent — универсальный ИИ-агент в одном Go-бинарнике: терминал, веб-интерфейс, ACP, Telegram, планировщик, рой узлов, навыки и собственные ключи API." />
+  <meta property="og:url" content="https://coddy.dev/ru/" />
+  <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content="Coddy Agent — универсальная платформа для агентов" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Coddy Agent — универсальный агент в одном Go-бинарнике" />
+  <meta name="twitter:description" content="Coddy Agent — универсальный ИИ-агент в одном Go-бинарнике: терминал, веб-интерфейс, ACP, Telegram, планировщик, рой узлов, навыки и собственные ключи API." />
+  <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
+  <link rel="icon" href="/assets/coddy-favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/assets/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+  <link rel="stylesheet" href="/styles.css?v=27" />
+  <script type="application/ld+json">
+  {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": "https://coddy.dev/ru/#webpage",
+  "url": "https://coddy.dev/ru/",
+  "name": "Coddy Agent — универсальный агент в одном Go-бинарнике",
+  "description": "Coddy Agent — универсальный ИИ-агент в одном Go-бинарнике: терминал, веб-интерфейс, ACP, Telegram, планировщик, рой узлов, навыки и собственные ключи API.",
+  "inLanguage": "ru",
+  "isPartOf": {
+    "@id": "https://coddy.dev/#website"
+  }
+}
+  </script>
+</head>
+<body>
+  <div class="nav-scrim" id="nav-scrim" hidden></div>
+  <header class="site-header">
+    <div class="site-header-inner shell-width">
+      <a class="logo" href="/ru/" aria-label="Coddy — главная">
+        <img class="logo-wordmark" src="/assets/coddy-logo-wordmark.svg" width="188" height="56" alt="Coddy agent" />
+      </a>
+      <nav class="nav-drawer" id="site-nav" aria-label="Меню сайта" aria-hidden="true">
+        <a class="nav-drawer-link" href="#install">Установка</a>
+        <a class="nav-drawer-link" href="#demos">Демо</a>
+        <a class="nav-drawer-link" href="#features">Возможности</a>
+        <a class="nav-drawer-link" href="/ru/compare/">Сравнение</a>
+        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Документация</a>
+        <span class="lang-switch" aria-label="Язык">
+          <a href="/" lang="en" hreflang="en">EN</a>
+          <span aria-hidden="true">/</span>
+          <a href="/ru/" lang="ru" hreflang="ru" aria-current="page">RU</a>
+        </span>
+        <a
+          class="release-pill nav-release"
+          id="release-pill"
+          href="https://github.com/coddy-project/coddy-agent/releases/latest"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Последний релиз на GitHub"
+        >
+          <svg class="release-pill-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
+          <span class="visually-hidden">Последний релиз на GitHub </span>
+          <span class="release-pill-version" id="release-pill-version">v1.0.1</span>
+        </a>
+      </nav>
+      <button
+        type="button"
+        class="nav-burger"
+        aria-expanded="false"
+        aria-controls="site-nav"
+        aria-label="Открыть меню"
+      >
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+        <span class="nav-burger-bar" aria-hidden="true"></span>
+      </button>
+    </div>
+  </header>
+  <main class="shell">
+
+    <section class="hero">
+      <h1>Запустите универсального агента<br class="hero-br" /> из одного статического бинарника</h1>
+      <p class="tagline">
+        Coddy — платформа для агентов: цикл ReAct с инструментами для файлов и командной строки, MCP, правилами проекта, навыками, субагентами, хуками, фоновыми задачами и долговременной памятью. Работайте через терминал, браузер, редактор по ACP или Telegram. Запускайте как сервис с планировщиком cron, ретранслятором для группы узлов и удалённым управлением. Подходит для контейнеров и ваших собственных ключей API.
+      </p>
+      <div class="hero-skills" role="list" aria-label="Возможности">
+        <span class="skill-chip" role="listitem">/go-binary</span>
+        <span class="skill-chip" role="listitem">/console-tui</span>
+        <span class="skill-chip" role="listitem">/acp-harness</span>
+        <span class="skill-chip" role="listitem">/subagents</span>
+        <span class="skill-chip" role="listitem">/swarm</span>
+        <span class="skill-chip" role="listitem">/distroless-ready</span>
+        <span class="skill-chip" role="listitem">/on-prem-llms</span>
+      </div>
+    </section>
+
+    <section id="install">
+      <div class="glass install-block">
+        <div class="install-block-head">
+          <h2>Быстрая установка</h2>
+          <div class="tabs" role="tablist" aria-label="Платформа установки">
+            <button type="button" class="tab active" data-tab="linux" role="tab" aria-selected="true" aria-controls="panel-linux" id="tab-linux">Linux</button>
+            <button type="button" class="tab" data-tab="mac" role="tab" aria-selected="false" aria-controls="panel-mac" id="tab-mac">macOS</button>
+            <button type="button" class="tab" data-tab="win" role="tab" aria-selected="false" aria-controls="panel-win" id="tab-win">Windows</button>
+            <button type="button" class="tab" data-tab="docker" role="tab" aria-selected="false" aria-controls="panel-docker" id="tab-docker">Docker</button>
+          </div>
+        </div>
+
+        <div class="code-wrap active" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux">
+          <div class="method active" data-method="linux-script">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-linux" aria-label="Копировать команду установки">Копировать</button>
+              <pre><code id="cmd-linux"><span class="cmd">curl -fsSL https://coddy.dev/install.sh | bash</span></code></pre>
+            </div>
+          </div>
+          <div class="method" data-method="linux-deb">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-deb" aria-label="Копировать команды установки deb">Копировать</button>
+              <pre><code id="cmd-deb"><span class="cmd">curl -fsSLO https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.deb</span>
+<span class="cmd">sudo apt-get install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.deb</span></code></pre>
+            </div>
+          </div>
+          <div class="method" data-method="linux-rpm">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-rpm" aria-label="Копировать команды установки rpm">Копировать</button>
+              <pre><code id="cmd-rpm"><span class="cmd">curl -fsSLO https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm</span>
+<span class="cmd">sudo dnf install ./coddy_<span class="pkg-version">X.Y.Z</span>_linux_amd64.rpm</span></code></pre>
+            </div>
+          </div>
+          <div class="install-bar">
+            <div class="methods" role="tablist" aria-label="Способ установки Linux">
+              <button type="button" class="method-tab active" data-method="linux-script" role="tab" aria-selected="true">Скрипт</button>
+              <button type="button" class="method-tab" data-method="linux-deb" role="tab" aria-selected="false">Debian / Ubuntu</button>
+              <button type="button" class="method-tab" data-method="linux-rpm" role="tab" aria-selected="false">Fedora / RHEL</button>
+            </div>
+            <a class="install-view method active" data-method="linux-script" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.sh" target="_blank" rel="noopener noreferrer">Посмотреть скрипт установки <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="linux-deb" href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">Файлы релиза <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="linux-rpm" href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">Файлы релиза <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <p class="install-note method active" data-method="linux-script">
+            Добавляет бинарник последнего релиза в PATH и создаёт <code>~/.coddy/config.yaml</code> на основе примера, если файла ещё нет.
+          </p>
+          <p class="install-note method" data-method="linux-deb">
+            Замените <code>amd64</code> на <code>arm64</code> для 64-битной ARM или выберите файл в <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">последнем релизе</a>. Пакет устанавливает <code>/usr/bin/coddy</code>, <code>man coddy</code> и автодополнение команд. Сервис и системная учётная запись не создаются; команда <code>coddy update</code> передаёт обновление пакетному менеджеру.
+          </p>
+          <p class="install-note method" data-method="linux-rpm">
+            В openSUSE этот же файл устанавливается через <code>zypper</code>. Замените <code>amd64</code> на <code>arm64</code> для 64-битной ARM или выберите файл в <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">последнем релизе</a>. Пакет устанавливает <code>/usr/bin/coddy</code>, <code>man coddy</code> и автодополнение команд. Сервис и системная учётная запись не создаются; команда <code>coddy update</code> передаёт обновление пакетному менеджеру.
+          </p>
+        </div>
+
+        <div class="code-wrap" id="panel-mac" role="tabpanel" aria-labelledby="tab-mac">
+          <div class="method active" data-method="mac-script">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-mac" aria-label="Копировать команду установки">Копировать</button>
+              <pre><code id="cmd-mac"><span class="cmd">curl -fsSL https://coddy.dev/install.sh | bash</span></code></pre>
+            </div>
+          </div>
+          <div class="method" data-method="mac-brew">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-brew" aria-label="Копировать команду установки Homebrew">Копировать</button>
+              <pre><code id="cmd-brew"><span class="cmd">brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</span></code></pre>
+            </div>
+          </div>
+          <div class="install-bar">
+            <div class="methods" role="tablist" aria-label="Способ установки macOS">
+              <button type="button" class="method-tab active" data-method="mac-script" role="tab" aria-selected="true">Скрипт</button>
+              <button type="button" class="method-tab" data-method="mac-brew" role="tab" aria-selected="false">Homebrew</button>
+            </div>
+            <a class="install-view method active" data-method="mac-script" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.sh" target="_blank" rel="noopener noreferrer">Посмотреть скрипт установки <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">О Homebrew-пакете <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <p class="install-note method active" data-method="mac-script">
+            Добавляет бинарник последнего релиза в PATH и создаёт <code>~/.coddy/config.yaml</code> на основе примера, если файла ещё нет.
+          </p>
+          <p class="install-note method" data-method="mac-brew">
+            Каждый релиз публикует Homebrew-пакет вместе с архивами. Он добавляет <code>man coddy</code> и автодополнение команд, а <code>coddy update</code> передаёт обновление команде <code>brew upgrade --cask coddy</code>. Если macOS блокирует первый запуск, снимите флаг карантина командой <code>xattr -d com.apple.quarantine "$(which coddy)"</code>.
+          </p>
+        </div>
+
+        <div class="code-wrap" id="panel-win" role="tabpanel" aria-labelledby="tab-win">
+          <div class="method active">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-win" aria-label="Копировать команду установки">Копировать</button>
+              <pre><code id="cmd-win"><span class="cmd">irm https://coddy.dev/install.ps1 | iex</span></code></pre>
+            </div>
+          </div>
+          <div class="install-bar">
+            <a class="install-view" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.ps1" target="_blank" rel="noopener noreferrer">Посмотреть скрипт установки <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <p class="install-note active">
+            Запустите команду в PowerShell. Она добавит бинарник последнего релиза в PATH и создаст <code>~/.coddy/config.yaml</code> на основе примера, если файла ещё нет.
+          </p>
+        </div>
+
+        <div class="code-wrap" id="panel-docker" role="tabpanel" aria-labelledby="tab-docker">
+          <div class="method active" data-method="docker-run">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-docker" aria-label="Копировать команду Docker">Копировать</button>
+              <pre><code id="cmd-docker"><span class="cmd">docker run -d --name coddy \</span>
+  -p 12345:12345 \
+  -e OPENAI_API_KEY \
+  -v "$PWD/workspace:/workspace" \
+  -v "$PWD/coddy_home:/home/user/.coddy" \
+  ghcr.io/coddy-project/coddy-agent:latest</code></pre>
+            </div>
+          </div>
+          <div class="method" data-method="docker-compose">
+            <div class="install-code">
+              <button type="button" class="install-copy" data-copy-for="cmd-compose" aria-label="Копировать Compose-файл">Копировать</button>
+              <pre><code id="cmd-compose">services:
+  coddy:
+    image: ghcr.io/coddy-project/coddy-agent:latest
+    command: serve -H 0.0.0.0 -P 12345
+    ports:
+      - "12345:12345"
+    working_dir: /workspace
+    environment:
+      CODDY_HOME: /home/user/.coddy
+      CODDY_CWD: /workspace
+      CODDY_CONFIG: /home/user/.coddy/config.yaml
+      OPENAI_API_KEY: ${OPENAI_API_KEY-}
+    volumes:
+      - ./workspace:/workspace
+      - ./coddy_home:/home/user/.coddy
+    healthcheck:
+      test: ["CMD", "/bin/coddy", "--version"]
+      interval: 5s
+      timeout: 3s
+      retries: 20</code></pre>
+            </div>
+          </div>
+          <div class="install-bar">
+            <div class="methods" role="tablist" aria-label="Способ установки Docker">
+              <button type="button" class="method-tab active" data-method="docker-run" role="tab" aria-selected="true">docker run</button>
+              <button type="button" class="method-tab" data-method="docker-compose" role="tab" aria-selected="false">Compose</button>
+            </div>
+            <a class="install-view method active" data-method="docker-run" href="https://coddy.dev/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">Руководство по Docker <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="docker-compose" href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.yml" target="_blank" rel="noopener noreferrer">Compose-файл в репозитории <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <p class="install-note method active" data-method="docker-run">
+            Открывает веб-интерфейс по адресу <a href="http://localhost:12345" target="_blank" rel="noopener noreferrer">localhost:12345</a>. Агент работает в подключённом каталоге <code>/workspace</code>; сессии, навыки и конфигурация находятся во втором томе. Образ собирается для <code>amd64</code> и <code>arm64</code> и публикуется в GitHub Container Registry — для загрузки вход не нужен. Вместо <code>latest</code>можно закрепить версию релиза, например <code>ghcr.io/coddy-project/coddy-agent:<span class="pkg-version">X.Y.Z</span></code>.
+          </p>
+          <p class="install-note method" data-method="docker-compose">
+            Сохраните файл как <code>docker-compose.yaml</code> и выполните <code>docker compose up -d</code>. В репозитории есть: <a href="https://github.com/coddy-project/coddy-agent/blob/main/Dockerfile" target="_blank" rel="noopener noreferrer">Dockerfile</a>, <a href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.yml" target="_blank" rel="noopener noreferrer">docker-compose.yml</a> для опубликованного образа и <a href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.dev.yml" target="_blank" rel="noopener noreferrer">docker-compose.dev.yml</a> для сборки из исходников со своими тегами.
+          </p>
+        </div>
+
+        <div class="install-next" id="install-next">
+          <p class="install-next-title">Затем укажите ключ провайдера в <code>~/.coddy/config.yaml</code> и выполните</p>
+          <dl class="install-cmds">
+            <dt><code>coddy</code></dt>
+            <dd>терминальную консоль</dd>
+            <dt><code>coddy serve</code></dt>
+            <dd>веб-интерфейс</dd>
+            <dt><code>coddy acp</code></dt>
+            <dd>клиент редактора по ACP</dd>
+            <dt><code>coddy update -y</code></dt>
+            <dd>обновление в будущем</dd>
+          </dl>
+        </div>
+      </div>
+      <p class="hint install-alt">
+        Другие способы установки и подробности:
+        <a href="https://coddy.dev/docs/getting-started/install" target="_blank" rel="noopener noreferrer">docs/install.md</a>
+        · Установка Homebrew по имени пока готовится, см.
+        <a href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">docs/homebrew.md</a>
+      </p>
+    </section>
+
+    <section id="demos">
+      <h2>Посмотрите, как это работает</h2>
+      <div class="glass showcase">
+        <div class="showcase-tabs" role="tablist" aria-label="Интерфейсы Coddy">
+          <button type="button" class="showcase-tab active" role="tab" aria-selected="true" aria-controls="shot-webui" id="tab-webui" data-shot="shot-webui">Веб-интерфейс</button>
+          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-terminal" id="tab-terminal" data-shot="shot-terminal">Терминал</button>
+          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-acp" id="tab-acp" data-shot="shot-acp">Редактор (ACP)</button>
+        </div>
+
+        <div class="showcase-panel" id="shot-webui" role="tabpanel" aria-labelledby="tab-webui" tabindex="0">
+          <button
+            type="button"
+            class="demo-player"
+            data-video="/assets/demo/coddy-webui-demo.mp4"
+            aria-label="Воспроизвести демо веб-интерфейса Coddy, 2:22"
+          >
+            <img src="/assets/demo/poster-webui.jpg" width="1280" height="720" alt="Coddy web UI start screen with the model menu open" loading="eager" fetchpriority="high" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">2:22</span>
+          </button>
+          <p class="showcase-caption">
+            Тот же агент, запущенный через <code>coddy serve</code>: потоковый вывод вызовов инструментов, запрос разрешения с настоящим diff, история сессий, семь тем и переключатель окружения для подключения к удалённому серверу.
+          </p>
+        </div>
+
+        <div class="showcase-panel" id="shot-terminal" role="tabpanel" aria-labelledby="tab-terminal" tabindex="0" hidden>
+          <button
+            type="button"
+            class="demo-player"
+            data-video="/assets/demo/coddy-tui-demo.mp4"
+            aria-label="Воспроизвести демо терминальной консоли Coddy, 3:46"
+          >
+            <img src="/assets/demo/poster-tui.jpg" width="1280" height="720" alt="Coddy console TUI with the model selector open" loading="lazy" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">3:46</span>
+          </button>
+          <p class="showcase-caption">
+            Обычный запуск <code>coddy</code> в терминале: выберите модель через <code>Ctrl+L</code>, подтверждайте правки и команды во время работы агента, возобновляйте сессию через <code>coddy -c</code>, подключайтесь к удалённому серверу через <code>--remote</code>.
+          </p>
+        </div>
+
+        <div class="showcase-panel" id="shot-acp" role="tabpanel" aria-labelledby="tab-acp" tabindex="0" hidden>
+          <button
+            type="button"
+            class="demo-player"
+            data-video="/assets/demo/coddy-zed-acp-demo.mp4"
+            aria-label="Воспроизвести демо Coddy в Zed через ACP, 2:57"
+          >
+            <img src="/assets/demo/poster-zed.jpg" width="1280" height="720" alt="Zed with the Coddy thread open in the agent panel" loading="lazy" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">2:57</span>
+          </button>
+          <p class="showcase-caption">
+            Zed запускает <code>coddy acp</code> для рабочего каталога. Режимы, модели и политика разрешений Coddy отображаются в панели агента редактора, а навыки доступны как слеш-команды. Достаточно одной записи в
+            <code>settings.json</code>:
+          </p>
+          <pre class="showcase-code"><code>"agent_servers": {
+  "Coddy": { "type": "custom", "command": "coddy", "args": ["acp"] }
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <h2>Что такое Coddy</h2>
+      <p>
+        Coddy начинался как агент для программирования и вырос в <strong>универсальную платформу для агентов</strong>: правила и навыки в стиле Cursor на диске, режимы <code>agent</code>, <code>plan</code> и <code>ask</code> , разрешения инструментов, потоковый вывод и сессии, которые можно продолжить из терминала, IDE, браузера, Telegram или автоматизации. Один и тот же каталог <code>$CODDY_HOME</code> используется независимо от интерфейса.
+      </p>
+      <p>
+        Разверните один бинарник в образе <strong>distroless</strong> или <strong>с нуля</strong> или запустите
+        <strong>группу контейнеров</strong> под управлением оркестратора, задающего CPU, память и тома: отдельный агент для каждой задачи, полный контроль над каждым экземпляром и один ретранслятор, связывающий все узлы.
+      </p>
+    </section>
+
+    <section id="features">
+      <h2>Возможности</h2>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Основа агента</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/contributing/react-agent" target="_blank" rel="noopener noreferrer">
+            <h4>Цикл ReAct</h4>
+            <p>Рассуждения, вызовы инструментов и наблюдения в цикле; защита останавливает повторяющийся вывод и одинаковые вызовы инструментов.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/subagents" target="_blank" rel="noopener noreferrer">
+            <h4>Субагенты</h4>
+            <p><code>spawn_agent</code> передаёт ограниченную задачу дочернему агенту с отдельным контекстом и сессией. Определения в Markdown могут только сужать доступ к инструментам родителя.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/hooks" target="_blank" rel="noopener noreferrer">
+            <h4>Хуки</h4>
+            <p>Ваши команды на каждом этапе жизненного цикла в формате Claude Code <code>hooks.json</code> . Хук может отклонить, разрешить или изменить вызов инструмента до его выполнения.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/background-tasks" target="_blank" rel="noopener noreferrer">
+            <h4>Фоновые задачи</h4>
+            <p>Долгие команды запускаются в фоне через <code>background: true</code>. Панель задач отслеживает их относительно оценки модели; агент забирает результат позже.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/compaction" target="_blank" rel="noopener noreferrer">
+            <h4>Сжатие контекста</h4>
+            <p><code>/compact</code> и автоматическое резюмирование при заполнении контекста. Последние сообщения сохраняются без изменений, а полная история остаётся на диске.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/memory" target="_blank" rel="noopener noreferrer">
+            <h4>Долговременная память</h4>
+            <p>Необязательный помощник по памяти извлекает сведения из прошлых сессий; HTTP API предоставляет маршруты памяти для каждой сессии.</p>
+          </a>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Где работать с агентом</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
+            <h4>Консоль</h4>
+            <p>Обычный запуск <code>coddy</code> в терминале: потоковая история, блоки инструментов, окна разрешений, <code>!!</code> для локальной оболочки, недоступной модели, <code>coddy -c</code> для продолжения сессии, <code>coddy -p</code> для однократного вывода.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
+            <h4>Веб-интерфейс</h4>
+            <p>Встроенное SPA по адресу <code>/</code> с <code>http,ui</code> тегами. Чат, сессии, планы, панели задач и планировщика, карта узлов и настройки в реальном времени.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/acp-protocol" target="_blank" rel="noopener noreferrer">
+            <h4>ACP</h4>
+            <p><code>coddy acp</code> через stdio: сессии, режимы, разрешения и потоковые обновления для Zed, Obsidian, VS Code или вашего скрипта.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/http-api" target="_blank" rel="noopener noreferrer">
+            <h4>HTTP API</h4>
+            <p>Совместимый с OpenAI шлюз по адресу <code>coddy serve</code>. <code>POST /v1/responses</code>, модели, Swagger по адресу <code>/docs/</code>.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/gateway" target="_blank" rel="noopener noreferrer">
+            <h4>Шлюз Telegram</h4>
+            <p>Адаптер бота с отдельными сессиями для пользователей, режимами изоляции групп, списком прав администратора и форматированными сообщениями. Можно расширить на другие мессенджеры.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/sessions" target="_blank" rel="noopener noreferrer">
+            <h4>Сессии</h4>
+            <p>Наборы данных на диске в <code>$CODDY_HOME</code>, доступные из любого интерфейса. Отредактируйте сообщение, чтобы создать ветку диалога; экспортируйте <code>/export</code> в Markdown, HTML или JSON.</p>
+          </a>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Управление</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/serve" target="_blank" rel="noopener noreferrer">
+            <h4>coddy serve</h4>
+            <p>Один процесс для всех подсистем, которые <code>config.yaml</code> включает. <code>--daemon</code> оставляет его работать в фоне через <code>status</code>, <code>stop</code> и <code>restart</code>; изменения конфигурации применяются без перезапуска.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/swarm" target="_blank" rel="noopener noreferrer">
+            <h4>Рой узлов</h4>
+            <p>Ретранслятор связывает несколько узлов, собирает их сессии в общий список и маршрутизирует запросы между кольцами. Узлы, способные только к исходящему соединению, подключаются через обратный туннель.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/remote" target="_blank" rel="noopener noreferrer">
+            <h4>Удалённое управление</h4>
+            <p>Подключите консоль или <code>coddy acp</code> к работающему серверу через <code>--remote</code>или переключите веб-интерфейс между локальным и удалённым сервером в поле ввода.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/scheduler" target="_blank" rel="noopener noreferrer">
+            <h4>Планировщик</h4>
+            <p>Задачи cron с панелью управления и инструментами агента: повторяющаяся работа запускается без открытой сессии.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
+            <h4>Проверка конфигурации и пробный запуск</h4>
+            <p><code>coddy -t</code> проверяет <code>config.yaml</code> по встроенной схеме с <code>file:line:col</code> и подсказкой для исправления. <code>--dry-run</code> проверяет пути, провайдеров, модели, порты, MCP-серверы и удалённые подключения до запуска.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">
+            <h4>Docker и distroless</h4>
+            <p>Образы публикуются в <code>ghcr.io</code> для amd64 и arm64. Статический бинарник также можно поместить в минимальный образ с файловой системой только для чтения.</p>
+          </a>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Контекст проекта и контроль</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/rules" target="_blank" rel="noopener noreferrer">
+            <h4>Правила</h4>
+            <p>Автоматически находит <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.agents/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>и вложенные <code>AGENTS.md</code> внутри рабочего каталога сессии.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/skills" target="_blank" rel="noopener noreferrer">
+            <h4>Навыки</h4>
+            <p>Слеш-команды из <code>SKILL.md</code> наборов в <code>skills.dirs</code>. Устанавливайте из каталогов через <code>npx skills</code> или в меню «Настройки → Навыки».</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/mcp" target="_blank" rel="noopener noreferrer">
+            <h4>MCP-серверы</h4>
+            <p>Подключайте MCP-серверы через stdio, потоковый HTTP и SSE из конфигурации, <code>mcp.json</code> файлов или редактора. Их инструменты доступны агенту и режиму планирования.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/modes" target="_blank" rel="noopener noreferrer">
+            <h4>Три режима</h4>
+            <p><code>agent</code> использует все инструменты, <code>plan</code> создаёт только планы, <code>ask</code> ищет информацию в режиме только для чтения с веб-поиском.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/security" target="_blank" rel="noopener noreferrer">
+            <h4>Разрешения и доверие</h4>
+            <p>Правки и команды запрашивают разрешение перед выполнением; его можно выдать для всей программы. MCP-серверы, хуки и файлы субагентов из проекта также требуют явного подтверждения.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/config#agent-self-configuration" target="_blank" rel="noopener noreferrer">
+            <h4>Самонастройка</h4>
+            <p>Агент редактирует собственный YAML через подготовленные команды <code>config_set</code> . Изменения вступают в силу только после подтверждённого вами коммита, проверки и перезагрузки конфигурации.</p>
+          </a>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <h3 class="feature-group-title">Модели, инструменты и внешний вид</h3>
+        <div class="features">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
+            <h4>Любой провайдер</h4>
+            <p>OpenAI, Anthropic, Ollama, NeuralDeep, любой API, совместимый с OpenAI, и вход через ChatGPT с помощью Codex backend. Ваши ключи и адреса серверов.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#per-session-reasoning-level" target="_blank" rel="noopener noreferrer">
+            <h4>Уровни рассуждения</h4>
+            <p>В поле ввода можно выбрать усилие для рассуждающих моделей, соответствующее параметру OpenAI <code>reasoning_effort</code> или бюджету рассуждений Anthropic.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
+            <h4>Мультимодальность</h4>
+            <p>Прикрепляйте изображения и файлы, если модель их поддерживает. Они сохраняются в каталоге сессии и добавляются в контекст агента.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
+            <h4>Расход и лимиты</h4>
+            <p>Квота текущей модели отображается внизу консоли и в веб-интерфейсе, если провайдер её сообщает. При достижении лимита запрос может дождаться сброса и продолжиться автоматически.</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration#ssh-remote-execution" target="_blank" rel="noopener noreferrer">
+            <h4>Команды SSH</h4>
+            <p><code>ssh_run_command</code> подключается к удалённым хостам по SSH на Go, используя SSH-агент или ключи <code>~/.ssh</code> .</p>
+          </a>
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
+            <h4>Темы и язык</h4>
+            <p>Семь тем веб-интерфейса и переключение между английским и русским языками в настройках внешнего вида без изменения конфигурации.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="compare">
+      <h2>Сравнение Coddy</h2>
+      <div class="glass compare-teaser">
+        <h3>Coddy и другие агентные среды в 2026 году</h3>
+        <p>
+          Сравнение двадцати агентных сред по состоянию на сентябрь 2026 года: Claude Code, Codex CLI, OpenCode, Pi, OMP, DeepSeek Harness, OpenClaw, Hermes, Goose, Aider, Cline, OpenHands, Crush, Reasonix, CodeWhale, Grok Build, Antigravity CLI, Koda, Drift и Coddy. Рассмотрены установка, интерфейсы, расширяемость, работа с контекстом и модель доверия.
+        </p>
+        <ul>
+          <li><b>Шесть из двадцати</b> поставляются одним статическим файлом без среды выполнения. Только Coddy включает в тот же файл веб-интерфейс, планировщик, память и шлюз мессенджера.</li>
+          <li><b>Никто другой</b> из списка не позволяет агенту готовить изменения собственного YAML с проверкой, снимком и откатом.</li>
+          <li><b>Где Coddy уступает:</b> нет изоляции на уровне ядра, как в Codex CLI, нет LSP или DAP, как в OMP, и нет снимков рабочего каталога, как в Reasonix.</li>
+        </ul>
+        <p>
+          <a href="/ru/compare/">Читайте полное сравнение с пятью таблицами</a>
+        </p>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>Вопросы</h2>
+      <div class="faq-list">
+        <div class="faq-item">
+          <h3>Что такое Coddy Agent?</h3>
+          <p>Coddy Agent — универсальный ИИ-агент с открытым исходным кодом под лицензией MIT, поставляемый одним статическим Go-бинарником. Он выполняет цикл ReAct с инструментами для файлов и командной строки, MCP-серверами, правилами проекта, навыками, субагентами, хуками, фоновыми задачами, планировщиком cron и долговременной памятью. Один и тот же агент доступен через терминал, браузер, редактор по ACP или Telegram, на одном компьютере или в группе узлов.</p>
+        </div>
+        <div class="faq-item">
+          <h3>С какими провайдерами и моделями работает Coddy?</h3>
+          <p>Любой API, совместимый с OpenAI, а также Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep или ваш собственный шлюз, с вашими ключами и адресами серверов. Вход через ChatGPT работает через Codex backend. Модели задаются в <code>config.yaml</code> и переключаются для каждой сессии.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Как установить Coddy?</h3>
+          <p>Linux и macOS: <code>curl -fsSL https://coddy.dev/install.sh | bash</code>. Windows: <code>irm https://coddy.dev/install.ps1 | iex</code>. Скрипт скачивает бинарник последнего релиза, добавляет его в PATH и создаёт <code>~/.coddy/config.yaml</code> на основе примера. В Linux также можно установить пакет <code>.deb</code> или <code>.rpm</code> , публикуемый с каждым релизом (<code>apt-get install ./coddy_X.Y.Z_linux_amd64.deb</code>, <code>dnf install ./coddy_X.Y.Z_linux_amd64.rpm</code>), а в macOS — Homebrew-пакет непосредственно из релиза (<code>brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code>). Оба способа регистрируют Coddy в пакетном менеджере и добавляют man-страницу и автодополнение. Docker: <code>docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -v "$PWD/workspace:/workspace" -v "$PWD/coddy_home:/home/user/.coddy" ghcr.io/coddy-project/coddy-agent:latest</code> открывает веб-интерфейс по адресу <code>localhost:12345</code>; на вкладке Docker также есть <code>docker-compose.yaml</code> для копирования. Многоархитектурные образы (amd64, arm64) опубликованы в GitHub Container Registry. <code>coddy update -y</code> обновляет существующую установку.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Можно ли запускать Coddy локально с локальными моделями?</h3>
+          <p>Да. Укажите для модели локальный сервер, совместимый с OpenAI, например Ollama, llama.cpp или vLLM: запросы не покинут вашу сеть. Статический бинарник работает и в контейнерах distroless или минимальных образах с файловой системой только для чтения — по одному агенту на задачу.</p>
+        </div>
+        <div class="faq-item">
+          <h3>В каких редакторах и клиентах работает Coddy?</h3>
+          <p><code>coddy acp</code> использует Agent Client Protocol через stdio, поэтому Zed, Obsidian, VS Code или ваш скрипт получают сессии, режимы, разрешения, потоковые обновления и навыки как слеш-команды. <code>coddy serve</code> запускает остальные компоненты в одном процессе: REST API, совместимый с OpenAI, встроенный веб-интерфейс, шлюз Telegram, ретранслятор узлов и планировщик cron. Он включает те из них, которые разрешены в <code>config.yaml</code> . Они используют общие сессии, поэтому разговор, начатый в чате, виден в веб-интерфейсе и может быть продолжен там или в чате.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Как запустить Coddy на нескольких компьютерах?</h3>
+          <p>Запустите <code>coddy serve</code> на каждом компьютере и включите ретранслятор узлов на одном из них: он объединит сессии, будет маршрутизировать запросы и подключит узлы, доступные только через исходящее соединение, по обратному туннелю. Консоль, <code>coddy acp</code>и веб-интерфейс также могут работать с отдельным удалённым сервером через <code>--remote</code>и <code>coddy serve --daemon</code> оставляет сервер работать в фоне через <code>status</code>, <code>stop</code>и <code>restart</code>.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Чем Coddy отличается от других агентов для программирования?</h3>
+          <p>Coddy не привязан к провайдеру и рассчитан на собственный сервер: один бинарник под лицензией MIT без зависимостей от среды выполнения, ваши ключи или локальные модели и общие сессии для терминала, веб-интерфейса, редактора, Telegram и планировщика. Он читает правила и навыки в стиле Cursor, а также <code>AGENTS.md</code> из репозитория, поэтому подходит проектам, уже настроенным для других агентов. Сравнение с девятнадцатью другими платформами опубликовано по адресу <a href="/ru/compare/">coddy.dev/compare/</a>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="shell-width">
+      <p class="footer-links">
+        <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Документация</a>
+        <a href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Релизы</a>
+        <a href="https://github.com/coddy-project/coddy-agent/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Лицензия MIT</a>
+        <a href="/llms.txt">llms.txt</a>
+      </p>
+      <p>
+        Coddy Project ·
+        <a href="https://github.com/coddy-project" target="_blank" rel="noopener noreferrer">github.com/coddy-project</a>
+      </p>
+    </div>
+  </footer>
+  <script>
+    (function () {
+      function wireTablist(tabs, activate) {
+        tabs.forEach(function (btn, index) {
+          btn.addEventListener("click", function () {
+            activate(btn);
+          });
+          btn.addEventListener("keydown", function (e) {
+            var step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+            if (!step) return;
+            e.preventDefault();
+            var next = tabs[(index + step + tabs.length) % tabs.length];
+            activate(next);
+            next.focus();
+          });
+        });
+      }
+
+      var installTabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+      var installPanels = {};
+      installTabs.forEach(function (t) {
+        var id = t.getAttribute("data-tab");
+        installPanels[id] = document.getElementById("panel-" + id);
+      });
+      function activateInstallTab(btn) {
+        var id = btn.getAttribute("data-tab");
+        installTabs.forEach(function (t) {
+          var on = t === btn;
+          t.classList.toggle("active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        Object.keys(installPanels).forEach(function (k) {
+          installPanels[k].classList.toggle("active", k === id);
+        });
+        // The "then run" block describes the installed binary; the container
+        // already runs `coddy serve`, so the Docker tab hides it.
+        var installNext = document.getElementById("install-next");
+        if (installNext) installNext.hidden = id === "docker";
+      }
+      wireTablist(installTabs, activateInstallTab);
+
+      // Open the tab for the visitor's own platform. The markup ships with
+      // Linux selected, which is also the answer when nothing matches.
+      function detectInstallTab() {
+        var hints = [
+          navigator.userAgentData && navigator.userAgentData.platform,
+          navigator.platform,
+          navigator.userAgent,
+        ].filter(Boolean).join(" ");
+        if (/mac|iphone|ipad/i.test(hints)) return "mac";
+        if (/windows|win32|win64/i.test(hints)) return "win";
+        return "linux";
+      }
+      var detectedTab = document.getElementById("tab-" + detectInstallTab());
+      if (detectedTab && !detectedTab.classList.contains("active")) activateInstallTab(detectedTab);
+
+      // Inside a platform panel the segmented control under the command
+      // swaps the command block and its note: every element carrying
+      // data-method in that panel follows the selected tab.
+      Array.prototype.slice.call(document.querySelectorAll(".methods")).forEach(function (group) {
+        var panel = group.closest(".code-wrap");
+        var methodTabs = Array.prototype.slice.call(group.querySelectorAll(".method-tab"));
+        wireTablist(methodTabs, function (btn) {
+          var id = btn.getAttribute("data-method");
+          methodTabs.forEach(function (t) {
+            var on = t === btn;
+            t.classList.toggle("active", on);
+            t.setAttribute("aria-selected", on ? "true" : "false");
+          });
+          Array.prototype.slice.call(panel.querySelectorAll(".method")).forEach(function (el) {
+            el.classList.toggle("active", el.getAttribute("data-method") === id);
+          });
+        });
+      });
+
+      var showcaseTabs = Array.prototype.slice.call(document.querySelectorAll(".showcase-tab"));
+      wireTablist(showcaseTabs, function (btn) {
+        var id = btn.getAttribute("data-shot");
+        showcaseTabs.forEach(function (t) {
+          var on = t === btn;
+          t.classList.toggle("active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+          t.tabIndex = on ? 0 : -1;
+          var panel = document.getElementById(t.getAttribute("data-shot"));
+          if (!panel) return;
+          if (!on) {
+            var playing = panel.querySelector("video");
+            if (playing && !playing.paused) playing.pause();
+          }
+          panel.hidden = !on;
+        });
+        void id;
+      });
+
+      function copyInstallText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text);
+        }
+        return new Promise(function (resolve, reject) {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          try {
+            document.execCommand("copy") ? resolve() : reject();
+          } catch (e) {
+            reject(e);
+          } finally {
+            document.body.removeChild(ta);
+          }
+        });
+      }
+
+      document.querySelectorAll(".demo-player").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          if (btn.dataset.loaded) return;
+          btn.dataset.loaded = "1";
+          var poster = btn.querySelector("img");
+          var video = document.createElement("video");
+          video.className = "demo-video";
+          video.controls = true;
+          video.autoplay = true;
+          video.playsInline = true;
+          video.setAttribute("playsinline", "");
+          video.preload = "auto";
+          if (poster) video.poster = poster.currentSrc || poster.src;
+          video.src = btn.getAttribute("data-video");
+          btn.replaceWith(video);
+          var p = video.play();
+          if (p && p.catch) p.catch(function () {});
+        });
+      });
+
+      document.querySelectorAll(".install-copy").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var id = btn.getAttribute("data-copy-for");
+          var code = id ? document.getElementById(id) : null;
+          var text = code ? code.textContent.replace(/\s+$/, "") : "";
+          if (!text) return;
+          copyInstallText(text)
+            .then(function () {
+              btn.textContent = "Скопировано";
+              btn.classList.add("install-copy--done");
+              window.setTimeout(function () {
+                btn.textContent = "Копировать";
+                btn.classList.remove("install-copy--done");
+              }, 900);
+            })
+            .catch(function () {});
+        });
+      });
+    })();
+  </script>
+  <script src="/nav.js?v=3" defer></script>
+</body>
+</html>
