@@ -685,8 +685,8 @@ prompts:
   # Built-in templates order: Tools, Skills, Memory (session notes).
   # They deliberately render neither {{.TodoList}} nor {{.UTCNow}}: both move between the steps of a
   # turn, and the system prompt is what the provider's prompt cache keys the whole conversation on.
-  # Coddy sends the clock, the checklist and the rules a tool call activated after the history instead,
-  # in a <turn_context> block. Your own template may still render them, at the cost of that cache.
+  # Coddy sends the clock and the checklist after the history instead, in a <turn_context> block,
+  # and a rule a tool call activates rides in that call's result. Your own template may still render them, at the cost of that cache.
   # See docs/contributing/react-agent.md (The turn context block).
   dir: ""
   agent_prompt: "agent.md"     # optional; default agent.md
@@ -748,12 +748,16 @@ skills:
     - "${CWD}/.coddy/skills"
 
 # Rules (Go: config.Rules, internal/config/rules.go)
-# Discovered from .coddy/rules, the shared .agents/rules, .cursor/rules,
-# .claude/rules, .codex/rules, and nested **/AGENTS.md under session CWD, plus
-# your own ~/.coddy/rules, which applies in every workspace. Your own
+# One project folder is read under the session CWD: the first of .coddy/rules,
+# the shared .agents/rules, .cursor/rules, .claude/rules and .codex/rules that
+# holds a rule file, so another agent's mirror of the same rules is not loaded
+# twice. Your own ~/.coddy/rules joins it in every workspace, and nested
+# **/AGENTS.md are read for the folders a tool enters. Your own
 # ~/.coddy/AGENTS.md is read too, ahead of the project's, and has no key here.
 # .mdc files are read as Cursor rules, .md files as Claude Code rules.
-# Injected into {{.Rules}} in the system prompt (separate from skills). See docs/features/rules.md.
+# The rules that always apply go into {{.Rules}} in the system prompt (separate
+# from skills); a rule scoped to paths arrives with the tool result or message
+# that touches a matching path. See docs/features/rules.md.
 rules:
   auto_discover: true
   systems: []   # optional: user, coddy, agents-dir, cursor, claude, codex, agents
@@ -8320,7 +8324,7 @@ Coddy reads standing instructions from two places and injects them into the syst
 - The **workspace**: the rule folders of the session working directory and its `AGENTS.md`, which travel with the checkout and apply to whoever opens it;
 - your **agent home** (`~/.coddy`): `AGENTS.md`, `DESIGN.md` and `rules/` next to `config.yaml`, which belong to the person running Coddy and apply in every workspace.
 
-Nothing has to be configured for either: both `AGENTS.md` files and every rule folder reach the model through **`{{.Rules}}`**, yours first. **`{{.Instructions}}`** carries whatever else `instructions.files` names.
+Nothing has to be configured for either: both `AGENTS.md` files and the rules that always apply reach the model through **`{{.Rules}}`**, yours first, and a rule scoped to paths arrives with the tool result or the message that first touches a matching path. **`{{.Instructions}}`** carries whatever else `instructions.files` names.
 
 ## Prompt order
 
@@ -8329,48 +8333,76 @@ From top to bottom in the rendered system message:
 1. Tools
 2. Skills
 3. Plan context (mode-dependent)
-4. **Rules** (project docs + active rules)
+4. **Rules** (project docs + the rules that always apply)
 5. Session memory
 
-A rule a **tool call** activated mid-turn does not rewrite that message: it would throw away the
-provider's cached copy of the whole conversation behind it. It arrives after the history instead, in
-the `<turn_context>` block that also carries the clock and the todo checklist, and the next turn's
-system prompt picks it up from the sticky set. See *The turn context block* in
-[react-agent.md](../contributing/react-agent.md).
+### Rules and the prompt cache
 
-A rule a **mention** brings never enters the system message at all. A mention-only rule the user
-names, and a path-gated rule or a nested `AGENTS.md` that a mentioned file or folder activates, ride
-in the user's message as attachments (`kind="rule"`), and while that message is in the model's view
-the `{{.Rules}}` block leaves them out; a compaction that folds the message into its summary brings
-them back through the sticky set. See [Mentions](mentions.md#mentions-and-the-prompt-cache).
+A provider caches a request by its prefix, and the system message opens every request: one byte that
+changes there throws away the cached copy of the whole conversation behind it. So the rules block of
+the system message holds only what does not depend on what the session touches - the `AGENTS.md` and
+`DESIGN.md` pairs and the rules that always apply - and it is rendered **once**, when the session
+starts, then reused by every turn byte for byte. An `AGENTS.md` edited during the session, by the
+agent or by you, does not move it either: the block is read again after a
+[compaction](compaction.md), which rewrites the cached history anyway, after a config reload or a
+workspace switch, and when a session is opened in a new process. To hand the model an edited file
+right away, mention it: `@AGENTS.md` attaches its current text to your message, later in the
+conversation than the older text the system message keeps until the next generation.
+
+A rule scoped to paths never enters the system message. It rides in the conversation, where the
+conversation already grows, and costs its own length once:
+
+- a **tool call** that reads or writes a matching file brings it in the **result of that call**, after
+  the output, under a one-line lead; a nested `AGENTS.md` comes the same way with the call that
+  enters its folder;
+- a **mention** brings it in the **user's message** as an attachment (`kind="rule"`): a mention-only
+  rule the user names, and a path-gated rule or a nested `AGENTS.md` that a mentioned file or folder
+  activates. See [Mentions](mentions.md#mentions-and-the-prompt-cache).
+
+Either way it arrives **once**: while an earlier result or message that carries it with the same
+text is still sent to the model, a later match attaches nothing. When a compaction folds that result
+or message into its summary, or the rule's file has changed since, the next tool call or mention
+that matches brings the rule again, with its current text. A call that reads or writes a rule
+document itself - `read internal/api/AGENTS.md`, an edit of `.cursor/rules/go.mdc` - does not get
+that document back as a rule: the output already carries its text, or the model is writing it. The
+result shown in the web UI, the console and an editor is the tool's own output; the rules travel with
+it only to the model.
 
 ## Discovery
 
-When `rules.auto_discover` is true (default), Coddy scans:
+When `rules.auto_discover` is true (default), Coddy reads your own folder and **one** project folder:
 
 | System | Path | Notes |
 |--------|------|-------|
-| `user` | `~/.coddy/rules/` | **Yours**, not the project's: read in every workspace, never part of a checkout. Lowest precedence, so a project file of the same name overrides it |
-| `coddy` | `.coddy/rules/` | Coddy's own folder |
+| `user` | `~/.coddy/rules/` | **Yours**, not the project's: read in every workspace, never part of a checkout. A project rule of the same file name overrides it |
+| `coddy` | `.coddy/rules/` | Coddy's own folder, the first project folder looked at |
 | `agents-dir` | `.agents/rules/` | The tool-neutral `.agents/` tree, next to `.agents/skills`: rules meant for every agent that works on the project |
-| `cursor` | `.cursor/rules/` | |
-| `claude` | `.claude/rules/` | |
-| `codex` | `.codex/rules/` | Markdown only in v1; Codex's own `*.rules` policy files are not prompt rules |
+| `cursor` | `.cursor/rules/` | Cursor's folder, in the `.mdc` dialect Coddy's own rules are written in |
+| `claude` | `.claude/rules/` | Claude Code's folder |
+| `codex` | `.codex/rules/` | Last; Codex keeps its `*.rules` command policy here, which is not a prompt rule, so only `.md` and `.mdc` files count |
 | `agents` | nested `**/AGENTS.md` and `**/DESIGN.md` | [agents.md](https://agents.md/) convention, plus the design note beside it; **read on demand**, only from the folders a tool enters, never walked (see Activation); hidden dirs, `node_modules`, `vendor` are not entered |
 
-Every markdown root is scanned recursively for `.md` and `.mdc` files; those roots are small rule folders, and nothing else of the workspace is read at session start. Duplicate rule files (same file name, extension included) resolve with precedence: **coddy > agents-dir > cursor > claude > codex > agents > user**. A project that keeps its rules in `.agents/rules/` therefore overrides tool-specific copies of the same file, and `.coddy/rules/` overrides everything. Nested documents are keyed by full path, so they never collapse into each other.
+The project folders form a chain, in the order of the table: Coddy reads the **first one that holds a rule file** and none after it. Every agent keeps its rules in a folder of its own, and a project that works with several of them keeps the same rules in each - `.cursor/rules/workflow.mdc` and its Claude Code mirror `.claude/rules/workflow.md` - so reading every folder would hand the model each rule twice. A project with `.coddy/rules/` is read from there alone; one that writes its rules for every agent in `.agents/rules/` is read from there; otherwise Coddy borrows Cursor's folder, and Claude Code's when there is no Cursor folder either. A folder with no `.md` or `.mdc` file in it - empty, or holding only Codex's `*.rules` - does not count, and the chain moves on.
 
-Nested `AGENTS.md` files are **read on demand**, the way Codex reads the `AGENTS.md` chain of the folder it works in, and a `DESIGN.md` beside one is read with it - a folder that describes itself is read whichever of the two it wrote, the same pair the workspace root and the agent home are read for. Nothing walks the tree to find them: the first time a filesystem tool call or an attached `file://` path targets a path, every such document on the chain of folders from the project root (exclusive) down to that path's directory is read and enters **`{{.Rules}}`** — then it **sticks** for the rest of the session. Reading `a/b/c/f.go` pulls in `a/AGENTS.md`, `a/b/AGENTS.md` and `a/b/c/AGENTS.md`, plus whichever of those folders also has a `DESIGN.md`; a sibling folder nobody enters is never opened, and a file written after the session started is picked up the moment a tool enters its folder. Hidden directories, `node_modules` and `vendor` end the chain. `run_command` does not activate anything: a shell string cannot be attributed to a directory reliably.
+Every folder read is scanned recursively for `.md` and `.mdc` files; those are small rule folders, and nothing else of the workspace is read at session start. Your own folder joins whichever project folder was read, and when a file name appears in both, the project's file wins. Nested documents are keyed by full path, so they never collapse into each other.
+
+Nested `AGENTS.md` files are **read on demand**, the way Codex reads the `AGENTS.md` chain of the folder it works in, and a `DESIGN.md` beside one is read with it - a folder that describes itself is read whichever of the two it wrote, the same pair the workspace root and the agent home are read for. Nothing walks the tree to find them: the first time a filesystem tool call or an attached `file://` path targets a path, every such document on the chain of folders from the project root (exclusive) down to that path's directory is read and arrives with that call's result, or in the message that attached the path. Reading `a/b/c/f.go` pulls in `a/AGENTS.md`, `a/b/AGENTS.md` and `a/b/c/AGENTS.md`, plus whichever of those folders also has a `DESIGN.md`; a sibling folder nobody enters is never opened, and a file written after the session started is picked up the moment a tool enters its folder. Hidden directories, `node_modules` and `vendor` end the chain. `run_command` does not activate anything: a shell string cannot be attributed to a directory reliably.
 
 This is what keeps a repo with vendored sibling checkouts usable — 45 nested files loaded unconditionally cost ~131k tokens of system prompt before the first question — and what keeps a session anchored on a home directory from stalling: a walk over `~` (a macOS home carries hundreds of thousands of entries under `~/Library` alone, read cold and behind folder-access prompts) once held the console before its first frame. Bodies over 256 KB are truncated, as with the project docs preamble.
 
 The **root** `AGENTS.md` is not part of this set — it already enters the prompt unconditionally as a project docs preamble (below).
 
-CLI: `coddy rules list [--cwd DIR]` prints the discovered catalog: the source folder (`SOURCE`), the dialect each file was read with (`FORMAT`), the activation mode (`APPLY`: `auto` or `mention`), whether the rule is in every prompt (`ALWAYS`: an auto rule with no patterns and no directory scope) and what activates the others (`ACTIVATES ON`). Nested `AGENTS.md` and `DESIGN.md` files are not in the table, since listing them would mean walking the workspace; a line under the table says they are read on demand from the folders a tool enters.
+CLI: `coddy rules list [--cwd DIR]` prints the discovered catalog: the source folder (`SOURCE`), the dialect each file was read with (`FORMAT`), the activation mode (`APPLY`: `auto` or `mention`), whether the rule is in every prompt (`ALWAYS`: an auto rule with no patterns and no directory scope) and what activates the others (`ACTIVATES ON`). Under the table, `Project rules folder:` names the folder the project rules came from, `Not read:` names the folders further down the chain that hold rules too - usually another agent's copy of the same rules - and `Only in a folder not read:` lists the files of those folders whose name the folder read has no file for, the rules a session goes without rather than mirrors of rules it has. `Could not read:` names a folder of the chain that exists and could not be read; the chain passed over it. Nested `AGENTS.md` and `DESIGN.md` files are not in the table, since listing them would mean walking the workspace; a line under the table says they are read on demand from the folders a tool enters.
+
+```text
+11 rule(s) under .
+Project rules folder: .cursor/rules
+Not read: .claude/rules (one project folder is read: the first of .coddy/rules, .agents/rules, .cursor/rules, .claude/rules, .codex/rules that holds a rule file)
+```
 
 ## Rule file formats
 
-The file extension selects the dialect a rule is read with. Both dialects are accepted in every root, so `.agents/rules/` can hold Cursor and Claude Code rules side by side and a file copied from `.cursor/rules/` or `.claude/rules/` keeps its meaning.
+The file extension selects the dialect a rule is read with. Both dialects are accepted in every folder, so `.agents/rules/` can hold Cursor and Claude Code rules side by side and a file copied from `.cursor/rules/` or `.claude/rules/` keeps its meaning.
 
 | Extension | Format | Frontmatter keys | Header without `alwaysApply` and without patterns |
 |-----------|--------|------------------|----------------------------------------------------|
@@ -8380,7 +8412,7 @@ The file extension selects the dialect a rule is read with. Both dialects are ac
 Shared by both dialects:
 
 - A file without frontmatter is active from the first turn.
-- Patterns (`globs` or `paths`; either key is accepted in either dialect) gate the rule: the body enters the prompt the first time a matching file comes into play, then sticks. This is Cursor's auto-attach and Claude Code's path scoping; Coddy applies the same gate to `alwaysApply: true` rules that carry patterns, to keep the prompt small.
+- Patterns (`globs` or `paths`; either key is accepted in either dialect) gate the rule: the body reaches the model the first time a matching file comes into play, with the tool result or the message that brought it. This is Cursor's auto-attach and Claude Code's path scoping; Coddy applies the same gate to `alwaysApply: true` rules that carry patterns, to keep the prompt small.
 - An explicit `alwaysApply` is the master switch for a header without patterns: `true` is active immediately, `false` is mention-only.
 - CRLF line endings, quoted or unquoted values, `[flow, lists]`, `- item` lists and trailing `# comments` are all read.
 
@@ -8413,6 +8445,9 @@ Patterns follow Cursor and Claude Code: `*` matches within one path segment, `**
 
 Rule files already on disk may change mode after this release; `coddy rules list` shows the result.
 
+- The rule folders of the project are no longer merged: only the first of `.coddy/rules`, `.agents/rules`, `.cursor/rules`, `.claude/rules` and `.codex/rules` that holds a rule file is read. A project that kept different rules in, say, `.cursor/rules` and `.claude/rules` now gets the Cursor ones alone; `coddy rules list` names the folder it skipped under the table. Put what Coddy should read in `.coddy/rules` or `.agents/rules`, or narrow the chain with `rules.systems`.
+- A rule gated by patterns, and a nested `AGENTS.md`, no longer move into the system prompt once they have matched: they arrive once with the tool result or the message that brought their path in, and again after a compaction.
+- `AGENTS.md`, `DESIGN.md` and the files of `instructions.files` are read when the session starts and after a compaction, a config reload or a workspace switch, not on every turn. Mention `@AGENTS.md` to hand the model an edit right away.
 - `alwaysApply: false` together with `globs` is auto-attached once a matching file is attached or read. Earlier releases kept such a rule mention-only. Drop the `globs` to keep a rule manual.
 - `.md` rules without `alwaysApply` follow Claude Code: unconditional without `paths`, path-gated with them. Earlier releases treated them as mention-only. Write `alwaysApply: false` to keep a `.md` rule manual.
 - A directory-less pattern such as `*.go` matches files in the project root only. Earlier releases matched it against the file name at any depth; write `**/*.go` for that.
@@ -8422,26 +8457,26 @@ Rule files already on disk may change mode after this release; `coddy rules list
 
 | Rule | Behavior |
 |------|----------|
-| Patterns (`globs` / `paths`), any `alwaysApply` | Active the first time a matching file comes into play, then **sticks** for the rest of the session. A filesystem tool call (`read`, `edit`, `grep`, ...) targeting a matching path puts the body in **`{{.Rules}}`**; a mentioned file or folder (`@src/app.go`, an editor's `file://` attachment) puts it in that user message instead |
+| Patterns (`globs` / `paths`), any `alwaysApply` | Arrives **once**, the first time a matching file comes into play: a filesystem tool call (`read`, `edit`, `write`, ...) that targets a matching file brings the body in its result, and a mentioned file or folder (`@src/app.go`, an editor's `file://` attachment) in that user message. A folder a call lists or searches (`grep`, `glob` over a directory) brings no glob rule; the call that reads or writes a matching file inside it does. After a compaction folds it away, or once its file has changed and been read again, the next match brings it again |
 | `alwaysApply: true` without patterns | Active immediately for the session |
 | `alwaysApply: false` without patterns | **Never** auto-included. Its body rides in the user message that names it: **`@ruleName`** or **`@rule:ruleName`** |
 | No `alwaysApply`, no patterns, `.mdc` | Mention-only (Cursor's default) |
 | No `alwaysApply`, no patterns, `.md` | Active immediately (Claude Code loads it unconditionally) |
 | No frontmatter | Active immediately |
-| Nested `AGENTS.md`, `DESIGN.md` | Read on demand. The first filesystem tool call inside its directory reads it (with every such document on the chain of folders above it) into **`{{.Rules}}`**, and the first mention of a path there into that user message; then it **sticks** for the session. Nothing is read for folders no tool enters and no mention names |
+| Nested `AGENTS.md`, `DESIGN.md` | Read on demand. The first filesystem tool call inside its directory reads it (with every such document on the chain of folders above it) into that call's result, and the first mention of a path there into that user message; like a glob rule, it comes once, and again after a compaction or when the file has changed - an edit made during the session reaches the model with the next call in that folder. Nothing is read for folders no tool enters and no mention names |
 
 Mention-only rules use **`@name`** (file stem) or **`@rule:name`**; `@rule:name` also attaches any other rule of the catalog by name. They are **not** slash commands and do not appear in the skills catalog. `run_command` activates nothing: a shell string cannot be attributed to a path reliably.
 
 ## Project docs preamble
 
-Two directories describe themselves the same way, with the same pair of files, and both are read on every turn when present - yours first, so the operator speaks before the checkout:
+Two directories describe themselves the same way, with the same pair of files, and both are read when present - yours first, so the operator speaks before the checkout:
 
 - **`~/.coddy/AGENTS.md`**, then **`~/.coddy/DESIGN.md`** - the agent home
 - **`AGENTS.md`**, then **`DESIGN.md`** - the session CWD
 
 Whichever of the four exists is read; a home with only a `DESIGN.md` contributes that one and nothing else.
 
-These are unconditional; they do not use `alwaysApply` or `@mention`, and none of them is named in `config.yaml`. A file that enters the prompt here is not sent a second time as an instruction file, so the default `instructions.files` can name `AGENTS.md` without paying for it twice.
+These are unconditional; they do not use `alwaysApply` or `@mention`, and none of them is named in `config.yaml`. They are read when the session starts and kept for as long as its rules are ([Rules and the prompt cache](#rules-and-the-prompt-cache)): an edit reaches the prompt after the next compaction, a config reload or a workspace switch, or right away through `@AGENTS.md`. A file that enters the prompt here is not sent a second time as an instruction file, so the default `instructions.files` can name `AGENTS.md` without paying for it twice.
 
 ## Your own instructions and rules
 
@@ -8449,8 +8484,8 @@ A checkout describes itself: how it is built, what its conventions are, which co
 
 | File | Reaches the prompt as | Read when |
 |------|-----------------------|-----------|
-| `~/.coddy/AGENTS.md`, `~/.coddy/DESIGN.md` | **`{{.Rules}}`**, the first preamble sections, above the project's own pair | every turn, in every workspace |
-| `~/.coddy/rules/*.md`, `*.mdc` | **`{{.Rules}}`**, like any project rule | per their own frontmatter (always on, glob-gated or `@mention`) |
+| `~/.coddy/AGENTS.md`, `~/.coddy/DESIGN.md` | **`{{.Rules}}`**, the first preamble sections, above the project's own pair | when a session starts, and again after a compaction, in every workspace |
+| `~/.coddy/rules/*.md`, `*.mdc` | like any project rule: **`{{.Rules}}`** when they always apply, otherwise the tool result or message that brings their path in, or the message that names them | per their own frontmatter (always on, glob-gated or `@mention`) |
 
 Nothing is configured for either. Writing the file is the switch, deleting it is the off switch, and no key in `config.yaml` mentions them:
 
@@ -8461,13 +8496,13 @@ $EDITOR ~/.coddy/AGENTS.md
 
 Your pair is read first, so what you want is in front of the model before the checkout starts describing itself, and the project's own `AGENTS.md` and `DESIGN.md` follow below - they join, neither replaces the other. Write one of the two or both; the file that is not there costs nothing.
 
-Your rules are ordinary rule files and follow the same dialects, globs and activation modes as a project's - a `go.mdc` with `globs: **/*.go` under `~/.coddy/rules/` waits for a Go file in whichever project the session opened, because globs are anchored at the workspace, not at the folder the rule came from. `coddy rules list` shows them with source `user`, and names the folder under the table. The project still has the last word: when a project file and one of yours share a file name, the project's wins.
+Your rules are ordinary rule files and follow the same dialects, globs and activation modes as a project's - a `go.mdc` with `globs: **/*.go` under `~/.coddy/rules/` waits for a Go file in whichever project the session opened, because globs are anchored at the workspace, not at the folder the rule came from. `coddy rules list` shows them with source `user`, and names the folder under the table. Your folder is read next to whichever project folder the chain picked, never instead of it. The project still has the last word: when a project file and one of yours share a file name, the project's wins.
 
 Nothing here is trusted differently from a project file: both are text that steers the model, and neither can run anything by itself (see [Security](../operate/security.md)). The difference is who wrote it - your own folder needs no trust receipt because nothing arrives in it with a `git clone`.
 
 ### More instruction files
 
-`instructions.files` names what else a session reads into **`{{.Instructions}}`**, on top of the preamble above. It defaults to `["AGENTS.md", "DESIGN.md"]` - the workspace's own pair, which the preamble already carries, so out of the box that block is empty - and a team or a machine can add its own:
+`instructions.files` names what else a session reads into **`{{.Instructions}}`**, on top of the preamble above, at the same moments the preamble is read. It defaults to `["AGENTS.md", "DESIGN.md"]` - the workspace's own pair, which the preamble already carries, so out of the box that block is empty - and a team or a machine can add its own:
 
 ```yaml
 instructions:
@@ -8485,7 +8520,7 @@ A leading `~` expands, and so do the two placeholders the config understands: `$
 
 Use **`/rpa-gen-rules`**, one of the skills of the [standard delivery](skills.md#the-standard-delivery), so it is there on a fresh install. It reads the specs, the docs and the code first and derives the rules from what it finds, rather than asking you to describe the project: a layered-cake architecture rule (implement the inner layers that depend on nothing first), BDD-style delivery, and a Rules Sync step that mirrors a change in one agent's tree into every other one. It writes Cursor `.mdc` files under `.cursor/rules/`, the Claude Code pair (`CLAUDE.md` and `.claude/rules/`), and the Codex hook bridge under `.codex/` that attaches the Cursor rules by glob the way Cursor and Claude Code do natively.
 
-Rules Coddy reads itself live in `.coddy/rules/` and `.agents/rules/`; both are ordinary discovery roots, so a rule file the skill wrote for another agent is picked up here as well.
+Coddy reads one project folder, the first of the chain that holds rules ([Discovery](#discovery)): a project the skill set up for Cursor and Claude Code is read from `.cursor/rules/`, and its Claude Code mirror is left alone rather than loaded twice. Rules written for Coddy itself go to `.coddy/rules/`, or to `.agents/rules/` when every agent should read them.
 
 There is no `coddy rules generate` CLI subcommand.
 
@@ -8506,7 +8541,10 @@ instructions:
 
 rules:
   auto_discover: true
-  systems: []   # optional filter: user, coddy, agents-dir, cursor, claude, codex, agents
+  # Optional filter: user, coddy, agents-dir, cursor, claude, codex, agents.
+  # A project folder left out is not part of the chain; of the ones admitted,
+  # the first that holds a rule file is read.
+  systems: []
 ```
 
 ## References
@@ -8514,8 +8552,8 @@ rules:
 - [Cursor Rules](https://cursor.com/docs/rules)
 - [Claude `.claude/rules`](https://code.claude.com/docs/en/memory#organize-rules-with-clauderules)
 - [Codex Rules](https://developers.openai.com/codex/rules)
-- Implementation: `internal/rules/*` (roots in `factory.go`, dialects and glob matching in `markdown.go`, directory scoping in `scope.go`), instruction files in `internal/session/instructions_load.go`, wiring in `internal/session`, `internal/agent/system_prompt.go`; tool-path activation in `internal/agent/rules_activation.go` and `internal/tools/fs/toolpaths.go`
-- Specs: `features/rules_agents_dir.feature`, `features/agents_md_scoping.feature`, `features/global_instructions.feature`
+- Implementation: `internal/rules/*` (the folder chain in `factory.go`, dialects and glob matching in `markdown.go`, directory scoping in `scope.go`), instruction files in `internal/session/instructions_load.go`, the per-session rendering of the standing block in `internal/session/rules_load.go` and `internal/agent/rules_prompt.go`; tool-path activation and the rules a tool result carries in `internal/agent/rules_activation.go` and `internal/tools/fs/toolpaths.go`
+- Specs: `features/rules_one_folder.feature`, `features/rules_agents_dir.feature`, `features/agents_md_scoping.feature`, `features/global_instructions.feature`, and the prompt-cache group `features/prompt_cache_rules.feature` and `features/prompt_cache_prefix.feature` (`make test-cache`); the context a session over this repository's own rules costs is measured by `BenchmarkContextOfThisRepositoryRules` (`make test-perf BENCH=Context`)
 - End-to-end against a real model: `examples/cli/cli_e2e_rules.py` (a project glob rule through the console) and `examples/cli/cli_e2e_global_instructions.py` (an `AGENTS.md` and a rule in an isolated `CODDY_HOME`, a workspace with nothing in it)
 
 
@@ -10455,10 +10493,10 @@ What each kind carries:
 A provider caches a request by its prefix, and the system message opens every request. A mention must never move what came before it, so:
 
 - A mention is resolved once, when its message enters the conversation, and the message is persisted with its attachments. A later turn replays it byte for byte; a file edited afterwards does not rewrite an old message - mention it again to show the model the new version.
-- A rule never enters the system prompt because of a mention. A rule the user names rides in the user's message, and so does a rule a mentioned path activates - a glob rule whose patterns match the file, the `AGENTS.md` and `DESIGN.md` of the folders down to it. While that message is in the model's view the system prompt leaves those rules out; a compaction that folds the message into its summary brings them back ([Rules](rules.md)).
+- A rule never enters the system prompt because of a mention. A rule the user names rides in the user's message, and so does a rule a mentioned path activates - a glob rule whose patterns match the file, the `AGENTS.md` and `DESIGN.md` of the folders down to it. While that message is in the model's view, no later tool call or mention attaches those rules again; a compaction that folds the message into its summary lets the next match bring them back ([Rules and the prompt cache](rules.md#rules-and-the-prompt-cache)).
 - A skill invoked as `/name` writes its body into the message that invoked it, once, instead of being added to whichever message happens to be the last one.
 
-`features/mention_prompt_cache.feature` holds the story: a turn that mentions a file, names a rule and invokes a skill, then a second turn - every request of both opens with the same system message, and the second turn replays the first turn's message unchanged.
+`features/prompt_cache_mentions.feature` holds the story: a turn that mentions a file, names a rule and invokes a skill, then a second turn - every request of both opens with the same system message, and the second turn replays the first turn's message unchanged.
 
 ## Who may mention what
 
@@ -11215,6 +11253,8 @@ The row a compaction draws for itself is live: it reaches whoever is watching th
 The boundary is the `keep_recent_turns`-th most recent user message (2 by default). Everything from that message on - the user turns, the replies and the tool activity after each - stays verbatim. Everything before it is sent to the summariser as a flattened transcript, tool calls rendered as labelled lines, and is replaced in the model's view by one summary row inserted at the boundary. A previous summary is part of the older history, so a second compaction folds it into the new one and the model always sees exactly one. `keep_recent_turns: 0` summarises the whole window.
 
 The summary is requested from `compaction.model` when set, otherwise from the session's model, with a fixed system prompt that asks, in order, for the user's goals and constraints, the decisions taken and the approaches rejected, the state of the work, the exact paths, names, commands and values that matter, and the open questions and next steps. The result-eviction projection below is applied to the history first, so a page the model had already moved past is not summarised in full.
+
+The project rules a tool result or a message carried are not summarised: a rule the summary folds away comes back with the next tool call or mention that touches a matching path, and one the kept tail still carries comes again only if its file has changed. A compaction is also the moment the standing rules are read again - the `AGENTS.md` and `DESIGN.md` pairs, the rules that always apply and the files of `instructions.files` - so an edit made to them during the session reaches the next system prompt ([Rules and the prompt cache](rules.md#rules-and-the-prompt-cache)).
 
 ## The summary row and the context estimate
 
@@ -12062,12 +12102,12 @@ Directories scanned for skills (SKILL.md and root .md/.mdc files).
 
 ### `rules`
 
-Discovery of rule files from ${CODDY_HOME}/rules (the operator's own, applied in every workspace) and from .coddy/rules, .agents/rules, .cursor/rules, .claude/rules, .codex/rules under the session CWD, plus the AGENTS.md and DESIGN.md of a folder a tool enters; .mdc files are Cursor rules, .md files Claude Code rules. See https://coddy.dev/docs/features/rules.
+Discovery of rule files from ${CODDY_HOME}/rules (the operator's own, applied in every workspace) and from one project folder under the session CWD, the first of .coddy/rules, .agents/rules, .cursor/rules, .claude/rules, .codex/rules that holds a rule file, plus the AGENTS.md and DESIGN.md of a folder a tool enters; .mdc files are Cursor rules, .md files Claude Code rules. See https://coddy.dev/docs/features/rules.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `rules.auto_discover` | boolean or null | true | Scan the session CWD rule roots automatically. |
-| `rules.systems` | list of strings | [] | Restrict which rule systems are loaded: user (${CODDY_HOME}/rules), coddy, agents-dir (.agents/rules), cursor, claude, codex, agents (nested AGENTS.md and DESIGN.md). Empty means all. |
+| `rules.systems` | list of strings | [] | Restrict which rule systems are loaded: user (${CODDY_HOME}/rules), coddy, agents-dir (.agents/rules), cursor, claude, codex, agents (nested AGENTS.md and DESIGN.md). Empty means all. A project folder left out drops out of the chain; of the ones admitted, the first that holds a rule file is read. |
 
 ### `mcp_servers`
 
@@ -14465,7 +14505,7 @@ my-project/
 
 1. **`AGENTS.md` at the root.** It is read into every prompt unconditionally, as the project docs preamble ([Project docs preamble](../features/rules.md#project-docs-preamble)), and so is a `DESIGN.md` beside it. Keep it a short map: where things live, how to build and test, what a change must carry. Nested `AGENTS.md` files deeper in the tree are read on demand, the moment a tool enters their folder, and never walked for.
 
-2. **Rules in `.coddy/rules/`.** A `.md` file is a Claude Code rule (`paths` gates it, and it is unconditional without them); a `.mdc` file is a Cursor rule (`description`, `globs`, `alwaysApply`). Both dialects are accepted in every rule folder, and `.coddy/rules` wins over `.agents/rules`, `.cursor/rules`, `.claude/rules` and `.codex/rules` when two files share a name ([Rule file formats](../features/rules.md#rule-file-formats)). A gated rule enters the prompt the first time a matching file is attached or touched by a tool, then sticks for the session.
+2. **Rules in `.coddy/rules/`.** A `.md` file is a Claude Code rule (`paths` gates it, and it is unconditional without them); a `.mdc` file is a Cursor rule (`description`, `globs`, `alwaysApply`). Both dialects are accepted in every rule folder ([Rule file formats](../features/rules.md#rule-file-formats)). Coddy reads one project folder: `.coddy/rules` when the project has it, else the first of `.agents/rules`, `.cursor/rules`, `.claude/rules` and `.codex/rules` that holds a rule file, so rules mirrored for other agents are not loaded twice ([Discovery](../features/rules.md#discovery)). A gated rule reaches the model once, with the tool result or the message that first touches a matching file.
 
    Everything in this tutorial is the project talking. What *you* want from every session, in every repository - the language to answer in, the commands you never want run - belongs to you rather than to this checkout: put it in `~/.coddy/AGENTS.md` and `~/.coddy/rules/` instead, where it applies everywhere and nobody else has to agree with it ([Your own instructions and rules](../features/rules.md#your-own-instructions-and-rules)).
 
@@ -15231,6 +15271,8 @@ What ships is still the embedded copy: a change under `external/ui/src` is compl
 - **`make test`** - the express run, before every push: the OpenCode plugin test, `ui-build`, the SPA's vitest suite (`make ui-test`), then one `go test -tags=http,ui,scheduler,memory,cli,gateway,swarm ./...` over the whole tree with every optional module compiled in. Minutes, not tens of minutes.
 - **`make test-matrix`** - every tag combination in `TEST_TAG_SETS` (`Makefile`), one after another. This is CI's job, one job per combination on every pull request; do not walk it locally. When a change moved a build-tag boundary (a `_stub.go`, an `Available` const, a `//go:build` line), run that one combination by hand, `go test -tags=<set> ./...`, and leave the rest to CI.
 - **`make test-race`** - the tree under the Go race detector, with every optional module but `ui` compiled in. CI runs it on every pull request (job **Race detector**). Run it before the push when a change touches goroutines, locks, channels or a test harness that drives a live loop; `GOFLAGS=-count=3 make test-race` repeats every test for a race that shows up rarely. Every package is clean under it, so a race it reports is fixed rather than skipped.
+- **`make test-cache`** - the prompt-cache group on its own: the `features/prompt_cache_*.feature` specs and every test named `TestPromptCache*`, which check what each request sends the provider - the same system message for the whole session, a history that only grows at its end, every rule at most once and nothing no path brought in. It is part of `make test`; run it when a change touches the system prompt, the rules, the history or the send boundary, and name a new test of the kind `TestPromptCache...` so it joins the group.
+- **`make test-perf`** - the performance group: the benchmarks in the `perf_test.go` files, which `make test` never runs. They time what a turn repeats (rules discovery, the look for the rules a tool call brings in, the send boundary) and report what a session over this repository's own rules costs the context (`system-tokens`, `request-tokens`, `duplicate-rules`). `BENCH=<regexp>` narrows them, `BENCHTIME=5x` sets the runs; compare a branch with `main` before and after a change to the prompt or the rules.
 - **`make check-windows`** and **`make lint-windows`** - whenever you touch a file behind `//go:build windows`, or a signature it shares with the rest of the tree. The host runs never compile that half; CI cross-builds it and also runs the OS-specific packages on real `windows-latest` and `macos-latest` runners, the latter driving the console through a pty with `examples/cli/cli_e2e_startup.py`.
 - **`make ui-test`** (`cd external/ui && npm test`) - the SPA's own vitest suite on its own (`npm run test:watch` while editing). `make test` runs it as well, and CI runs it once, in the job that reads the tag matrix. **`make ui-typecheck`** (`npm run typecheck`) is the TypeScript compiler over the same sources with no emit, the step `make lint` ends with: `vite` only transpiles, so a type error reaches the bundle unless this runs.
 - **The harnesses in `examples/`** - real binaries against a reachable model: `./examples/build_coddy.sh`, then `./examples/test_acp.sh` (ACP over stdio), `./examples/test_httpserver.sh` (a disposable `coddy serve`), `./examples/test_cli.sh` (the console in a pty, Linux only) and `./examples/test_swarm.sh` (three relays, no model needed). The layout and every script are in [examples/README.md](examples/README.md).
@@ -15680,11 +15722,11 @@ Loads operator **lifecycle hooks** - commands that read one JSON document on std
 
 ### Rules engine (`internal/rules`)
 
-Discovers `.mdc` / `.md` rules from `.coddy/rules`, the tool-neutral `.agents/rules` (system id `agents-dir`), `.cursor/rules`, `.claude/rules`, `.codex/rules`, plus nested `**/AGENTS.md` and `**/DESIGN.md` files ([agents.md](https://agents.md/) convention), under session CWD, and from the operator's own **`${CODDY_HOME}/rules`** (system id `user`), which applies in every workspace; duplicates by file name resolve as coddy > agents-dir > cursor > claude > codex > agents > user. Injected into **`{{.Rules}}`** separately from skills, together with the preamble documents: the agent home's **`AGENTS.md`** and **`DESIGN.md`** when they exist, first, then the workspace's pair, and a nested folder's pair when a tool enters it. The files of `instructions.files` go into **`{{.Instructions}}`**, minus whatever the preamble already carries. See **`docs/features/rules.md`**.
+Discovers `.mdc` / `.md` rules from one project folder under session CWD - the first of `.coddy/rules`, the tool-neutral `.agents/rules` (system id `agents-dir`), `.cursor/rules`, `.claude/rules` and `.codex/rules` that holds a rule file, so another agent's mirror of the same rules is never loaded next to it - plus the operator's own **`${CODDY_HOME}/rules`** (system id `user`), which applies in every workspace and loses a file name clash to the project, and nested `**/AGENTS.md` and `**/DESIGN.md` files ([agents.md](https://agents.md/) convention) read for the folders a tool enters. The rules that always apply go into **`{{.Rules}}`** separately from skills, together with the preamble documents: the agent home's **`AGENTS.md`** and **`DESIGN.md`** when they exist, first, then the workspace's pair; that block is rendered once per rules generation of the session (a compaction, a config reload or a workspace switch starts the next one), so it does not move the cached system message. The files of `instructions.files` go into **`{{.Instructions}}`**, minus whatever the preamble already carries. See **`docs/features/rules.md`**.
 
 The extension selects the dialect (**`markdown.go`**): `.mdc` is read as a Cursor rule (`description`, `globs` as a comma-separated string or list, `alwaysApply`, default manual), `.md` as a Claude Code rule (`paths`; unconditional without them). Headers are read as YAML first, then by a lenient line reader, because Cursor's own `globs: **/*.go` is not valid YAML. Globs use doublestar syntax anchored at the session cwd (`Rule.Root`, **`MatchGlob`**).
 
-Activation uses globs, **`alwaysApply`**, **`@mention`**, sticky auto rules, and filesystem tool paths (`MatchScoped`: a `read`/`edit`/... targeting a matching path or a nested `AGENTS.md` subtree activates the rule); see **`docs/features/rules.md`**. A rule a mention brings - one the user names, one a mentioned path activates - rides in that user message rather than in **`{{.Rules}}`** (**`internal/agent/mentions.go`**).
+Activation uses globs, **`alwaysApply`**, **`@mention`** and filesystem tool paths (`MatchScoped`: a `read`/`edit`/... targeting a matching file, or a path in a nested `AGENTS.md` subtree, activates the rule); see **`docs/features/rules.md`**. A rule a tool call activates rides in that call's result (**`llm.Message.Rules`**, **`internal/agent/rules_activation.go`**), and a rule a mention brings - one the user names, one a mentioned path activates - in that user message (**`internal/agent/mentions.go`**); neither enters **`{{.Rules}}`**, and each comes once until a compaction folds it away.
 
 ### Mentions (`internal/mention`)
 
@@ -15973,7 +16015,7 @@ Order does not matter for these tags.
 | **`gateway`** | All messenger adapters (superset of **`gateway.telegram`**; includes future Discord, Slack adapters) | [`docs/surfaces/gateway.md`](../surfaces/gateway.md) |
 | **`swarm`** | Stateless relay that aggregates nodes, started by **`coddy serve`** under **`swarm.enable`** | [`docs/operate/swarm.md`](../operate/swarm.md) · [`external/swarm/`](../../external/swarm) |
 
-**`make test`** is the express run: the whole tree once with every optional module compiled in (**`http,ui,scheduler,memory,cli,gateway,swarm`**). **`make test-matrix`** walks every combination (the **`TEST_TAG_SETS`** list in [`Makefile`](../../Makefile)); CI runs that matrix on every pull request, one job per combination. Two of those jobs also start the built binary: `cli` drives the console through a real pty (`examples/cli/cli_e2e_startup.py`), `gateway` runs the Telegram bot against the offline stand of `cmd/tgfake` (`examples/gateway/tg_e2e_offline.sh`). **`make test-race`** runs the whole tree under the Go race detector with every tag but `ui`; CI runs it on every pull request in the **Race detector** job, and `GOFLAGS=-count=3 make test-race` repeats every test locally for a race that shows up rarely.
+**`make test`** is the express run: the whole tree once with every optional module compiled in (**`http,ui,scheduler,memory,cli,gateway,swarm`**). **`make test-matrix`** walks every combination (the **`TEST_TAG_SETS`** list in [`Makefile`](../../Makefile)); CI runs that matrix on every pull request, one job per combination. Two of those jobs also start the built binary: `cli` drives the console through a real pty (`examples/cli/cli_e2e_startup.py`), `gateway` runs the Telegram bot against the offline stand of `cmd/tgfake` (`examples/gateway/tg_e2e_offline.sh`). **`make test-race`** runs the whole tree under the Go race detector with every tag but `ui`; CI runs it on every pull request in the **Race detector** job, and `GOFLAGS=-count=3 make test-race` repeats every test locally for a race that shows up rarely. Two groups can be run on their own: **`make test-cache`** is the prompt-cache group (the `features/prompt_cache_*.feature` specs and the `TestPromptCache*` tests, part of `make test`: what every request sends the provider, held byte for byte across a session), and **`make test-perf`** is the performance group (the benchmarks of the `perf_test.go` files, never part of `make test`: timings of the work a turn repeats and the context a session over this repository's own rules costs, as `system-tokens`, `request-tokens` and `duplicate-rules`).
 
 On Windows, run Make through Git Bash. The build and install targets use Go's
 executable suffix (`coddy.exe`), including the binary that `make docs` runs.
@@ -16568,10 +16610,6 @@ Runtime state refreshed by Coddy for this step. It is not a message from the use
 ## Current todo checklist
 - [ ] ...
 
-## Project rules activated by this turn
-### go-files (Go style)
-...
-
 ## Long-term memory
 Already on disk:
 - ...
@@ -16585,11 +16623,6 @@ Already on disk:
 - the **todo checklist** (markdown from **`internal/tools/todo.FormatPlanMarkdown`** over
   **`session.Plan`**), when the session has one - so a **`coddy_todo_*`** call in this turn is
   reflected on the very next step;
-- the **rules a tool call activated** after the system prompt was frozen - a glob rule or a nested
-  **`AGENTS.md`** that a filesystem tool reached mid-turn (**`activateScopedRulesForToolCall`**).
-  They are **not** folded back into the frozen prompt; the next turn's prompt picks them up from
-  the sticky set, and **`rules.Added`** is what keeps the block down to what the model has not been
-  given yet;
 - the **memory subagent's report** for this turn, when long-term memory is on
   ([memory.md](../features/memory.md)). A recall differs from turn to turn, so rendering it into
   the system message would make **`messages[0]`** a new one on every turn and cost the cached
@@ -16605,6 +16638,21 @@ The block is never persisted: it is appended at the **`provider.Stream`** send b
 read/grep eviction projection, and the working message slice the loop keeps appending to never sees
 it. Only the last few hundred tokens of a request are therefore uncached; the conversation behind
 them is a cache hit.
+
+A **rule a tool call activates** - a glob rule whose pattern matches a file the call reads or writes,
+the nested **`AGENTS.md`** and **`DESIGN.md`** of the folders it enters - is not in the block. It
+rides in the **result of that call** (**`toolCallRules`**, **`internal/agent/rules_activation.go`**),
+kept in the transcript row's own **`Rules`** field so the output a surface shows and the result
+eviction replaces stays the tool's own, and joined to the content only at the same send boundary
+(**`withToolRules`**). Written once with the result, it is replayed byte for byte by every later
+request, where the block would have sent it again on every step and the next turn's system prompt
+would have taken it in. A rule the model can already read with the same text - in an earlier result
+or message it is still sent - is not attached again; one a compaction folded away, or whose file has
+changed since, comes back with the next matching call, and a call on the rule document itself does
+not get it back as a rule. The rules and instructions blocks of the system prompt themselves are rendered once per rules
+generation of the session (**`standingPrompt`**, **`session.RulesPrompt`**), so an **`AGENTS.md`**
+edited mid-session does not move **`messages[0]`** either; a compaction starts the next generation.
+See [Rules and the prompt cache](../features/rules.md#rules-and-the-prompt-cache).
 
 **`UTCNow`** and **`TodoList`** stay available to a template under **`prompts.dir`**, which may still
 render them - at the cost of that cache, on every request. Such a template gets no clock and no
@@ -18524,7 +18572,7 @@ Short map for automation-friendly contributors.
 | `internal/session` | Session manager, Filesystem persistence, Acp hooks, rules catalog, the **paged reads** of a history (**`message_window.go`**: **`PageMessages`** step-aligned pages and the counts a client numbers them from, **`MessagePage.UILog`**; behind **`GET /coddy/sessions/{id}/messages?limit=&before=&from=`**, issue #338), and the **provider usage** cache and schedule (**`provider_usage.go`**: the account quota behind a session's model, published as **`provider_usage`** at session ready and from every turn's release, served over **`GET /coddy/providers/{name}/usage`** and the events stream; **`provider_usage_sources.go`** picks the reader per provider type - **`internal/llm/neuraldeep_usage.go`** for the hub's `GET /v1/limits`, **`codex_usage.go`** for the Codex backend's usage endpoint, **`devin_usage.go`** for the seat-management status RPC). Design: **`docs/plans/neuraldeep-usage.md`**. |
 | `internal/mention` | The one grammar of **`@`** mentions (**`grammar.go`**: relative, absolute, **`~`** and **`../`** paths, quoted paths, **`:N-M`** / **`#L`** ranges, folders, **`@session:`** / **`@rule:`** / **`@agent:`** / **`@coddy:`**, web pages; every reading of an ambiguous token, the one that exists winning), path resolution (**`paths.go`**), the workspace index for completion (**`index.go`**: **`git ls-files`** or a walk, cached per root, rebuilt when a mention starts), fuzzy ranking (**`fuzzy.go`**) and the **`<coddy_attachment>`** element plus its display twin **`ForDisplay`** (**`attachment.go`**). **`internal/session/mentions.go`** resolves a prompt's mentions once, into that user message; **`mention_search.go`** answers completion (**`GET /coddy/mentions`**, the console in-process); **`mention_check.go`** runs the resolver dry for the web composer's highlight (**`POST /coddy/mentions/check`**), so only a mention sending would attach is marked; **`internal/agent/mentions.go`** adds the rules a mentioned path activates to the same message, so a mention never moves the system prompt. The SPA twin is **`external/ui/src/ui/skills/draftAt.ts`**, held to **`internal/mention/testdata/grammar_cases.json`** like the Go side. Guide: **`docs/features/mentions.md`**. |
 | `internal/docs`, `docs/embed.go` | The documentation built into the binary: **`docs/embed.go`** (package **`docs`**, the only place the embed pattern reaches the tree from) carries **`nav.yaml`** and the pages of its groups, never **`plans/`** or **`assets/`**; **`internal/docs`** reads them into a **`Library`** (**`library.go`**: **`Default`**, **`Resolve`** for every spelling of a page, **`Prev`** / **`Next`**), splits pages at headings with GitHub's anchors (**`markdown.go`**: **`Anchor`** and **`HeadingAnchors`**, which **`internal/docsgen`**'s link check uses too, and the link rewriting to **`coddy:<slug>#<anchor>`** and to GitHub at the release tag), ranks sections with BM25F (**`search.go`**, index built once on first use) and reads a page or a section under a byte budget (**`read.go`**). Consumers: **`coddy_docs_search`** / **`coddy_docs_read`** (**`internal/tools`**), **`@coddy:`** (**`internal/session/mentions.go`**, **`mention_search.go`**), **`GET /coddy/docs*`** (**`external/httpserver/docs_http.go`**), the web reader (**`external/ui/src/ui/docs/`**), the console's F1 help (**`external/cli/docs_modal.go`**), **`coddy docs`** (**`cmd/coddy/docs.go`**). A new group folder under **`docs/`** goes into the embed pattern; **`TestDefaultCarriesEveryPageOfTheMap`** fails otherwise. Guide: **`docs/features/built-in-docs.md`**. |
-| `internal/rules` | Rules: discovery roots (`.coddy/rules`, the shared `.agents/rules` as system **`agents-dir`**, `.cursor/rules`, `.claude/rules`, `.codex/rules`, and the operator's own **`${CODDY_HOME}/rules`** as system **`user`**, which applies in every workspace and loses a name clash to the project), nested `AGENTS.md` and `DESIGN.md` files read on demand for the folders a tool enters and never walked for (**`agents.go`**, **`AgentsForPaths`**), the dialect chosen by extension in **`markdown.go`** (**`.mdc`** Cursor: `description` / `globs` / `alwaysApply`, default manual; **`.md`** Claude Code: `paths`, unconditional without them) with a lenient reader for Cursor's YAML-invalid `globs: **/*.go` headers, doublestar glob matching anchored at the session cwd (**`MatchGlob`**), sticky activation from mentioned paths (`@path`, an editor's `file://` attachment) and filesystem tool paths (**`select.go`**, **`scope.go`**; a rule a mention brings rides in that user message, not in **`{{.Rules}}`**), and the catalog behind **`coddy rules list`**. The project docs preamble (**`project_docs.go`**) puts the agent home's **`AGENTS.md`** and **`DESIGN.md`** first, above the workspace's own pair, and no config key names them - the file existing is the switch; **`AgentsForPaths`** reads that same pair for a nested folder a tool enters. The instruction files of **`instructions.files`** are a separate block, read by **`internal/session/instructions_load.go`** into **`{{.Instructions}}`**; a file the preamble already carries is not sent twice. Guide: **`docs/features/rules.md`**. |
+| `internal/rules` | Rules: discovery (**`factory.go`**) reads **one** project folder, the first of `.coddy/rules`, the shared `.agents/rules` as system **`agents-dir`**, `.cursor/rules`, `.claude/rules` and `.codex/rules` that holds a rule file - so another agent's mirror of the same rules is never loaded next to it - plus the operator's own **`${CODDY_HOME}/rules`** as system **`user`**, which applies in every workspace and loses a name clash to the project; nested `AGENTS.md` and `DESIGN.md` files read on demand for the folders a tool enters and never walked for (**`agents.go`**, **`AgentsForPaths`**), the dialect chosen by extension in **`markdown.go`** (**`.mdc`** Cursor: `description` / `globs` / `alwaysApply`, default manual; **`.md`** Claude Code: `paths`, unconditional without them) with a lenient reader for Cursor's YAML-invalid `globs: **/*.go` headers, doublestar glob matching anchored at the session cwd (**`MatchGlob`**), activation from mentioned paths (`@path`, an editor's `file://` attachment) and filesystem tool paths (**`select.go`**, **`scope.go`**): only the always-on rules (**`AlwaysOnRules`**) are in **`{{.Rules}}`**, a rule a tool call activates rides in that call's result (**`llm.Message.Rules`**, **`internal/agent/rules_activation.go`**) and one a mention brings in that user message, each once until a compaction folds it away, and the catalog behind **`coddy rules list`**, which names the folder read and the ones skipped. The project docs preamble (**`project_docs.go`**) puts the agent home's **`AGENTS.md`** and **`DESIGN.md`** first, above the workspace's own pair, and no config key names them - the file existing is the switch; **`AgentsForPaths`** reads that same pair for a nested folder a tool enters. The instruction files of **`instructions.files`** are a separate block, read by **`internal/session/instructions_load.go`** into **`{{.Instructions}}`**; a file the preamble already carries is not sent twice. Both blocks are rendered once per rules generation of the session (**`session.RulesPrompt`**, **`internal/agent/rules_prompt.go`**), so an `AGENTS.md` edited mid-session does not move the cached system prompt; a compaction, a config reload or a workspace switch starts the next generation. Guide: **`docs/features/rules.md`**. |
 | `external/httpserver` | The HTTP surface **`coddy serve`** runs under **`httpserver.enable`**, built with **`tags=http`** (SSE bridge, Swagger statics, `/coddy` REST, ServeMux wiring). **`Serve(ctx, Options)`** takes an already-built manager; **`turn_mirror.go`** implements **`session.TurnMirror`**, publishing a turn another surface started into that session's composer relay so a browser can watch it - session updates fan out, permission and question requests stay with the surface that has a human. **`subagent_permission_hub.go`** is this server's offer to **`serve.Runtime`** for detached permission prompts: a subagent whose spawning turn has ended publishes its prompt on the agent task row (**`pending_permission`**, shown in the parent chat) and on **`GET /coddy/events`** (**`subagent_permission`**), answered through the ordinary **`POST /coddy/sessions/{child}/permission`**. |
 | `external/ui` | Embedded SPA (`go:embed`) when built with **`tags=http,ui`**. A long conversation is a sliding window: the newest page first, older pages as the reader scrolls up, a bounded slice of rows in the DOM (**`chat/TranscriptList.tsx`**, **`useTranscriptWindow`**; **`DESIGN.md`**, *Transcript window*); **`npm run check:transcript`** measures it in a real browser against the binary. |
 | `external/memory` | Long-term memory (**`-tags memory`**): the memory subagent's prompt template, task and tool set (**`agent.go`**), the note storage and the six **`coddy_memory_*`** tools. The run itself is launched by **`internal/agent/memory_hooks.go`** as a system child in the task pool (bookkeeping in **`memory_run.go`**, untagged): one run per user turn, a bounded wait for its report, delivery in the turn context block after the history (never the system message, so the provider's prompt cache holds), retention of finished runs. See README there and **`docs/features/memory.md`**. |
@@ -18547,7 +18595,7 @@ Swagger lives at **`/docs/`**, OpenAPI YAML at **`/openapi.yaml`**.
 
 ## Pre-commit gate
 
-A git **`pre-commit`** hook runs the linter before every commit, so nothing lands with lint errors. It is the single enforcement point for humans and coding agents alike. Tests are **opt-in** on commit: **`make test`** (the express run: the SPA's vitest suite, then every optional module compiled in once) belongs before the push, and the per-combination tag matrix (**`make test-matrix`**) runs on GitHub Actions for every pull request, as does **`make test-race`**: the race detector over the whole tree with every tag but `ui`, clean in every package. Run it before the push when a change touches goroutines, locks or a test harness that drives a live loop.
+A git **`pre-commit`** hook runs the linter before every commit, so nothing lands with lint errors. It is the single enforcement point for humans and coding agents alike. Tests are **opt-in** on commit: **`make test`** (the express run: the SPA's vitest suite, then every optional module compiled in once) belongs before the push, and the per-combination tag matrix (**`make test-matrix`**) runs on GitHub Actions for every pull request, as does **`make test-race`**: the race detector over the whole tree with every tag but `ui`, clean in every package. Run it before the push when a change touches goroutines, locks or a test harness that drives a live loop. Two groups run on their own: **`make test-cache`** (the **`features/prompt_cache_*.feature`** specs and the **`TestPromptCache*`** tests, part of `make test`: what each request sends the provider, byte for byte across a session - run it when a change touches the system prompt, the rules, the history or the send boundary) and **`make test-perf`** (the benchmarks of the **`perf_test.go`** files, never part of `make test`: timings and the context a session costs, as token metrics).
 
 - Enable once per clone: **`make hooks`** (sets **`core.hooksPath=.githooks`**; this is local config and is not committed, so every clone runs it once).
 - On commit, **`.githooks/pre-commit`** calls **`scripts/checks.sh`**, which runs **`make lint`** by default: `golangci-lint` over the untagged tree, over every tag but `ui` and over the shipped tag set, so every Go file of the host platform is compiled once, then `tsc --noEmit` over the SPA sources (**`make ui-typecheck`**). Commits touching only non-code files (docs, etc.) skip the gate.
