@@ -180,6 +180,9 @@ curl -fsSL https://coddy.dev/install.sh | bash
 irm https://coddy.dev/install.ps1 | iex
 ```
 
+**Android (Termux)**: the same **`install.sh`** fetches the Android build; see
+[Android (Termux)](#android-termux).
+
 Creates **`~/.coddy/config.yaml`** from the release **`config.example.yaml`** when missing.
 
 On Linux and macOS the script installs more than the binary. The release archive carries the man
@@ -243,11 +246,16 @@ published, and **`SHA256SUMS`** beside them covers the packages too:
 sha256sum -c --ignore-missing SHA256SUMS
 ```
 
+The packages suggest **`tmux`** and do not install it. Coddy runs without it, and its console runs
+well inside it: a session there outlives a closed terminal or a dropped SSH connection. **`apt`**
+lists it under *Suggested packages*; add it with **`sudo apt-get install tmux`** or
+**`sudo dnf install tmux`**.
+
 ### What the package installs
 
 | Path | What |
 |------|------|
-| **`/usr/bin/coddy`** | The full binary (**`http`**, **`ui`**, **`scheduler`**, **`memory`**, **`cli`**) |
+| **`/usr/bin/coddy`** | The full binary (**`http`**, **`ui`**, **`scheduler`**, **`memory`**, **`cli`**, **`gateway`**, **`swarm`**) |
 | **`/usr/share/man/man1/coddy.1.gz`** | **`man coddy`** |
 | **`/usr/share/bash-completion/completions/coddy`** | bash completion |
 | **`/usr/share/zsh/site-functions/_coddy`** | zsh completion |
@@ -318,7 +326,9 @@ brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest
 
 Every release publishes **`coddy.rb`** beside the archives, rendered with the checksums of the macOS
 archives of that same tag. The cask installs the same **`coddy`** binary the macOS archive carries,
-plus **`man coddy`** and the bash and zsh completions. Removal goes through Homebrew:
+plus **`man coddy`** and the bash and zsh completions. It does not install **`tmux`**: its caveats,
+printed after the install and by **`brew info --cask coddy`**, recommend **`brew install tmux`**
+for a console session that outlives the terminal. Removal goes through Homebrew:
 
 ```bash
 brew uninstall --cask coddy      # brew zap --cask coddy also removes ~/.coddy
@@ -339,6 +349,22 @@ privileged shortcut there.
 
 If macOS blocks the first run because the binary is not notarised, clear the quarantine flag:
 **`xattr -d com.apple.quarantine "$(which coddy)"`**.
+
+## Android (Termux)
+
+```bash
+pkg install curl
+curl -fsSL https://coddy.dev/install.sh | bash
+```
+
+In Termux the script fetches the build for Android, **`coddy_X.Y.Z_android_arm64.tar.gz`** on a
+64-bit ARM device and **`coddy_X.Y.Z_android_amd64.tar.gz`** on x86_64. The Linux archive does not
+start there: a Termux that targets Android 10 or later runs every
+program through Android's linker, which turns a static executable away with
+**`has unexpected e_type: 2`**. The rest of the install is the Linux one: **`~/.local/bin`**, the
+man page and the completions in **`~/.local/share`**, and the block in **`~/.bashrc`**. What differs
+on the device (the programs Coddy starts, certificates, running **`coddy serve`** in the background)
+is on its own page: [Android (Termux)](android.md).
 
 ## After install
 
@@ -1170,6 +1196,8 @@ CI publishes one archive per platform on each SemVer tag **`X.Y.Z`**, plus Linux
 |---------|----------|
 | **`coddy_X.Y.Z_linux_amd64.tar.gz`** | Linux x86_64 |
 | **`coddy_X.Y.Z_linux_arm64.tar.gz`** | Linux arm64 |
+| **`coddy_X.Y.Z_android_arm64.tar.gz`** | Android arm64, under Termux ([Android](android.md)) |
+| **`coddy_X.Y.Z_android_amd64.tar.gz`** | Android x86_64, under Termux |
 | **`coddy_X.Y.Z_windows_amd64.zip`** | Windows x86_64 (**`coddy.exe`**) |
 | **`coddy_X.Y.Z_darwin_amd64.tar.gz`** | macOS Intel |
 | **`coddy_X.Y.Z_darwin_arm64.tar.gz`** | macOS Apple Silicon |
@@ -1178,13 +1206,13 @@ CI publishes one archive per platform on each SemVer tag **`X.Y.Z`**, plus Linux
 | **`coddy_X.Y.Z_linux_amd64.rpm`** | Fedora, RHEL, openSUSE and derivatives, x86_64 |
 | **`coddy_X.Y.Z_linux_arm64.rpm`** | Fedora, RHEL, openSUSE and derivatives, arm64 |
 
-The Linux and macOS archives carry the man page and the bash and zsh completions beside the binary; the packages install the same files where the system expects them - see [Install](install.md#linux-packages-deb-rpm). Every release also publishes **`coddy.rb`**, the Homebrew cask for the two macOS archives of that tag.
+The Linux, Android and macOS archives carry the man page and the bash and zsh completions beside the binary; the packages install the same files where the system expects them - see [Install](install.md#linux-packages-deb-rpm). Every release also publishes **`coddy.rb`**, the Homebrew cask for the two macOS archives of that tag.
 
-Each binary is built with **`http`**, **`ui`**, **`scheduler`**, and **`memory`** (same as **`make build TAGS="http ui scheduler memory"`** and the default Docker image). See [Build from source](../contributing/build.md#release-binaries-ci) for the release pipeline.
+Each binary is built with the whole tag set - **`http`**, **`ui`**, **`scheduler`**, **`memory`**, **`cli`**, **`gateway`** and **`swarm`** - the same as **`make build TAGS="http ui scheduler memory cli gateway swarm"`** and the default Docker image. See [Build from source](../contributing/build.md#release-binaries-ci) for the release pipeline.
 
 ## Which file is replaced
 
-**`coddy update`** resolves **`os.Executable()`** (symlinks followed) and overwrites that path. Examples:
+**`coddy update`** resolves the running executable (symlinks followed) and overwrites that path. On Android, where Termux may start Coddy through the system linker, that is the binary the linker was given rather than the linker itself. Examples:
 
 - After **`make install`** as a regular user, that is usually **`~/.local/bin/coddy`**.
 - When you run **`./build/coddy update`**, it updates **`build/coddy`** in the repo.
@@ -1193,7 +1221,7 @@ This differs from **`make install`**, which always copies to **`~/.local/bin`** 
 
 ## The man page and the completions beside it
 
-The Linux and macOS archives carry **`coddy.1`**, **`coddy.bash`** and **`coddy.zsh`** beside the binary, and the install script puts them into the **`share`** directory of the binary's prefix (**`~/.local/bin`** -> **`~/.local/share`**, **`/usr/local/bin`** -> **`/usr/local/share`**; see [Install](install.md)). **`coddy update`** refreshes every one of those files it finds there, right after the executable, so **`man coddy`** and Tab completion describe the release that is running. A completer left at the previous release keeps offering commands the binary no longer has - that is how a completer went on listing **`http`** and **`gateway`** without **`serve`** after the binary had moved on ([issue #188](https://github.com/coddy-project/coddy-agent/issues/188)).
+The Linux, Android and macOS archives carry **`coddy.1`**, **`coddy.bash`** and **`coddy.zsh`** beside the binary, and the install script puts them into the **`share`** directory of the binary's prefix (**`~/.local/bin`** -> **`~/.local/share`**, **`/usr/local/bin`** -> **`/usr/local/share`**; see [Install](install.md)). **`coddy update`** refreshes every one of those files it finds there, right after the executable, so **`man coddy`** and Tab completion describe the release that is running. A completer left at the previous release keeps offering commands the binary no longer has - that is how a completer went on listing **`http`** and **`gateway`** without **`serve`** after the binary had moved on ([issue #188](https://github.com/coddy-project/coddy-agent/issues/188)).
 
 Nothing is created: a file that was never installed (**`--no-shell-setup`**, a binary copied by hand) is left alone, and an executable outside a **`bin`** directory - a build tree, a bare download - has no **`share`** directory to pair with. A release from before the archives carried those files leaves the installed copies as they are and says so. A file it cannot write is reported after the binary is installed, and the command exits non-zero.
 
@@ -1634,6 +1662,10 @@ Every release publishes **`coddy.rb`** beside the archives, rendered with the ch
 macOS archives of that same tag. This installs and upgrades by hand: Homebrew cannot see new
 versions of a cask it did not get from a tap, so a new release means running the command again.
 
+The cask installs Coddy alone and recommends **`tmux`** in its caveats (**`brew install tmux`**).
+A cask's **`depends_on`** has no optional form, so declaring tmux there would install it for
+everyone, and Coddy runs without it; the deb and the rpm suggest it the same way.
+
 To let **`brew upgrade`** track releases before Coddy is in homebrew/core, put the same cask in a tap
 of ours (`brew tap coddy-project/coddy`). That is a repository of its own and is not set up yet; a
 tap is also the documented home for anything Homebrew's official repositories decline
@@ -1655,6 +1687,11 @@ dependency beside **`go`**: the embedded SPA is generated rather than committed,
 needs those files to exist before the binary that carries them is linked. It runs **`npm ci`**, not
 **`npm install`**, because [Acceptable Formulae](https://docs.brew.sh/Acceptable-Formulae#versioned-and-verifiable-sources)
 forbids resolving a moving dependency set during a build.
+
+The formula leaves **`tmux`** out. [Formula Cookbook](https://docs.brew.sh/Formula-Cookbook#specifying-other-formulae-as-dependencies)
+does not allow the optional and recommended dependencies of a formula in homebrew/core, and keeps
+caveats for what the Homebrew packaging itself changes, so the recommendation stays with the cask
+and the pages here.
 
 Its **`test do`** block runs **`coddy -v`**, **`coddy sessions list`** and **`coddy skills list`** -
 three commands that need no network and no configuration, and that fail if the binary cannot reach
@@ -1744,6 +1781,131 @@ version bumps and the submission is one-time work rather than per-release work. 
 side is small: **`brew install coddy`** starts working by name, the docs stop pointing at the release
 asset, and a formula install reports **`brew upgrade coddy`** from **`coddy update`** - which it
 already does.
+
+
+# Getting started / Android (Termux)
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/android.md
+
+# Android (Termux)
+
+Coddy runs on Android inside [Termux](https://termux.dev) from a release built for Android:
+**`coddy_X.Y.Z_android_arm64.tar.gz`** for 64-bit ARM (aarch64), the processor of phones and
+tablets, and **`coddy_X.Y.Z_android_amd64.tar.gz`** for x86-64 (x86_64), which Android runs on in
+emulators, on Chromebooks and on PCs. It is the whole Coddy: the console, **`coddy serve`** with the
+web UI, the Telegram bot and **`coddy acp`**. Android 7.0 or later is needed, as for Termux itself.
+
+## Install
+
+The install script recognises Termux and fetches the Android build for the device's processor:
+
+```bash
+pkg install curl
+curl -fsSL https://coddy.dev/install.sh | bash
+```
+
+It installs **`coddy`** into **`~/.local/bin`**, the man page and the completions into
+**`~/.local/share`**, and writes the block that puts them on **`PATH`** into **`~/.bashrc`**, which
+Termux's login shell reads. Running the script again replaces a binary it installed earlier, the
+Linux build a previous attempt left there included. Open a new session, or reload the file, and
+check:
+
+```bash
+source ~/.bashrc
+coddy -v
+```
+
+By hand, with **`X.Y.Z`** replaced by the release you want and **`arm64`** by **`amd64`** when
+**`uname -m`** says **`x86_64`**:
+
+```bash
+curl -fsSLO https://github.com/coddy-project/coddy-agent/releases/download/X.Y.Z/coddy_X.Y.Z_android_arm64.tar.gz
+tar -xzf coddy_X.Y.Z_android_arm64.tar.gz
+install -m 0755 coddy "$PREFIX/bin/coddy"
+```
+
+**`$PREFIX/bin`** is on Termux's **`PATH`** already. Keep the binary in Termux's own storage, as
+both examples do: Android mounts the shared storage (**`/sdcard`**, **`~/storage`**) without the
+right to execute anything from it.
+
+The first run needs a provider key in **`~/.coddy/config.yaml`**, as on any other system; see
+[Configuration](configuration.md).
+
+## Why the Linux archive does not run
+
+The Linux archives hold a static Linux executable, and Termux cannot start it everywhere.
+Android 10 and later refuse an app that targets them the right to execute files from its own data
+directory, so a Termux that targets them, such as the Google Play build, starts every program
+through Android's linker, **`/system/bin/linker64 <program>`**. The linker loads position-independent
+executables only and turns the static one away:
+
+```text
+error: "/data/data/com.termux/files/home/.local/bin/coddy" has unexpected e_type: 2
+```
+
+Where Termux executes files directly (the F-Droid and GitHub builds), the Linux binary starts, but
+the Linux paths it relies on are missing: it finds no CA certificates and no **`/etc/resolv.conf`**,
+so every request to a provider fails, and on the Android versions whose seccomp filter rejects the
+**`faccessat2`** system call it is killed with **`Bad system call`** the first time it looks a
+program up.
+
+The Android archives are built with **`GOOS=android`** and linked by the Android NDK against
+Bionic, Android's C library: a position-independent executable that names **`/system/bin/linker64`**
+as its interpreter and needs only libraries every Android carries (**`libc`**, **`libdl`**,
+**`liblog`**), which both kinds of Termux start. Like any Termux program, it resolves hostnames
+through Android itself, so the network's DNS, Private DNS and a VPN's DNS all apply. The rest of
+this page is what the build does differently at run time.
+
+## What Coddy adapts on Android
+
+Nothing needs configuring: Coddy reads the Termux environment when it starts.
+
+- **Programs it starts.** **`run_command`**, background tasks, hooks, MCP servers over stdio, git and
+  ripgrep are started the way Termux starts its own programs. Where Termux goes through
+  **`/system/bin/linker64`**, Coddy does too, and a script is handed to its interpreter; a script
+  whose first line names **`/usr/bin/env`** or **`/bin/sh`** gets the Termux program of that name.
+  This is what the **`termux-exec`** library does for Termux's own programs; Coddy, like any Go
+  program, starts processes with a system call the library cannot see, so it does the same itself.
+  A shell command runs in Termux's **`bash`** and behaves as it does in your session.
+- **Its own path.** Started through the linker, Coddy finds its binary from the command line rather
+  than **`/proc/self/exe`**, which names the linker, so **`coddy update`** and
+  **`coddy serve --daemon`** reach the right file.
+- **Certificates.** Coddy trusts the bundle of Termux's **`ca-certificates`** package,
+  **`$PREFIX/etc/tls/cert.pem`**, next to Android's system store. It does so through
+  **`SSL_CERT_FILE`**, so a bundle you export yourself wins.
+- **Temporary files.** **`TMPDIR`** falls back to **`$PREFIX/tmp`**: the Android default,
+  **`/data/local/tmp`**, is not writable by an app.
+- **Opening a browser.** Sign-in flows such as **`coddy providers login`** open the phone's browser
+  with **`termux-open-url`**, and the browser reaches the callback Coddy listens for on the device's
+  loopback address.
+- **Updates.** **`coddy update`** downloads the Android archive of the new release and replaces the
+  binary in place; see [Update](update.md).
+
+## Running `coddy serve`
+
+**`coddy serve`** works as elsewhere, and the web UI opens at **`http://127.0.0.1:12345/`** in the
+phone's browser. Android has no systemd, so **`coddy serve install`** is not available: run the
+server in a Termux session, in **`tmux`** (**`pkg install tmux`**), or in the background with
+**`coddy serve --daemon`** (see [coddy serve](../operate/serve.md)).
+
+Android stops the processes of an app it considers idle. While the server has to stay up, take
+Termux's wake lock (**`termux-wake-lock`**, or from the Termux notification) and let Termux run
+unrestricted in the battery settings. Android 12 and later also kill the background processes of an
+app beyond a limit (the "phantom process killer"); Termux's documentation describes how to lift it.
+
+## Limitations
+
+- Only the 64-bit builds are published, arm64 and x86_64: a 32-bit ARM or x86 Android device is
+  not covered.
+- A program that is itself a static executable cannot run where Termux starts programs through the
+  linker, whoever starts it; that is Android's rule, and the error is the same **`unexpected e_type`**.
+
+## Building it yourself
+
+**`make android`** cross-compiles **`build/coddy-android-arm64`** and **`build/coddy-android-amd64`**
+with **`TAGS`** as for **`make build`**, and **`make check-android`** type-checks the Android build.
+Both need the Android NDK, which links the binaries against Bionic; see
+[Build from source](../contributing/build.md#android-termux).
 
 
 # Getting started / Troubleshooting
@@ -2025,6 +2187,21 @@ brew upgrade --cask coddy                               # the cask; a formula in
 ```
 
 A copy under `~/.local/bin` or a build of your own is untouched by any of this and keeps updating itself. See [Update](update.md#installations-owned-by-a-package-manager).
+
+## Termux says `has unexpected e_type: 2` or `Bad system call`
+
+**Symptom.** In Termux on Android, `coddy` stops at once with `error: ".../coddy" has unexpected e_type: 2`. Or it starts, but a provider request fails with `x509: certificate signed by unknown authority` or `lookup ... on [::1]:53: ... connection refused`, or the process dies with `Bad system call`.
+
+**Cause.** That is the Linux build. A Termux that targets Android 10 or later starts every program through Android's linker, which loads position-independent executables only, and the Linux build is a static one. Where Termux starts it directly, it looks for certificates and for `/etc/resolv.conf` at Linux paths Android does not have, and some Android versions forbid a system call it makes.
+
+**Fix.** Install the Android build, `coddy_X.Y.Z_android_arm64.tar.gz` (or `_amd64` on x86_64), which the install script picks in Termux. Running the script again replaces the Linux binary in place:
+
+```bash
+curl -fsSL https://coddy.dev/install.sh | bash
+coddy -v
+```
+
+In a Termux session that was open during the install, `coddy` is found only after `source ~/.bashrc` or in a new session. See [Android (Termux)](android.md).
 
 ## Windows notes
 
@@ -13111,6 +13288,18 @@ MCP servers started over stdio get Coddy's environment plus the `env` map of the
 | `SSH_CONNECTION`, `SSH_TTY` | `external/cli/tui/terminal.go` | A lone Escape is resolved after 100 ms over SSH and 10 ms locally. | [Keyboard](keyboard.md) |
 | `COLUMNS` | `internal/skills/commands.go` | The width of the `coddy skills list` table; default 100, values under 40 are ignored. | [Skills](../features/skills.md) |
 
+## Android (Termux)
+
+Read by the Android build only (`internal/platform/android.go`, `android_init.go`), where Termux exports them. None needs setting by hand.
+
+| Variable | Read by | Meaning | Documented in |
+|---|---|---|---|
+| `TERMUX__PREFIX`, `PREFIX` | `internal/platform/android.go` | The Termux prefix, the first of the two that holds an absolute path; default `/data/data/com.termux/files/usr`. Coddy takes `etc/tls/cert.pem` and `tmp` from it, and the programs of its `bin` for a `/bin/...` or `/usr/bin/...` path. | [Android (Termux)](../getting-started/android.md#what-coddy-adapts-on-android) |
+| `TERMUX_APP__DATA_DIR`, `TERMUX_APP__LEGACY_DATA_DIR` | `internal/platform/android.go` | The app data directory under both its names. A program under it is started through `/system/bin/linker64` when Coddy itself was; without the variables, the directory the prefix sits in stands for it. | [Android (Termux)](../getting-started/android.md#what-coddy-adapts-on-android) |
+| `SSL_CERT_FILE` | Go's `crypto/x509` | Set to `$PREFIX/etc/tls/cert.pem` when unset and the file exists, so the Termux CA bundle is trusted next to Android's store. | [Android (Termux)](../getting-started/android.md#what-coddy-adapts-on-android) |
+| `TMPDIR` | Go's `os.TempDir` | Set to `$PREFIX/tmp` when unset: Go's Android default, `/data/local/tmp`, is not writable by an app. | [Android (Termux)](../getting-started/android.md#what-coddy-adapts-on-android) |
+| `TERMUX_EXEC__PROC_SELF_EXE` | the child process | Set for a program Coddy starts through the system linker to that program's path, which `/proc/self/exe` does not name then; dropped for every other child. | [Android (Termux)](../getting-started/android.md#what-coddy-adapts-on-android) |
+
 ## Docker and compose
 
 These are read by the compose files and the `Dockerfile`, not by the binary. Inside the container the image sets `CODDY_HOME=/home/user/.coddy`, `CODDY_CWD=/workspace` and `CODDY_CONFIG=/home/user/.coddy.yaml`, and `docker-compose.yml` overrides `CODDY_CONFIG` with the mounted `/home/user/.coddy/config.yaml`.
@@ -16292,7 +16481,7 @@ Output: **`dist/coddy_<version>_linux_<arch>.deb`** and **`.rpm`**. Knobs:
 | Variable | Default | What |
 |----------|---------|------|
 | **`PKG_ARCHS`** | host **`GOARCH`** | architectures to package, e.g. **`"amd64 arm64"`** |
-| **`PKG_TAGS`** | **`http ui scheduler memory cli`** | build tags for the packaged binary |
+| **`PKG_TAGS`** | **`http ui scheduler memory cli gateway swarm`** | build tags for the packaged binary |
 | **`DIST_DIR`** | **`dist`** | where the packages land |
 
 ```bash
@@ -16318,6 +16507,13 @@ fails until **`packaging/systemd/coddy.service`** matches it byte for byte. The 
 packages** CI job then checks that both package formats carry that file and the maintainer
 scripts.
 
+The packages suggest **`tmux`** and require nothing. Coddy runs without it, and its console runs
+well inside it, where a session outlives a closed terminal or a dropped SSH connection. A
+suggestion is named and never installed - **`apt`** and **`zypper`** list it during the install,
+**`dnf`** keeps it in the metadata (**`rpm -q --suggests`**) - so the choice stays with the user.
+The **Distribution packages** CI job checks that the deb and the rpm suggest it and neither
+requires nor recommends it.
+
 Version strings are normalised for the two formats by **`scripts/package-version.sh`** - rpm forbids
 **`-`** in a version and dpkg reads the last one as the start of the Debian revision, so
 **`1.0.8-5-gb6b7d31-dirty`** is packaged as **`1.0.8+5.gb6b7d31.dirty`**, which both accept and both
@@ -16342,7 +16538,9 @@ brew install --cask dist/coddy.rb
 ```
 
 The cask links **`coddy`**, **`coddy.1`** and both completion scripts, which is why the release
-**`darwin`** and **`linux`** archives carry those files beside the binary. Each release publishes
+**`darwin`** and **`linux`** archives carry those files beside the binary. It recommends **`tmux`**
+in its **`caveats`** rather than declaring it: a cask's **`depends_on`** has no optional form, and
+Coddy runs without tmux, so the cask names it and installs nothing. Each release publishes
 **`coddy.rb`** as an asset, and **`brew install --cask <url>`** installs from it.
 
 ### Homebrew formula
@@ -16384,6 +16582,46 @@ make build
 ```
 
 Use this when you only need stdio ACP and want fewer dependencies and no **`npm`** step.
+
+## Android (Termux)
+
+```bash
+make android TAGS="http ui scheduler memory cli gateway swarm"   # build/coddy-android-arm64, -amd64
+make check-android                                              # go vet with GOOS=android, test files included
+```
+
+The Android build is the same sources with **`GOOS=android`** and cgo, linked by the Android NDK
+against Bionic for arm64 and x86_64: a position-independent executable that names
+**`/system/bin/linker64`** as its interpreter and needs only **`libc`**, **`libdl`** and
+**`liblog`**. That is the one shape Termux can start where it runs every program through Android's
+linker, which turns the static **`GOOS=linux`** binary away with **`has unexpected e_type: 2`**, and
+Bionic gives the binary what libc gives any program: its own arguments under the linker and
+Android's resolver. **`GOOS=android`** also keeps Go off the system calls Android's seccomp filter
+forbids. Go links android/amd64 only through a C toolchain anyway, and a build without cgo would
+ask **`127.0.0.1:53`** for every host, so **`internal/platform/android_nocgo.go`** stops it at
+compile time. What users see is on [Android (Termux)](../getting-started/android.md).
+
+**`scripts/android-cc.sh arm64|amd64`** prints the NDK clang both targets use, for API 24 (Android
+7.0, the oldest Termux runs on): it takes the NDK from **`ANDROID_NDK_HOME`**, **`ANDROID_NDK_ROOT`**
+or **`ANDROID_NDK`**, which the GitHub runners set, and otherwise the newest one under the SDK
+(**`sdkmanager "ndk;27.3.13750724"`** installs the version the runners carry).
+
+A binary built outside Termux carries none of the patches Termux applies to its own Go, so
+**`internal/platform`** makes the remaining adjustments at run time. **`android_init.go`** keeps the
+path of the binary when the linker started it, since **`/proc/self/exe`** names the linker then,
+and points **`SSL_CERT_FILE`** and **`TMPDIR`** at the Termux prefix; **`platform.AdaptCommand`**
+starts a child process the way **`termux-exec`** would, through the linker when Coddy itself came up
+that way, with **`/usr/bin/env`** and **`/bin/sh`** in a shebang taken from the prefix. Every place
+that builds an **`exec.Cmd`** calls **`AdaptCommand`** before **`Start`**, and
+**`TestEverySpawnSiteAdaptsTheCommand`** fails on one that does not.
+
+The decisions are plain functions in **`internal/platform/android.go`**, held on any Unix host by
+**`features/android_termux.feature`** and **`internal/platform/android_test.go`**. The files behind
+**`//go:build android`** are compiled only by **`make check-android`** and by the **Android
+cross-build** job of the pull request checks, which also builds both release binaries, checks that
+each is position-independent, names the Android linker and needs no library Android does not ship,
+and uploads them as the **`coddy-android-arm64`** and **`coddy-android-amd64`** artifacts to try on
+a device before the release.
 
 ## Version string (`LDFLAGS`, `print-version`)
 
@@ -16461,6 +16699,7 @@ On each SemVer git tag **`X.Y.Z`** that is on **`main`**, the [**Release binarie
 |---------|----------|
 | **`coddy_X.Y.Z_linux_amd64.tar.gz`** | Linux x86_64 |
 | **`coddy_X.Y.Z_linux_arm64.tar.gz`** | Linux arm64 |
+| **`coddy_X.Y.Z_android_arm64.tar.gz`**, **`coddy_X.Y.Z_android_amd64.tar.gz`** | Android arm64 and x86_64, under Termux (see [above](#android-termux)) |
 | **`coddy_X.Y.Z_windows_amd64.zip`** | Windows x86_64 (**`coddy.exe`**) |
 | **`coddy_X.Y.Z_darwin_amd64.tar.gz`** | macOS Intel |
 | **`coddy_X.Y.Z_darwin_arm64.tar.gz`** | macOS Apple Silicon |
@@ -16473,7 +16712,7 @@ The **`.tar.gz`** archives carry the man page and the shell completions beside t
 packages wrap the Linux binaries the same job just built rather than compiling their own, so the
 **`.deb`**, the **`.rpm`** and the **`.tar.gz`** of one tag hold byte-identical executables.
 
-Tags match the full feature set: **`http`**, **`ui`**, **`scheduler`**, **`memory`**. Manual run after a tag exists:
+Tags match the full feature set: **`http`**, **`ui`**, **`scheduler`**, **`memory`**, **`cli`**, **`gateway`**, **`swarm`**. Manual run after a tag exists:
 
 ```bash
 gh workflow run "Release binaries" --ref X.Y.Z -f tag=X.Y.Z
@@ -19027,6 +19266,8 @@ Short map for automation-friendly contributors.
 
 Primary conversational surface for bundled UI lives at **`POST /v1/responses`** with **`stream:true`**. Prefer it over **`POST /v1/chat/completions`** when shipping Coddy-hosted experiences.
 
+Run **`make android`** for the Android (Termux) binaries, **`build/coddy-android-arm64`** and **`build/coddy-android-amd64`**: **`GOOS=android`** with cgo, linked by the Android NDK against Bionic (**`scripts/android-cc.sh`** finds the NDK), a position-independent executable naming **`/system/bin/linker64`**, which Termux can start where it runs programs through the system linker (the static **`GOOS=linux`** build is refused there with `has unexpected e_type: 2`). The release publishes them as **`coddy_X.Y.Z_android_arm64.tar.gz`** and **`coddy_X.Y.Z_android_amd64.tar.gz`**; a build without cgo does not compile (**`internal/platform/android_nocgo.go`**). What Termux patches into its own Go is done at run time by **`internal/platform/android*.go`** (the binary's own path under the linker, certificates, **`TMPDIR`**), and every **`exec.Cmd`** goes through **`platform.AdaptCommand`** before **`Start`** (held by **`TestEverySpawnSiteAdaptsTheCommand`**). Guide: **`docs/getting-started/android.md`**.
+
 Run **`make deb`** / **`make rpm`** for the Linux packages (**`PKG_ARCHS`**, **`PKG_TAGS`**, **`DIST_DIR`** knobs; nfpm is fetched on demand, nothing to install) and **`make brew VERSION=X.Y.Z`** to render the Homebrew cask for a release. CI builds the Linux packages on every pull request.
 
 Swagger lives at **`/docs/`**, OpenAPI YAML at **`/openapi.yaml`**.
@@ -19039,6 +19280,7 @@ A git **`pre-commit`** hook runs the linter before every commit, so nothing land
 - On commit, **`.githooks/pre-commit`** calls **`scripts/checks.sh`**, which runs **`make lint`** by default: `golangci-lint` over the untagged tree, over every tag but `ui` and over the shipped tag set, so every Go file of the host platform is compiled once, then `tsc --noEmit` over the SPA sources (**`make ui-typecheck`**). Commits touching only non-code files (docs, etc.) skip the gate.
 - Scope knobs: **`CODDY_HOOK_TESTS=fast`** also runs a quick **`go test ./...`**, **`CODDY_HOOK_TESTS=full`** the express **`make test`**, **`CODDY_HOOK_TESTS=matrix`** every tag combination; **`CODDY_HOOK_LINT=0`** skips the linter; **`CODDY_HOOK_SKIP=1`** bypasses everything.
 - Emergency bypass for a single commit: **`git commit --no-verify`**.
+- The Android half of **`internal/platform`** (**`//go:build android`**) is compiled by neither gate either: **`make check-android`** runs **`go vet`** with **`GOOS=android`** and cgo through the Android NDK, test files included, and CI runs it in the **Android cross-build** job, which also uploads both release-shaped binaries as artifacts.
 - Both gates compile the **host** platform only. Changing a file behind **`//go:build windows`**, or a signature it shares with the rest of the tree, needs **`make check-windows`** (cross-build plus **`go vet`** over every non-**`ui`** tag combination, test files included) and **`make lint-windows`**. CI runs both, and additionally runs **`go test`** on a real **`windows-latest`** runner for **`internal/platform`**, **`internal/bgtask`**, **`internal/tools/shell`**, **`internal/update`**, **`internal/hooks`**, **`internal/rules`** and the console TUI (**`external/cli`**, `-tags=cli`), plus **`cmd/coddy`**, **`internal/config`**, **`internal/dryrun`** and **`internal/swarm`**, whose tests write files and compare paths on the runner's CRLF checkout. The platform packages and the console suite run on a **`macos-latest`** runner as well (job **`test-macos`**), which also builds the console and drives the binary through a real pty with **`examples/cli/cli_e2e_startup.py`** (first frame, keys, exit); the `cli` job of the Linux test matrix runs that pty script too, and its `gateway` job builds the gateway binary and runs **`examples/gateway/tg_e2e_offline.sh`**: the real **`coddy serve`** against the fake Bot API and the scripted model of **`cmd/tgfake`**, no Telegram and no LLM.
 
 ## Documentation contract
