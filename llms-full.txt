@@ -3595,14 +3595,32 @@ flag-style shortcuts routed to the console: `coddy -c` continues the latest
 session in this folder and `coddy -p "..."` runs one non-interactive prompt
 (`coddy -p -` and `coddy -i FILE` read it from stdin or from a file).
 Startup runs before the terminal enters raw mode: the config, the session
-store, the skills, the rule folders and the configured MCP servers, then
-the first frame. Nothing reads the workspace tree: nested `AGENTS.md` files
-are read on demand, from the folders a tool enters (`docs/features/rules.md`), so a
-console opened in a home directory (a macOS `~/Library` alone runs to
-hundreds of thousands of entries) draws its frame at once instead of
-looking hung. The git branch in the footer is read with a three-second
-bound for the same reason. A first ctrl+c during startup cancels it; a
-second one ends the process the default way instead of being swallowed.
+store, the skills and the rule folders, then the first frame. The skills are
+read from their folders only, never from `skills.sources`, so hundreds of
+installed skills cost a fraction of a second and a marketplace that does not
+answer costs nothing ([Skills](../features/skills.md#when-skills-are-read)).
+The configured MCP servers are **not** on that path, whatever starts them - a
+program the config names, an npm package run through `npx`, a remote server
+over streamable HTTP or SSE: they connect in the background once the console
+has drawn, for a new session and for one resumed with `coddy -c` or
+`/resume` alike, all at once and each under a 20-second bound, and the
+footer counts them (`MCP 2/5`) until every one has answered. A prompt sent
+before that waits for its tool list on the status line (`Connecting MCP
+servers`), and Escape ends the wait like any other step. A server that fails
+or that the trust gate holds is said once as a row of the visible transcript,
+with what to do about it. A server that did not answer in time is tried
+once more at the next prompt - the first start of an `npx` package can
+outlast the bound while the package installs - and one that failed
+otherwise, or twice, is not dialed again until its switch in `/mcp`, a
+reload or a new session. Resuming a
+session restores its current MCP notices after the transcript is cleared.
+Nothing reads the workspace tree: nested `AGENTS.md` files are read on demand, from the folders
+a tool enters (`docs/features/rules.md`), so a console opened in a home
+directory (a macOS `~/Library` alone runs to hundreds of thousands of
+entries) draws its frame at once instead of looking hung. The git branch in
+the footer is read with a three-second bound for the same reason. A first
+ctrl+c during startup cancels it; a second one ends the process the default
+way instead of being swallowed.
 
 Quitting the console (double ctrl+c, ctrl+d, `/quit`) prints a resume hint
 after the terminal is restored:
@@ -3685,7 +3703,9 @@ Top to bottom:
   background tasks run right now - `15m 08s · 13.5k tokens · 1 running task ·
   Thinking…`. Before the first token it is the clock and the phrase alone
   (`57s · Waiting for the model`), and the tasks appear only while something
-  runs. The tokens are the agent's `turn_progress` update: the provider's
+  runs. A prompt sent while the session's configured MCP servers are still
+  connecting opens on `Connecting MCP servers` instead, with a counter of
+  its own, and goes back to waiting for the model when they have answered. The tokens are the agent's `turn_progress` update: the provider's
   figures for the calls that finished plus an estimate of the one in flight, so
   the count moves while the answer streams; a console attached over `--remote`
   receives the same update. Then comes the phrase of the current step and, for a
@@ -3725,7 +3745,7 @@ Top to bottom:
   `@Dockerfile:21-31` or `@f.go#L21-31`, absolute paths included. In remote mode the
   list comes from the server that runs the session. The grammar, what each kind
   attaches and the limits are in [Mentions](../features/mentions.md).
-- **Footer**: dim `cwd (git-branch) • title [• plan] [• N tasks running (/tasks)] [• accept edits|bypass]`,
+- **Footer**: dim `cwd (git-branch) • title [• plan] [• MCP N/M] [• N tasks running (/tasks)] [• accept edits|bypass]`,
   then `↑in ↓out  N.N%/ctx (auto)` left and `(provider) model [• reasoning]`
   right. The permission mode closes the first line when it is not `ask`,
   `bypass` in the warning colour, so a session that approves everything never
@@ -3734,8 +3754,12 @@ Top to bottom:
   session entered. A setting changed for a number of turns adds a line
   in the accent colour under the second one, `next turn: model x • next 3
   turns: reasoning high` (`this turn` while the running turn holds it). The running-task note stays after the turn that started the tasks has
-  ended, which is when the status line that counted them is gone. When the
-  line does not fit, the path and the title give way and the note stays.
+  ended, which is when the status line that counted them is gone. The MCP
+  count is there only while a configured server is still connecting after
+  the first frame - connected out of the ones being dialed, a held project
+  declaration not counted - and leaves the line once every one has
+  answered. When the line does not fit, the path and the title give way and
+  the notes stay.
   A third line appears while the active model's provider reports account
   usage (today: `neuraldeep`, read from the hub's `GET /v1/limits`; `codex`,
   read from the Codex backend's usage endpoint; `devin`, read from the
@@ -4336,6 +4360,14 @@ and is visible via `coddy mcp list` (approve with `coddy mcp trust <name>`).
 
 *The ctrl+l model selector*
 
+![The first frame with the MCP count in the footer while a server is still connecting](../assets/cli-tui/21-mcp-connecting.png)
+
+*The first frame: the console is drawn and takes keys while its MCP servers connect, and the footer counts them (`MCP 1/2`)*
+
+![A prompt sent before the servers answered: the status line reads Connecting MCP servers](../assets/cli-tui/22-mcp-connecting-turn.png)
+
+*A prompt sent before the servers answered waits for its tool list on the status line*
+
 ![The usage footer with the account windows](../assets/cli-tui/09-usage-footer.png)
 
 *The usage footer with the account windows*
@@ -4431,10 +4463,35 @@ comparison, as described under **Visual model**.
 - Real pty, no model: `examples/cli/cli_e2e_startup.py` opens the built
   binary in a pty (pexpect + pyte), waits for the first frame, types into the
   editor, clears it with ctrl+c and exits with the second one, then checks the
-  resume hint and the exit status. CI runs it in the `cli` job of the Linux test
+  resume hint and the exit status; a second case configures a stdio MCP
+  server that never answers (`sleep 600`) and checks that the first frame
+  still comes within seconds, with `MCP 0/1` in the footer, and that the
+  console still leaves through double ctrl+c; a third one adds 300 installed
+  skills and a `skills.sources` entry that accepts connections and never
+  answers (issue #319), and checks that the first frame comes within two
+  seconds, that a typed key is echoed and that the source was never
+  contacted. Those two are the startup bounds CI enforces. The performance of the startup itself is
+  measured, not gated: `make bench-cli-startup` times the first frame and a
+  typed probe's echo across skill sets in the same pty, and
+  `make bench-cli-startup-real` does it on a private copy of the operator's
+  `~/.coddy`, MCP servers included, reporting when every server settled and
+  which failed (`docs/plans/console-mcp-startup.md` keeps the numbers a
+  change cited). CI runs it in the `cli` job of the Linux test
   matrix and on `macos-latest` (job `test-macos`, which also runs the platform packages and
   the console suite on macOS), because the Go suite never opens a pty and the
   console's terminal path is exactly what differs between hosts.
+- MCP servers of every kind on a real pty: `examples/cli/cli_e2e_mcp_servers.py`
+  configures a native program (compiled from Go by the script and run by its
+  path), an npm package started through the real `npx -y` from a local
+  folder (no registry is asked), a remote server over streamable HTTP and one
+  over SSE, and serves a scripted model that calls the tool of each in turn.
+  It checks the first frame, the four tokens in the answer, what the model
+  received from each server, and the four servers listed as connected in
+  `/mcp`. It needs `go` and `npx` on `PATH`; CI runs it in the `cli` job of
+  the Linux test matrix. `features/cli_tui.feature` holds the same story in
+  the Go suite for a program, streamable HTTP and SSE, and
+  `features/mcp_tool_calls.feature` runs every kind, `npx` included, through
+  a real ReAct turn of the HTTP surface.
 - Message queue on a real pty, no model: `examples/cli/cli_e2e_queue.py`
   serves a scripted model whose first answer waits for the script, and checks
   the first-use question and the saved `agent.queue_mode`, Tab queueing the
@@ -9014,11 +9071,32 @@ To share it with others, publish to GitHub and list it on [skills.sh](https://sk
 
 ---
 
+## When skills are read
+
+A session reads its skills from disk when it starts (the console's first
+session, `session/new` or `session/load` over ACP, a new chat in the web UI),
+when its workspace changes and when the configuration is reloaded; nothing
+is read over the network for that.
+
+- **Read at the start, bodies included**: every `SKILL.md` (and root `.md` /
+  `.mdc` skill file) of the folders in `skills.dirs` and of the managed
+  folder, about 0.1 ms per skill, so a thousand installed skills add some
+  100 ms to the console's first frame; the skills built into the binary are
+  held in memory.
+- **Never read at the start**: `skills.sources`. A source's manifest or
+  repository is fetched only when someone asks for it - `coddy skills sync`,
+  `coddy plugin marketplace sync` and `/plugin`, Settings → Skills
+  (**Refresh**, **Update**), `GET /coddy/skills/updates` - so a large
+  marketplace, or a source that does not answer, never delays a session.
+
+What can hold a start up are the configured MCP servers; the console
+connects them after its first frame ([MCP servers](mcp.md#mcp-server-lifecycle)).
+
 ## How skills are applied
 
 On each `session/prompt` the agent:
 
-1. Scans `skills.dirs` for the session cwd and `CODDY_HOME`.
+1. Uses the skills the session read from `skills.dirs` for its cwd and `CODDY_HOME` ([When skills are read](#when-skills-are-read)).
 2. All loaded (and enabled) skills are always active — their bodies are available as slash commands and injected on demand.
 3. Builds the **`{{.Skills}}`** system-prompt block: the slash-command catalog listing all skills, plus the full body of any always-active or glob-matched skill whose name is **not** already in the catalog.
 4. Looks for `/name` invocations in the text the user typed and **appends each matched skill's body to the user message**, as a `<coddy_attachment path="skill:name" kind="skill">` element after the typed text. The message goes into **session history with the body in it**, so later turns replay the same bytes: the provider's cached prefix holds, and the model keeps the instructions it was given until a compaction folds the message into its summary ([Mentions and the prompt cache](mentions.md#mentions-and-the-prompt-cache)). The transcript shows the message as typed, because the web UI drops `kind="skill"` elements, and so does the history replay a reopened console or an ACP editor receives. A follow-up queued during a turn gets its skill bodies the same way.
@@ -9964,6 +10042,15 @@ parts of an answer reach the transcript: Coddy passes the `text` content of a
 The MCP server runs as a subprocess. Communication via stdin/stdout (newline-delimited
 JSON-RPC 2.0).
 
+Coddy runs `command` with `args` exactly as they are written: a program by its path or
+by its name on `PATH`, a package runner such as `npx -y <package>` or `uvx <package>`,
+a container started with `docker run -i`. What the command needs is the operator's to
+provide - Node.js for `npx`, the network for a package that is not in its cache yet -
+and Coddy neither rewrites the arguments nor installs anything. A program, an `npx`
+package, a streamable HTTP server and an SSE server are each run through a real turn by
+`features/mcp_tool_calls.feature` and, in the console, by
+`examples/cli/cli_e2e_mcp_servers.py`.
+
 Configuration in `session/new`:
 ```json
 {
@@ -10105,12 +10192,25 @@ mcp_servers:
 
 1. On `session/new`, the agent connects every enabled server from the merged
    config.yaml + `~/.coddy/mcp.json` + `./.coddy/mcp.json` list that the workspace
-   trust gate admits, then any ACP client-supplied servers. A session restored from
-   disk - reopened by an editor with `session/load`, or read by the web UI, a chat
-   or the console - connects its configured servers before its first turn instead,
-   through the same gate: reading a stored conversation starts no process, where it
-   used to start a set per session that stayed for the life of the server. Its ACP
-   client-supplied servers still connect on load
+   trust gate admits, then any ACP client-supplied servers. The servers are
+   dialed **concurrently**, each under its own 20-second bound - the servers
+   an ACP client sends too, which get no second try since only that client
+   can declare them again (a new session does): the call costs
+   the slowest server rather than the sum of them, and a server that starts
+   and never answers `initialize` - a stdio command as much as a remote URL
+   that accepts the connection and stays silent - fails alone, with a
+   warning, while the others connect beside it. A session restored from
+   disk - reopened by an editor with `session/load`, or read by the web UI or
+   a chat - connects its configured servers before its first turn instead,
+   through the same gate: reading a stored conversation starts no process,
+   where it used to start a set per session that stayed for the life of the
+   server. Its ACP client-supplied servers still connect on load. The
+   interactive console goes one step further and connects the servers of the
+   session it opens, new or resumed, **after its first frame**
+   ([Console](../surfaces/console.md)): `coddy` draws at once, the footer
+   counts the servers while they come up, and a prompt sent before they have
+   answered waits for its tool list on the status line (`Connecting MCP
+   servers`)
 2. The agent calls `tools/list` on each server and registers the tools
 3. The staged config tools can add, replace, or delete a global `mcp_servers`
    entry while the session is running: `config_set` stages the uci-like command
@@ -10153,7 +10253,22 @@ confirm-then-commit workflow, and discovery safety checks.
 
 ## Error Handling
 
-- If an MCP server fails to start, the session still proceeds with a warning
+- If an MCP server fails to start, the session still proceeds with a warning,
+  and the server is not dialed again at every turn: a settings reload, its
+  switch (`/mcp`, Settings → MCP servers) or a new session tries it again
+- A server that starts and never answers `initialize` is given up after 20
+  seconds, and the warning names the bound. It is tried once more when the
+  session's next turn starts, because a first start can outlast the bound for
+  a good reason: `npx -y <package>` installs the package before it runs it
+  (16 s for `@modelcontextprotocol/server-everything` on a laptop with an
+  empty npm cache), and the next try starts it from the cache. A server that
+  does not answer the second time either stays down until one of the above.
+  A dial cut short from outside - a save that reconnects many sessions under
+  one deadline, a request that ended - is retried at the next turn as well
+- What the server's own command does before it answers is up to the
+  operator: a package runner such as `npx -y <package>` asks its registry for
+  the latest release on every start and waits on the network, and a version
+  in `args` (`<package>@<version>`) is what keeps it off the network
 - Failed MCP tool calls return an error observation to the LLM
 - The LLM can decide to retry, use alternative tools, or inform the user
 
@@ -15524,6 +15639,7 @@ What ships is still the embedded copy: a change under `external/ui/src` is compl
 - **`make test-cache`** - the prompt-cache group on its own: the `features/prompt_cache_*.feature` specs and every test named `TestPromptCache*`, which check what each request sends the provider - the same system message for the whole session, a history that only grows at its end, every rule at most once and nothing no path brought in. It is part of `make test`; run it when a change touches the system prompt, the rules, the history or the send boundary, and name a new test of the kind `TestPromptCache...` so it joins the group.
 - **`make test-perf`** - the performance group: the benchmarks in the `perf_test.go` files, which `make test` never runs. They time what a turn repeats (rules discovery, the look for the rules a tool call brings in, the send boundary) and report what a session over this repository's own rules costs the context (`system-tokens`, `request-tokens`, `duplicate-rules`). `BENCH=<regexp>` narrows them, `BENCHTIME=5x` sets the runs; compare a branch with `main` before and after a change to the prompt or the rules.
 - **`make check-windows`** and **`make lint-windows`** - whenever you touch a file behind `//go:build windows`, or a signature it shares with the rest of the tree. The host runs never compile that half; CI cross-builds it and also runs the OS-specific packages on real `windows-latest` and `macos-latest` runners, the latter driving the console through a pty with `examples/cli/cli_e2e_startup.py`.
+- **`make bench-cli-startup`** and **`make bench-cli-startup-real`** - the performance checks of the console's startup, not a gate: the first is timed from spawn to the first frame and to a typed probe being echoed, in a real pty, with an empty, a real and a synthetic skill set and a source that never answers; the second does the same on a private copy of your own `~/.coddy` (never written to), MCP servers included, and reports when every one of them settled and which failed. Both need `examples/cli/requirements.txt` and a `cli`-tagged `build/coddy`; `BENCH_RUNS` sets the runs per case. A change that touches the startup path cites its numbers in a design record, the way `docs/plans/console-mcp-startup.md` does. The startup bounds CI enforces are in `cli_e2e_startup.py`: the first frame within seconds with a stdio MCP server that never answers, and within two seconds with 300 skills and a skill source that never answers.
 - **`make ui-test`** (`cd external/ui && npm test`) - the SPA's own vitest suite on its own (`npm run test:watch` while editing). `make test` runs it as well, and CI runs it once, in the job that reads the tag matrix. **`make ui-typecheck`** (`npm run typecheck`) is the TypeScript compiler over the same sources with no emit, the step `make lint` ends with: `vite` only transpiles, so a type error reaches the bundle unless this runs.
 - **The harnesses in `examples/`** - real binaries against a reachable model: `./examples/build_coddy.sh`, then `./examples/test_acp.sh` (ACP over stdio), `./examples/test_httpserver.sh` (a disposable `coddy serve`), `./examples/test_cli.sh` (the console in a pty, Linux only) and `./examples/test_swarm.sh` (three relays, no model needed). The layout and every script are in [examples/README.md](examples/README.md).
 
@@ -18829,7 +18945,7 @@ Short map for automation-friendly contributors.
 | `internal/dryrun` | The **`--dry-run`** probes over a loaded config: **`Prepare`** (the static check, then **`config.LoadReadOnly`** and a **`config.Locator`** so every finding carries its line), **`Run`** (paths in **`paths.go`**, LLM providers through **`llm.ListModels`** with the configured models checked against the list in **`providers.go`**, listen addresses, the Telegram token, remote MCP servers, configured remotes and the `--remote` target, swarm joins and upstreams in **`network.go`**), and the checklist **`Report`** (`ok` / `warning` / `error` / `skipped` per config path, exit 1 on errors; alone the flag prints problems and the status line, with **`--test-config`** the config report and every probe). Global `mcp_servers` only: project-local `.coddy/mcp.json` stays behind the trust gate. `coddy serve` hands it the subsystems **`serve.Resolve`** enabled and their addresses (**`cmd/coddy/dryrun.go`**). |
 | `internal/serve` | What **`coddy serve`** is: the **`Runtime`** every subsystem shares (paths, logger, one session store and one **`session.Manager`**, the turn-mirror slot, and the surfaces that offered to show a detached subagent's permission prompt - the HTTP server, a Telegram bot - which are all asked at once, the first answer winning, and the process **background waker** (**`wake.go`**: a finished **`notify_on_finish`** task's turn goes to the surface that offered it first by rank - the Telegram chat bound to the session, then the HTTP server - or runs through the manager when neither is up), the **`Supervisor`** that runs them (**`subsystem.go`**: a **`Subsystem`** descriptor per surface with its **`enable`** key, its build tag and its **`Available`** flag, so an enabled surface the binary cannot run is refused by name, plus **`Fingerprint`** for what can be rebuilt in place and **`RestartKey`** for what only a fresh process can adopt; **`supervisor.go`**: one goroutine per surface with panic recovery, a diff applied on every config reload - start, stop or rebuild only what moved - **`ErrRestartRequested`** when a **`RestartKey`** moves under a **`Restartable`** process, and shutdown in reverse declaration order so intake stops before the API), and the **background dispatcher** (**`dispatcher.go`**: the restart policy and the **`Record`** at **`<home>/serve.json`**; **`daemon.go`**: **`StartDetached`**, **`RunDispatcher`**, the worker process and the **`CODDY_SERVE_ROLE`** split, exit status **`ExitRestart`** = 75), and the **systemd user service** (**`systemd.go`**: **`UserService`** behind **`coddy serve install`** / **`uninstall`**, the unit renderer shared with the package, the **`PATH`** drop-in, the role **`service`** the unit sets so a listen-address change exits 75 under systemd too). Untagged: it names no tagged package, and the surfaces reach it through **`Available`** consts and stubs. Guide: **`docs/operate/serve.md`**. |
 | `internal/agent` | ReAct orchestration, MCP/tool wiring, and the opt-in wait for a hit usage limit (**`limit_wait.go`**: a **`llm.QuotaResetError`** from the resilient wrapper makes a top-level turn wait for the reset under **`agent.wait_for_limit_reset`**, sending **`provider_usage`** updates with **`resuming`** every 20 s, then re-issue the same call). |
-| `internal/mcp` | MCP transports, merged server list, and the **workspace trust gate** for project-local **`.coddy/mcp.json`** (**`trust.go`**, **`gate.go`**; policy **`mcp.project_trust`**, approvals in **`<home>/mcp-trust.json`**). Guide: **`docs/features/mcp.md`**. |
+| `internal/mcp` | MCP transports, merged server list, and the **workspace trust gate** for project-local **`.coddy/mcp.json`** (**`trust.go`**, **`gate.go`**; policy **`mcp.project_trust`**, approvals in **`<home>/mcp-trust.json`**). A server's `command` and `args` run exactly as written: nothing here knows `npx` or any other package runner. **`mcptest`** serves test MCP servers of every kind a user configures - the test binary re-executed on stdio, a local npm package started by the real `npx`, streamable HTTP and SSE - each answering one tool with its token. The dial itself lives in **`internal/session/mcp_dial.go`** (every configured server under its own 20 s bound, one more try at the next turn for one that did not answer) and the console's background connect in **`internal/session/mcp_background.go`**. Guide: **`docs/features/mcp.md`**. |
 | `internal/remote` | Go client for a remote `coddy serve` server: SSE frames back into ACP updates, `/coddy` REST, permission/question answers, and the permission prompts of background subagents the server announces on its events stream (**`detached_prompts.go`**). Powers `--remote` on the console and `coddy acp`. Guide: **`docs/surfaces/console.md`** (Remote mode), **`docs/plans/remote-control.md`**. |
 | `internal/bgtask` | Background task pool for detached shell commands (**`run_command`** **`background: true`** plus the **`background_*`** tools, the Tasks drawer, and **`/coddy/sessions/{id}/background-tasks`**), for subagent runs started by **`spawn_agent`** (**`Pool.Launch`**, kind **`agent`**, **`Agent {name, session_id}`** on the row), and for in-process servers the **`preview_server`** tool starts (**`Pool.Launch`**, kind **`server`**, **`Spec.URL`** / **`Snapshot.URL`**, **`Spec.NoTimeout`** - no hard limit unless the call names one). **`Pool.Adopt`** takes over a foreground command that outlived its timeout instead of killing it. **`Pool.CanWake`** says whether this process subscribed a waker (**`WakeWatcherKey`**), so **`run_command`** and **`spawn_agent`** promise a **`notify_on_finish`** wake only where one will happen, and **`Pool.MarkWokeAgent`** records on the row (**`woke_agent`**, persisted) that a task's end did start a turn, which is what keeps the bell on a finished card in the Tasks drawer and **`woke the agent`** in **`/tasks`**. Guide: **`docs/features/background-tasks.md`**. |
 | `internal/subagents` | Subagent definitions (markdown + YAML frontmatter from **`subagents.dirs`**, built-ins **`general`** and **`explore`**), canonical **scopes**, the **trust receipts** for project-scope files (**`trust.go`**; policy **`subagents.project_trust`**, receipts in **`<home>/subagents-trust.json`**), the process-wide **`Limiter`**, and the catalog (**`coddy agents list`**, **`GET /coddy/subagents`** with the bounds each definition declares, the prompt block; the web UI lists it read-only under **Settings → Subagents**). The runtime that spawns a child is **`internal/agent/subagent.go`**; it also continues a finished run in its own child session when the parent passes **`spawn_agent`** **`resume`**, instead of a second child starting over (issue #389). Child sessions are owned by **`internal/session`**, which stores each one inside the bundle of the session that spawned it (**`<parent>/subagents/<child>/`**) under an ordinary **`sess_`** id and reopens it from that bundle for a resumed run (**`SubagentSpec.Resume`**). Guide: **`docs/features/subagents.md`**. |
