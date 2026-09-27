@@ -130,6 +130,50 @@ class RussianBuildTest(unittest.TestCase):
         self.assertEqual(sorted(build_ru.PRESERVE & set(TRANSLATIONS)), [], "a name is both kept and translated")
 
 
+class LayoutTest(unittest.TestCase):
+    def test_copy_button_does_not_cover_the_command(self) -> None:
+        # The Copy button sits over the top right corner of each command block,
+        # which reserves room for it: beside the command, wide enough for the
+        # widest label of the page's language, or on a phone a row above it.
+        # Копировать and Скопировано are wider than Copy and Copied, and the
+        # phone rule once cut the room to 52px, so the button covered the end
+        # of the command.
+        css = read("styles.css")
+        rooms = {
+            "index.html": re.search(r"\n\.install-code \{[^}]*--copy-room: (\d+)px", css),
+            "ru/index.html": re.search(r'html\[lang="ru"\] \.install-code \{[^}]*--copy-room: (\d+)px', css),
+        }
+        for path, room in rooms.items():
+            with self.subTest(page=path):
+                self.assertIsNotNone(room, "the command blocks reserve no room for the Copy label")
+                page = read(path)
+                labels = re.findall(r'class="install-copy"[^>]*>([^<]+)<', page) + re.findall(r'btn\.textContent = "([^"]+)"', page)
+                widest = max(len(label) for label in labels)
+                # about 7.5px a letter at 12px, 20px of padding, the border and the 8px inset
+                self.assertGreaterEqual(int(room.group(1)), round(widest * 7.5 + 30))
+        row = re.search(r"\n\.install-code \{[^}]*--copy-row: (\d+)px", css)
+        self.assertIsNotNone(row, "the command blocks reserve no row for the Copy button")
+        # the 8px inset, a line of 12px text, 12px of padding, the border and a gap
+        self.assertGreaterEqual(int(row.group(1)), 8 + 15 + 12 + 2 + 4)
+        for rule in re.findall(r"\.install-code pre \{([^}]*)\}", css):
+            paddings = dict(re.findall(r"(padding(?:-top|-right)?): ([^;]+);", rule))
+            if not paddings:
+                continue
+            with self.subTest(rule=" ".join(rule.split())):
+                beside = "var(--copy-room)" in paddings.get("padding", "") + paddings.get("padding-right", "")
+                above = paddings.get("padding-top") == "var(--copy-row)"
+                self.assertTrue(beside or above, "a command block rule reserves no room for the Copy button")
+
+    def test_long_commands_in_faq_answers_wrap(self) -> None:
+        # An inline command is one unbreakable word to the grid of the FAQ,
+        # which sized its column to the longest one: at 320px the docker run
+        # answer pushed the page 20px wider than the window.
+        css = read("styles.css")
+        rule = re.search(r"\n\.faq-item code \{([^}]*)\}", css)
+        self.assertIsNotNone(rule)
+        self.assertIn("overflow-wrap: anywhere", rule.group(1))
+
+
 class TypographyTest(unittest.TestCase):
     def assert_absent(self, path: str, text: str, forbidden: dict[str, str]) -> None:
         for needle, reason in forbidden.items():
