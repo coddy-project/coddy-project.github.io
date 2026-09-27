@@ -34,6 +34,7 @@ ATTRIBUTE_TRANSLATIONS = {
     "Coddy console TUI with the model selector open": "Терминальная консоль Coddy с открытым выбором модели",
     "Coddy web UI start screen with the model menu open": "Стартовый экран веб-интерфейса Coddy с открытым меню моделей",
     "Zed with the Coddy thread open in the agent panel": "Zed с сессией Coddy в панели агента",
+    "Termux on an Android phone next to the relay's web UI asking to approve a file write on the phone": "Termux на телефоне с Android рядом с веб-интерфейсом ретранслятора, который просит разрешить запись файла на телефоне",
     "Breadcrumb": "Навигационная цепочка",
     "Capabilities": "Возможности",
     "Coddy agent home": "Главная страница Coddy",
@@ -49,9 +50,10 @@ ATTRIBUTE_TRANSLATIONS = {
     "Language": "Язык",
     "Linux install method": "Способ установки в Linux",
     "Open menu": "Открыть меню",
-    "Play demo: Coddy console TUI, 3:46": "Воспроизвести демо терминальной консоли Coddy, 3:46",
+    "Play demo: Coddy console TUI, 3:21": "Воспроизвести демо терминальной консоли Coddy, 3:21",
+    "Play demo: Coddy on an Android phone in a swarm, 1:47": "Воспроизвести демо Coddy на телефоне с Android в рое узлов, 1:47",
     "Play demo: Coddy inside Zed over ACP, 2:57": "Воспроизвести демо Coddy в Zed через ACP, 2:57",
-    "Play demo: Coddy web UI, 2:22": "Воспроизвести демо веб-интерфейса Coddy, 2:22",
+    "Play demo: Coddy web UI, 2:58": "Воспроизвести демо веб-интерфейса Coddy, 2:58",
     "Site menu": "Меню сайта",
     "macOS install method": "Способ установки в macOS",
     "Latest release on GitHub": "Последний релиз на GitHub",
@@ -78,26 +80,28 @@ class TranslateHTML(HTMLParser):
     def handle_comment(self, data: str) -> None:
         self.parts.append(f"<!--{data}-->")
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def localize_tag(self, tag: str, attrs: list[tuple[str, str | None]]) -> str:
+        """The tag as written, with its language, readable attributes and asset paths localized.
+        A self-closing tag such as <img ... /> takes the same path as an opening one."""
         raw = self.get_starttag_text()
         if tag == "html":
             raw = raw.replace('lang="en"', 'lang="ru"')
         for key, value in attrs:
             if key in {"aria-label", "alt", "title"} and value in ATTRIBUTE_TRANSLATIONS:
-                raw = raw.replace(
-                    f'{key}="{html.escape(value, quote=True)}"',
-                    f'{key}="{html.escape(ATTRIBUTE_TRANSLATIONS[value], quote=True)}"',
-                )
+                translated = f'{key}="{html.escape(ATTRIBUTE_TRANSLATIONS[value], quote=True)}"'
+                # The source may write an apostrophe as it is or as an entity.
+                for written in (html.escape(value, quote=True), html.escape(value, quote=False).replace('"', "&quot;")):
+                    raw = raw.replace(f'{key}="{written}"', translated)
         if self.page == "index.html":
             raw = re.sub(r'((?:href|src|data-video)=")(assets/|styles\.css)', r'\1/\2', raw)
-        self.parts.append(raw)
+        return raw
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.parts.append(self.localize_tag(tag, attrs))
         self.stack.append(tag)
 
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        raw = self.get_starttag_text()
-        if self.page == "index.html":
-            raw = re.sub(r'((?:href|src|data-video)=")(assets/|styles\.css)', r'\1/\2', raw)
-        self.parts.append(raw)
+        self.parts.append(self.localize_tag(tag, attrs))
 
     def handle_endtag(self, tag: str) -> None:
         self.parts.append(f"</{tag}>")

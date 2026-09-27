@@ -58,14 +58,12 @@ Run a general-purpose agent	Запустите универсального аг
 from one static binary	из одного статического бинарника
 Coddy is an agent harness: a ReAct loop with filesystem and shell tools, MCP, project rules, skills, subagents, hooks, background tasks, and long-term memory. Drive it from a terminal, a browser, your editor over ACP, or Telegram; run it as a service with a cron scheduler, a swarm relay for a fleet of nodes, and remote control from anywhere. Built for containers and your own API keys.	Coddy - агентный харнес с ReAct-циклом, инструментами для файлов и командной строки, MCP, правилами проекта, навыками, субагентами, хуками, фоновыми задачами и долговременной памятью. Работайте с ним из терминала, браузера, редактора по ACP или Telegram, запускайте как сервис с планировщиком cron, ретранслятором для роя узлов и удалённым управлением откуда угодно. Рассчитан на контейнеры и ваши собственные ключи API.
 Quick install	Быстрая установка
-Puts the latest release binary on your PATH and creates	Кладёт бинарник последнего релиза в PATH и создаёт
 from the example when it is missing.	из примера, если его ещё нет.
 Swap	Замените
 for	на
 on 64-bit ARM, or pick a file from the	для 64-битной ARM или выберите файл в
 latest release	последнем релизе
 . The package brings	. Пакет устанавливает
-and the shell completions, no service and no system account, and	и автодополнение команд, сервис и системную учётную запись не создаёт, а
 defers to the package manager.	передаёт обновление пакетному менеджеру.
 openSUSE takes the same file with	В openSUSE тот же файл ставится через
 . Swap	. Замените
@@ -100,11 +98,8 @@ Web UI	Веб-интерфейс
 Terminal	Терминал
 Editor (ACP)	Редактор (ACP)
 The same agent served by	Тот же агент, запущенный через
-: streamed tool calls, a permission card with a real diff, session history, seven themes, and an environment switch that points the UI at a remote server.	: потоковые вызовы инструментов, карточка разрешения с настоящим diff, история сессий, семь тем и переключатель окружения, который направляет интерфейс на удалённый сервер.
 Bare	Команда
 in a terminal: pick a model with	без аргументов в терминале. Выберите модель через
-, approve edits and commands as the agent works, resume with	, подтверждайте правки и команды по ходу работы агента, продолжайте сессию через
-, drive a remote server with	и подключайтесь к удалённому серверу через
 Zed launches	Zed запускает
 for the workspace, and coddy's own modes, models and permission policy show up in the editor's agent panel; its skills arrive as slash commands. One entry in Zed's	для рабочего каталога. Режимы, модели и политика разрешений Coddy появляются в панели агента, а навыки становятся слеш-командами. Хватит одной записи в
 What is Coddy	Что такое Coddy
@@ -129,12 +124,9 @@ Hooks	Хуки
 Your own commands at every lifecycle point, in Claude Code's	Ваши команды на каждом этапе жизненного цикла в формате
 shape. A hook can deny, approve or rewrite a tool call before it runs.	из Claude Code. Хук может запретить, разрешить или переписать вызов инструмента до его запуска.
 Background tasks	Фоновые задачи
-Long commands run detached with	Долгие команды уходят в фон через
-. A Tasks panel tracks them against the model's own estimate; the agent collects output later.	. Панель фоновых задач сверяет их ход с оценкой самой модели, а вывод агент забирает позже.
 Compaction	Сжатие контекста
 plus automatic summarization at a context threshold. The recent turns stay verbatim and the full transcript stays on disk.	и автоматическая суммаризация при достижении порога контекста. Последние ходы остаются дословно, а полный транскрипт хранится на диске.
 Long-term memory	Долговременная память
-Optional memory copilot that recalls across sessions, with per-session memory routes on the HTTP surface.	Необязательный копайлот памяти вспоминает сведения из прошлых сессий, а в HTTP API у каждой сессии есть свои маршруты памяти.
 Where you run it	Где запускать
 Console	Консоль
 on a terminal. Streaming transcript, tool boxes, permission modals,	без аргументов в терминале. Потоковый транскрипт, блоки инструментов, окна разрешений,
@@ -143,7 +135,6 @@ to resume,	для продолжения сессии,
 for one-shot output.	для разового вывода.
 Embedded SPA at	Встроенный SPA по адресу
 with the	в сборке с тегами
-tags. Chat, sessions, plan documents, Tasks and scheduler drawers, the swarm map, live settings.	. Чат, сессии, планы, панели фоновых задач и планировщика, карта роя и настройки на лету.
 over stdio. Sessions, modes, permissions, and streaming updates for Zed, Obsidian, VS Code, or your own script.	по stdio. Сессии, режимы, разрешения и потоковые обновления для Zed, Obsidian, VS Code или вашего скрипта.
 HTTP API	HTTP API
 OpenAI-compatible gateway on	Шлюз, совместимый с OpenAI, в
@@ -152,16 +143,9 @@ Telegram gateway	Шлюз Telegram
 Bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.	Адаптер бота с отдельными сессиями для каждого пользователя, режимами изоляции групп, ACL администраторов и нативным форматированием сообщений. Расширяется на другие мессенджеры.
 Sessions	Сессии
 Bundles on disk under	Каталоги сессий лежат на диске в
-, resumed from any surface. Edit a message to branch the conversation,	и открываются из любого интерфейса. Правка сообщения создаёт ветку диалога, а
-to Markdown, HTML or JSON.	выгружает сессию в Markdown, HTML или JSON.
 Operate it	Эксплуатация
 One process for every subsystem	Один процесс для всех подсистем, включённых в
-enables.	.
-keeps it in the background with	уводит его в фон, где им управляют
-, and	, а
-, and an edited config reaches it without a restart.	, а изменённый конфиг подхватывается без перезапуска.
 Swarm	Рой узлов
-A relay lists and reaches many nodes, mounts their sessions into one list and routes across rings. Nodes that can only dial out join through a reverse tunnel.	Ретранслятор видит множество узлов и связывается с ними, собирает их сессии в один список и маршрутизирует запросы между кольцами. Узлы, у которых есть только исходящий доступ, подключаются через обратный туннель.
 Remote control	Удалённое управление
 Point the console or	Подключите консоль или
 at a running server with	к работающему серверу через
@@ -178,13 +162,8 @@ Published images on	Готовые образы лежат в
 for amd64 and arm64, or drop the static binary into a scratch image with a read-only rootfs.	для amd64 и arm64, а можно положить статический бинарник в образ scratch с rootfs только для чтения.
 Project context and control	Контекст проекта и контроль
 Rules	Правила
-Auto-discovers	Сам находит
-under the session cwd.	в рабочем каталоге сессии.
-, and nested	и вложенные
 Skills	Навыки
 Slash commands from	Слеш-команды из наборов
-packs in	в
-. Install from registries with	. Устанавливаются из реестров через
 or from Settings → Skills.	или из раздела Настройки → Навыки.
 MCP servers	MCP-серверы
 Connect MCP servers over stdio, streamable HTTP and SSE, from config,	Подключайте MCP-серверы по stdio, streamable HTTP и SSE из конфига, файлов
@@ -200,7 +179,6 @@ The agent edits its own YAML through staged	Агент правит собств
 commands. Nothing lands until a commit you approve, which validates and hot-reloads.	. Изменения применяются только после одобренного вами коммита, который проверяет конфиг и перезагружает его на лету.
 Models, tools and appearance	Модели, инструменты и оформление
 Any provider	Любой провайдер
-OpenAI, Anthropic, Ollama, NeuralDeep, any OpenAI-compatible API, plus ChatGPT sign-in through the Codex backend. Your keys, your endpoints.	OpenAI, Anthropic, Ollama, NeuralDeep, любой API, совместимый с OpenAI, и вход через ChatGPT на бэкенде Codex. Ключи и адреса серверов ваши.
 Reasoning levels	Уровни рассуждения
 A composer dropdown picks the effort for reasoning models, mapped to OpenAI	Выпадающий список в поле ввода задаёт уровень рассуждения для reasoning-моделей, который переводится в параметр OpenAI
 or Anthropic thinking budgets.	или в бюджет thinking у Anthropic.
@@ -227,13 +205,11 @@ Questions	Вопросы
 What is Coddy Agent?	Что такое Coddy Agent?
 Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram, on one machine or across a swarm of them.	Coddy Agent - универсальный ИИ-агент с открытым исходным кодом, который поставляется одним статическим Go-бинарником под лицензией MIT. Внутри ReAct-цикл с инструментами для файлов и командной строки, MCP-серверы, правила проекта, навыки, субагенты, хуки, фоновые задачи, планировщик cron и долговременная память. Один и тот же агент доступен из терминала, браузера, редактора по ACP или Telegram, на одной машине или в рое из нескольких.
 Which LLM providers and models does Coddy work with?	С какими провайдерами и моделями работает Coddy?
-Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, always with your own keys and endpoints. ChatGPT sign-in works through the Codex backend. Models are declared in	Любой API, совместимый с OpenAI, а также Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep или ваш собственный шлюз, всегда с вашими ключами и адресами серверов. Войти через ChatGPT можно с помощью бэкенда Codex. Модели описываются в
 and switched per session.	и переключаются отдельно для каждой сессии.
 How do I install Coddy?	Как установить Coddy?
 Linux and macOS:	Linux и macOS:
 . Windows:	. Windows:
 . The script downloads the latest release binary, puts it on your PATH, and creates	. Скрипт скачивает бинарник последнего релиза, кладёт его в PATH и создаёт
-from the example. On Linux you can instead install the	из примера. В Linux вместо этого можно поставить пакет
 published with every release (	, который выходит с каждым релизом (
 ), and on macOS the Homebrew cask straight from the release (	), а в macOS есть Homebrew-пакет прямо из релиза (
 ); both register Coddy with your package manager and add the man page and shell completions. Docker:	). Оба способа регистрируют Coddy в пакетном менеджере и ставят man-страницу и автодополнение. Docker:
@@ -249,11 +225,7 @@ runs everything else in one process - the OpenAI-compatible REST API with the em
 enables. They share one set of sessions, so a conversation started in a chat is live in the web UI and can be continued in either.	. У них общие сессии, поэтому разговор, начатый в чате, сразу виден в веб-интерфейсе, и продолжить его можно в любом из двух.
 How do I run Coddy on more than one machine?	Как запустить Coddy на нескольких машинах?
 Run	Запустите
-on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel. The console,	на каждой машине и включите ретранслятор роя на одной из них. Он соберёт сессии всех узлов в одном месте, будет маршрутизировать запросы между кольцами и подтянет через обратный туннель машины, у которых есть только исходящий доступ. Консоль,
-, and the web UI can also drive a single remote server with	и веб-интерфейс тоже умеют работать с отдельным удалённым сервером через
-keeps a server running in the background with	держит сервер в фоне под управлением
 How is Coddy different from other coding agents?	Чем Coddy отличается от других агентов для программирования?
-It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and	Coddy изначально не привязан к провайдеру и рассчитан на собственный хостинг: один бинарник под лицензией MIT без зависимостей от среды выполнения, ваши ключи или локальные модели и общие сессии для терминала, веб-интерфейса, редактора, Telegram и планировщика. Он читает правила и навыки в стиле Cursor, а также
 from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at	из репозитория, поэтому подходит проектам, уже настроенным под других агентов. Сравнение с девятнадцатью другими харнесами опубликовано на
 Comparison	Сравнение
 Twenty harnesses side by side. What they are written in, where you can talk to them, how you extend them, what they do to a long session, and what stops them from running something you did not ask for. Coddy is one row among nineteen others, including the places where it loses.	Двадцать харнесов в одном сравнении: на чём они написаны, где с ними можно работать, как их расширять, что они делают с длинной сессией и что не даёт им запустить то, о чём вы не просили. Coddy здесь одна строка из двадцати, и места, где он проигрывает, тоже показаны.
@@ -584,3 +556,41 @@ folder trust, off by default	доверие к каталогу, по умолч
 Docker container per user, isolated volume and network	Docker-контейнер для каждого пользователя, отдельные том и сеть
 blocked command patterns, no per-action approval	блокировка команд по шаблонам, без подтверждения каждого действия
 n/a, nothing loads from a checkout	неприменимо, из репозитория ничего не загружается
+, and the web UI switches to one from its composer. On Linux	, а веб-интерфейс переключается на такой сервер из поля ввода. В Linux
+, no system service and no system account, and	, системную службу и системную учётную запись не создаёт, а
+, resumed from any surface. Editing a sent message rewinds the conversation to it, and	и открываются из любого интерфейса. Правка отправленного сообщения откатывает диалог к нему, а
+, the shell completions and a systemd user unit for	, автодополнение команд и пользовательскую службу systemd для
+. A nested	. Вложенный
+A relay lists and reaches many nodes, mounts their sessions into one list and routes across rings. Nodes that can only dial out, Android phones in Termux among them, join through a reverse tunnel.	Ретранслятор видит множество узлов и связывается с ними, собирает их сессии в один список и маршрутизирует запросы между кольцами. Узлы, у которых есть только исходящий доступ, в том числе телефоны на Android с Termux, подключаются через обратный туннель.
+An optional memory subagent runs in the background on every turn, recalls what the notes on disk hold and saves what you ask it to keep.	Необязательный субагент памяти работает в фоне на каждом ходе, поднимает из заметок на диске нужные сведения и сохраняет то, что вы просите запомнить.
+Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, with your own keys and endpoints. ChatGPT sign-in works through the Codex backend, and a Devin account signs in through the browser. Models are declared in	Любой API, совместимый с OpenAI, а также Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep или ваш собственный шлюз, с вашими ключами и адресами серверов. Войти через ChatGPT можно с помощью бэкенда Codex, а в аккаунт Devin входят через браузер. Модели описываются в
+Install guide	руководстве по установке
+It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor and Claude Code rules, skills and	Coddy изначально не привязан к провайдеру и рассчитан на собственный хостинг: один бинарник под лицензией MIT без зависимостей от среды выполнения, ваши ключи или локальные модели и общие сессии для терминала, веб-интерфейса, редактора, Telegram и планировщика. Он читает правила Cursor и Claude Code, навыки, а также
+Long commands and subagent runs go detached. A Tasks panel tracks them against the model's own estimate, and a finished one wakes the agent with its outcome.	Долгие команды и запуски субагентов уходят в фон. Панель фоновых задач сверяет их ход с оценкой самой модели, а закончившаяся задача будит агента и отдаёт ему результат.
+OpenAI, Anthropic, Ollama, NeuralDeep, any OpenAI-compatible API, plus ChatGPT sign-in through the Codex backend and a Devin account. Your keys or accounts, your endpoints.	OpenAI, Anthropic, Ollama, NeuralDeep, любой API, совместимый с OpenAI, вход через ChatGPT на бэкенде Codex и аккаунт Devin. Ключи, аккаунты и адреса серверов ваши.
+Puts the latest release binary on your PATH with its man page and shell completions, and creates	Кладёт бинарник последнего релиза в PATH, ставит справку man и автодополнение команд и создаёт
+Reads one project folder, the first of	Читает одну папку проекта, первую из
+can also drive a single remote server with	тоже умеют работать с отдельным удалённым сервером через
+does, with	с командами
+enables. On Linux	. В Linux
+from the example when it is missing. In Termux on Android the same script fetches the Android build.	из примера, если его ещё нет. В Termux на Android тот же скрипт скачивает сборку для Android.
+from the example. In Termux on Android the same script installs the Android build. On Linux you can instead install the	из примера. В Termux на Android тот же скрипт ставит сборку для Android. В Linux вместо этого можно поставить пакет
+joins when the agent enters its folder.	подключается, когда агент заходит в его папку.
+keeps a server running as a systemd user service, elsewhere	оставляет сервер работать пользовательской службой systemd, а в других системах то же делает
+keeps it in the background, and an edited config reaches it without a restart.	уводит его в фон, а изменённый конфиг подхватывается без перезапуска.
+on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel, an Android phone in Termux included. The console and	на каждой машине и включите ретранслятор роя на одной из них. Он соберёт сессии всех узлов в одном месте, будет маршрутизировать запросы между кольцами и подтянет через обратный туннель машины, у которых есть только исходящий доступ, в том числе телефон на Android с Termux. Консоль и
+packs. Five ship inside the binary, more install from registries with	. Пять из них встроены в бинарник, остальные ставятся из реестров через
+runs it as a systemd user service, elsewhere	запускает его пользовательской службой systemd, в других системах
+tags. Chat, History, plan documents, the Tasks panel, the scheduler, the documentation reader, the swarm map, live settings.	. Чат, история сессий, планы, панель фоновых задач, планировщик, встроенная документация, карта роя и настройки на лету.
+that holds rules, plus your own	, где есть правила, а также вашу папку
+the Homebrew page	страницу про Homebrew
+writes Markdown, HTML or JSON.	выгружает сессию в Markdown, HTML или JSON.
+, approve edits and commands as the agent works, ship them with a	, подтверждайте правки и команды по ходу работы агента, коммитьте их навыком
+skill, look things up on	, открывайте документацию по
+and resume with	и продолжайте сессию через
+: the model picked in the composer, tool calls as rows that name their action, a permission card with the diff of an edit, a	: модель выбирается в поле ввода, вызовы инструментов идут строками с названием действия, карточка разрешения показывает diff правки, навык
+skill from the slash menu, and History, where the session is picked up again.	запускается из меню слеш-команд, а из истории сессию можно открыть снова.
+in Termux joins a relay on the laptop with one	в Termux подключается к ретранслятору на ноутбуке одной записью
+entry and no open port on the phone. The relay's web UI opens the phone from its map, runs	, и открытый порт на телефоне для этого не нужен. Веб-интерфейс ретранслятора открывает телефон с карты роя и запускает там
+there and writes a file into the phone's home, each step approved in the browser.	, а потом пишет файл в домашний каталог телефона, и каждый шаг подтверждается в браузере.
+The tutorial	Пошаговая инструкция

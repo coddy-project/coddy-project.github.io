@@ -31,7 +31,7 @@
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
-  <link rel="stylesheet" href="styles.css?v=27" />
+  <link rel="stylesheet" href="styles.css?v=28" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -82,7 +82,7 @@
         "description": "Coddy Agent is an open-source, general-purpose AI agent in one static Go binary: a ReAct loop with filesystem and shell tools, MCP, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, driven from a terminal console, an embedded web UI, an OpenAI-compatible HTTP API, the Agent Client Protocol (ACP) for editors, or a Telegram gateway, with a swarm relay that lists and reaches a fleet of nodes and remote control of a running server. Works with any OpenAI-compatible provider or Anthropic using your own API keys, including local models, and runs in distroless containers.",
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "AI agent",
-        "operatingSystem": "Linux, macOS, Windows",
+        "operatingSystem": "Linux, macOS, Windows, Android",
         "programmingLanguage": "Go",
         "runtimePlatform": "Go 1.25",
         "codeRepository": "https://github.com/coddy-project/coddy-agent",
@@ -106,7 +106,8 @@
         "screenshot": [
           "https://coddy.dev/assets/demo/poster-webui.jpg",
           "https://coddy.dev/assets/demo/poster-tui.jpg",
-          "https://coddy.dev/assets/demo/poster-zed.jpg"
+          "https://coddy.dev/assets/demo/poster-zed.jpg",
+          "https://coddy.dev/assets/demo/poster-android.jpg"
         ],
         "featureList": [
           "ReAct loop with filesystem and shell tools",
@@ -115,7 +116,7 @@
           "Telegram gateway",
           "MCP servers, Cursor-style rules, skills, hooks, AGENTS.md",
           "Subagents, background tasks, cron scheduler, long-term memory, context compaction",
-          "Swarm relay for a fleet of nodes, remote control of a running server, coddy serve daemon",
+          "Swarm relay for a fleet of nodes, Android phones in Termux included, remote control of a running server, coddy serve as a systemd user service or a daemon",
           "Config check and dry run before start, hot reload of config.yaml",
           "Any OpenAI-compatible provider or Anthropic, local models via Ollama, llama.cpp, vLLM",
           "Single static binary, Docker images for amd64 and arm64, distroless and scratch images"
@@ -145,7 +146,7 @@
             "name": "Which LLM providers and models does Coddy work with?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, always with your own keys and endpoints. ChatGPT sign-in works through the Codex backend. Models are declared in config.yaml and switched per session."
+              "text": "Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, with your own keys and endpoints. ChatGPT sign-in works through the Codex backend, and a Devin account signs in through the browser. Models are declared in config.yaml and switched per session."
             }
           },
           {
@@ -153,7 +154,7 @@
             "name": "How do I install Coddy?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. On Linux you can instead install the .deb or .rpm published with every release (apt-get install ./coddy_X.Y.Z_linux_amd64.deb, dnf install ./coddy_X.Y.Z_linux_amd64.rpm), and on macOS the Homebrew cask straight from the release (brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb); both register Coddy with your package manager and add the man page and shell completions. Docker: docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -v \"$PWD/workspace:/workspace\" -v \"$PWD/coddy_home:/home/user/.coddy\" ghcr.io/coddy-project/coddy-agent:latest opens the web UI on localhost:12345, and the Docker tab of the install block also carries a docker-compose.yaml to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. coddy update -y upgrades an existing install."
+              "text": "Linux and macOS: curl -fsSL https://coddy.dev/install.sh | bash. Windows: irm https://coddy.dev/install.ps1 | iex. The script downloads the latest release binary, puts it on your PATH, and creates ~/.coddy/config.yaml from the example. In Termux on Android the same script installs the Android build. On Linux you can instead install the .deb or .rpm published with every release (apt-get install ./coddy_X.Y.Z_linux_amd64.deb, dnf install ./coddy_X.Y.Z_linux_amd64.rpm), and on macOS the Homebrew cask straight from the release (brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb); both register Coddy with your package manager and add the man page and shell completions. Docker: docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -e CODDY_CONFIG=/home/user/.coddy/config.yaml -v \"$PWD/workspace:/workspace\" -v \"$PWD/coddy_home:/home/user/.coddy\" ghcr.io/coddy-project/coddy-agent:latest opens the web UI on localhost:12345, and the Docker tab of the install block also carries a docker-compose.yaml to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. coddy update -y upgrades an existing install."
             }
           },
           {
@@ -177,7 +178,7 @@
             "name": "How do I run Coddy on more than one machine?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Run coddy serve on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel. The console, coddy acp, and the web UI can also drive a single remote server with --remote, and coddy serve --daemon keeps a server running in the background with status, stop and restart."
+              "text": "Run coddy serve on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel, an Android phone in Termux included. The console and coddy acp can also drive a single remote server with --remote, and the web UI switches to one from its composer. On Linux coddy serve install keeps a server running as a systemd user service, elsewhere coddy serve --daemon does, with status, stop and restart."
             }
           },
           {
@@ -185,7 +186,7 @@
             "name": "How is Coddy different from other coding agents?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at coddy.dev/compare/."
+              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor and Claude Code rules, skills and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at coddy.dev/compare/."
             }
           }
         ]
@@ -222,7 +223,7 @@
         >
           <svg class="release-pill-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/></svg>
           <span class="visually-hidden">GitHub, latest release </span>
-          <span class="release-pill-version" id="release-pill-version">v1.0.1</span>
+          <span class="release-pill-version" id="release-pill-version">v1.2.31</span>
         </a>
       </nav>
       <button
@@ -304,13 +305,13 @@
             <a class="install-view method" data-method="linux-rpm" href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">Release assets <span aria-hidden="true">&#8599;</span></a>
           </div>
           <p class="install-note method active" data-method="linux-script">
-            Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code> from the example when it is missing.
+            Puts the latest release binary on your PATH with its man page and shell completions, and creates <code>~/.coddy/config.yaml</code> from the example when it is missing. In Termux on Android the same script fetches the Android build.
           </p>
           <p class="install-note method" data-method="linux-deb">
-            Swap <code>amd64</code> for <code>arm64</code> on 64-bit ARM, or pick a file from the <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>. The package brings <code>/usr/bin/coddy</code>, <code>man coddy</code> and the shell completions, no service and no system account, and <code>coddy update</code> defers to the package manager.
+            Swap <code>amd64</code> for <code>arm64</code> on 64-bit ARM, or pick a file from the <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>. The package brings <code>/usr/bin/coddy</code>, <code>man coddy</code>, the shell completions and a systemd user unit for <code>coddy serve install</code>, no system service and no system account, and <code>coddy update</code> defers to the package manager.
           </p>
           <p class="install-note method" data-method="linux-rpm">
-            openSUSE takes the same file with <code>zypper</code>. Swap <code>amd64</code> for <code>arm64</code> on 64-bit ARM, or pick a file from the <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>. The package brings <code>/usr/bin/coddy</code>, <code>man coddy</code> and the shell completions, no service and no system account, and <code>coddy update</code> defers to the package manager.
+            openSUSE takes the same file with <code>zypper</code>. Swap <code>amd64</code> for <code>arm64</code> on 64-bit ARM, or pick a file from the <a href="https://github.com/coddy-project/coddy-agent/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a>. The package brings <code>/usr/bin/coddy</code>, <code>man coddy</code>, the shell completions and a systemd user unit for <code>coddy serve install</code>, no system service and no system account, and <code>coddy update</code> defers to the package manager.
           </p>
         </div>
 
@@ -336,7 +337,7 @@
             <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">About the cask <span aria-hidden="true">&#8599;</span></a>
           </div>
           <p class="install-note method active" data-method="mac-script">
-            Puts the latest release binary on your PATH and creates <code>~/.coddy/config.yaml</code> from the example when it is missing.
+            Puts the latest release binary on your PATH with its man page and shell completions, and creates <code>~/.coddy/config.yaml</code> from the example when it is missing.
           </p>
           <p class="install-note method" data-method="mac-brew">
             Every release publishes the cask beside its archives. It adds <code>man coddy</code> and the shell completions, and <code>coddy update</code> hands over to <code>brew upgrade --cask coddy</code>. If macOS blocks the first run, clear the quarantine flag with <code>xattr -d com.apple.quarantine "$(which coddy)"</code>.
@@ -365,6 +366,7 @@
               <pre><code id="cmd-docker"><span class="cmd">docker run -d --name coddy \</span>
   -p 12345:12345 \
   -e OPENAI_API_KEY \
+  -e CODDY_CONFIG=/home/user/.coddy/config.yaml \
   -v "$PWD/workspace:/workspace" \
   -v "$PWD/coddy_home:/home/user/.coddy" \
   ghcr.io/coddy-project/coddy-agent:latest</code></pre>
@@ -427,9 +429,10 @@
       </div>
       <p class="hint install-alt">
         Other install methods and details:
-        <a href="https://coddy.dev/docs/getting-started/install" target="_blank" rel="noopener noreferrer">docs/install.md</a>
+        <a href="https://coddy.dev/docs/getting-started/install" target="_blank" rel="noopener noreferrer">Install guide</a>
+        · <a href="https://coddy.dev/docs/getting-started/android" target="_blank" rel="noopener noreferrer">Android (Termux)</a>
         · Homebrew by name is still on its way, see
-        <a href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">docs/homebrew.md</a>
+        <a href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">the Homebrew page</a>
       </p>
     </section>
 
@@ -440,6 +443,7 @@
           <button type="button" class="showcase-tab active" role="tab" aria-selected="true" aria-controls="shot-webui" id="tab-webui" data-shot="shot-webui">Web UI</button>
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-terminal" id="tab-terminal" data-shot="shot-terminal">Terminal</button>
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-acp" id="tab-acp" data-shot="shot-acp">Editor (ACP)</button>
+          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-android" id="tab-android" data-shot="shot-android">Android</button>
         </div>
 
         <div class="showcase-panel" id="shot-webui" role="tabpanel" aria-labelledby="tab-webui" tabindex="0">
@@ -447,15 +451,16 @@
             type="button"
             class="demo-player"
             data-video="assets/demo/coddy-webui-demo.mp4"
-            aria-label="Play demo: Coddy web UI, 2:22"
+            aria-label="Play demo: Coddy web UI, 2:58"
           >
             <img src="assets/demo/poster-webui.jpg" width="1280" height="720" alt="Coddy web UI start screen with the model menu open" loading="eager" fetchpriority="high" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">2:22</span>
+            <span class="demo-duration" aria-hidden="true">2:58</span>
           </button>
           <p class="showcase-caption">
-            The same agent served by <code>coddy serve</code>: streamed tool calls, a permission card with a real diff,
-            session history, seven themes, and an environment switch that points the UI at a remote server.
+            The same agent served by <code>coddy serve</code>: the model picked in the composer, tool calls as rows
+            that name their action, a permission card with the diff of an edit, a <code>/commit</code> skill from the
+            slash menu, and History, where the session is picked up again.
           </p>
         </div>
 
@@ -464,15 +469,16 @@
             type="button"
             class="demo-player"
             data-video="assets/demo/coddy-tui-demo.mp4"
-            aria-label="Play demo: Coddy console TUI, 3:46"
+            aria-label="Play demo: Coddy console TUI, 3:21"
           >
             <img src="assets/demo/poster-tui.jpg" width="1280" height="720" alt="Coddy console TUI with the model selector open" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">3:46</span>
+            <span class="demo-duration" aria-hidden="true">3:21</span>
           </button>
           <p class="showcase-caption">
             Bare <code>coddy</code> in a terminal: pick a model with <code>Ctrl+L</code>, approve edits and commands
-            as the agent works, resume with <code>coddy -c</code>, drive a remote server with <code>--remote</code>.
+            as the agent works, ship them with a <code>/commit</code> skill, look things up on <code>F1</code> and
+            resume with <code>coddy -c</code>.
           </p>
         </div>
 
@@ -495,6 +501,25 @@
           <pre class="showcase-code"><code>"agent_servers": {
   "Coddy": { "type": "custom", "command": "coddy", "args": ["acp"] }
 }</code></pre>
+        </div>
+
+        <div class="showcase-panel" id="shot-android" role="tabpanel" aria-labelledby="tab-android" tabindex="0" hidden>
+          <button
+            type="button"
+            class="demo-player"
+            data-video="assets/demo/coddy-android-demo.mp4"
+            aria-label="Play demo: Coddy on an Android phone in a swarm, 1:47"
+          >
+            <img src="assets/demo/poster-android.jpg" width="1280" height="720" alt="Termux on an Android phone next to the relay's web UI asking to approve a file write on the phone" loading="lazy" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">1:47</span>
+          </button>
+          <p class="showcase-caption">
+            <code>coddy serve</code> in Termux joins a relay on the laptop with one <code>swarm.join</code> entry and
+            no open port on the phone. The relay's web UI opens the phone from its map, runs <code>getprop</code> there
+            and writes a file into the phone's home, each step approved in the browser.
+            <a href="https://coddy.dev/docs/tutorials/swarm-android-nodes" target="_blank" rel="noopener noreferrer">The tutorial</a>
+          </p>
         </div>
       </div>
     </section>
@@ -534,7 +559,7 @@
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/background-tasks" target="_blank" rel="noopener noreferrer">
             <h4>Background tasks</h4>
-            <p>Long commands run detached with <code>background: true</code>. A Tasks panel tracks them against the model's own estimate; the agent collects output later.</p>
+            <p>Long commands and subagent runs go detached. A Tasks panel tracks them against the model's own estimate, and a finished one wakes the agent with its outcome.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/compaction" target="_blank" rel="noopener noreferrer">
             <h4>Compaction</h4>
@@ -542,7 +567,7 @@
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/memory" target="_blank" rel="noopener noreferrer">
             <h4>Long-term memory</h4>
-            <p>Optional memory copilot that recalls across sessions, with per-session memory routes on the HTTP surface.</p>
+            <p>An optional memory subagent runs in the background on every turn, recalls what the notes on disk hold and saves what you ask it to keep.</p>
           </a>
         </div>
       </div>
@@ -556,7 +581,7 @@
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
             <h4>Web UI</h4>
-            <p>Embedded SPA at <code>/</code> with the <code>http,ui</code> tags. Chat, sessions, plan documents, Tasks and scheduler drawers, the swarm map, live settings.</p>
+            <p>Embedded SPA at <code>/</code> with the <code>http,ui</code> tags. Chat, History, plan documents, the Tasks panel, the scheduler, the documentation reader, the swarm map, live settings.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/acp-protocol" target="_blank" rel="noopener noreferrer">
             <h4>ACP</h4>
@@ -572,7 +597,7 @@
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/sessions" target="_blank" rel="noopener noreferrer">
             <h4>Sessions</h4>
-            <p>Bundles on disk under <code>$CODDY_HOME</code>, resumed from any surface. Edit a message to branch the conversation, <code>/export</code> to Markdown, HTML or JSON.</p>
+            <p>Bundles on disk under <code>$CODDY_HOME</code>, resumed from any surface. Editing a sent message rewinds the conversation to it, and <code>/export</code> writes Markdown, HTML or JSON.</p>
           </a>
         </div>
       </div>
@@ -582,11 +607,11 @@
         <div class="features">
           <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/serve" target="_blank" rel="noopener noreferrer">
             <h4>coddy serve</h4>
-            <p>One process for every subsystem <code>config.yaml</code> enables. <code>--daemon</code> keeps it in the background with <code>status</code>, <code>stop</code> and <code>restart</code>, and an edited config reaches it without a restart.</p>
+            <p>One process for every subsystem <code>config.yaml</code> enables. On Linux <code>coddy serve install</code> runs it as a systemd user service, elsewhere <code>--daemon</code> keeps it in the background, and an edited config reaches it without a restart.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/swarm" target="_blank" rel="noopener noreferrer">
             <h4>Swarm</h4>
-            <p>A relay lists and reaches many nodes, mounts their sessions into one list and routes across rings. Nodes that can only dial out join through a reverse tunnel.</p>
+            <p>A relay lists and reaches many nodes, mounts their sessions into one list and routes across rings. Nodes that can only dial out, Android phones in Termux among them, join through a reverse tunnel.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/remote" target="_blank" rel="noopener noreferrer">
             <h4>Remote control</h4>
@@ -612,11 +637,11 @@
         <div class="features">
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/rules" target="_blank" rel="noopener noreferrer">
             <h4>Rules</h4>
-            <p>Auto-discovers <code>.cursor/rules</code>, <code>.coddy/rules</code>, <code>.agents/rules</code>, <code>.claude/rules</code>, <code>.codex/rules</code>, and nested <code>AGENTS.md</code> under the session cwd.</p>
+            <p>Reads one project folder, the first of <code>.coddy/rules</code>, <code>.agents/rules</code>, <code>.cursor/rules</code>, <code>.claude/rules</code> and <code>.codex/rules</code> that holds rules, plus your own <code>~/.coddy/rules</code>. A nested <code>AGENTS.md</code> joins when the agent enters its folder.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/skills" target="_blank" rel="noopener noreferrer">
             <h4>Skills</h4>
-            <p>Slash commands from <code>SKILL.md</code> packs in <code>skills.dirs</code>. Install from registries with <code>npx skills</code> or from Settings → Skills.</p>
+            <p>Slash commands from <code>SKILL.md</code> packs. Five ship inside the binary, more install from registries with <code>npx skills</code> or from Settings → Skills.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/mcp" target="_blank" rel="noopener noreferrer">
             <h4>MCP servers</h4>
@@ -642,7 +667,7 @@
         <div class="features">
           <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
             <h4>Any provider</h4>
-            <p>OpenAI, Anthropic, Ollama, NeuralDeep, any OpenAI-compatible API, plus ChatGPT sign-in through the Codex backend. Your keys, your endpoints.</p>
+            <p>OpenAI, Anthropic, Ollama, NeuralDeep, any OpenAI-compatible API, plus ChatGPT sign-in through the Codex backend and a Devin account. Your keys or accounts, your endpoints.</p>
           </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#per-session-reasoning-level" target="_blank" rel="noopener noreferrer">
             <h4>Reasoning levels</h4>
@@ -698,11 +723,11 @@
         </div>
         <div class="faq-item">
           <h3>Which LLM providers and models does Coddy work with?</h3>
-          <p>Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, always with your own keys and endpoints. ChatGPT sign-in works through the Codex backend. Models are declared in <code>config.yaml</code> and switched per session.</p>
+          <p>Any OpenAI-compatible API plus Anthropic: OpenAI, Anthropic, Ollama, llama.cpp, vLLM, NeuralDeep, or your own gateway, with your own keys and endpoints. ChatGPT sign-in works through the Codex backend, and a Devin account signs in through the browser. Models are declared in <code>config.yaml</code> and switched per session.</p>
         </div>
         <div class="faq-item">
           <h3>How do I install Coddy?</h3>
-          <p>Linux and macOS: <code>curl -fsSL https://coddy.dev/install.sh | bash</code>. Windows: <code>irm https://coddy.dev/install.ps1 | iex</code>. The script downloads the latest release binary, puts it on your PATH, and creates <code>~/.coddy/config.yaml</code> from the example. On Linux you can instead install the <code>.deb</code> or <code>.rpm</code> published with every release (<code>apt-get install ./coddy_X.Y.Z_linux_amd64.deb</code>, <code>dnf install ./coddy_X.Y.Z_linux_amd64.rpm</code>), and on macOS the Homebrew cask straight from the release (<code>brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code>); both register Coddy with your package manager and add the man page and shell completions. Docker: <code>docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -v "$PWD/workspace:/workspace" -v "$PWD/coddy_home:/home/user/.coddy" ghcr.io/coddy-project/coddy-agent:latest</code> opens the web UI on <code>localhost:12345</code>, and the Docker tab of the install block also carries a <code>docker-compose.yaml</code> to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. <code>coddy update -y</code> upgrades an existing install.</p>
+          <p>Linux and macOS: <code>curl -fsSL https://coddy.dev/install.sh | bash</code>. Windows: <code>irm https://coddy.dev/install.ps1 | iex</code>. The script downloads the latest release binary, puts it on your PATH, and creates <code>~/.coddy/config.yaml</code> from the example. In Termux on Android the same script installs the Android build. On Linux you can instead install the <code>.deb</code> or <code>.rpm</code> published with every release (<code>apt-get install ./coddy_X.Y.Z_linux_amd64.deb</code>, <code>dnf install ./coddy_X.Y.Z_linux_amd64.rpm</code>), and on macOS the Homebrew cask straight from the release (<code>brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</code>); both register Coddy with your package manager and add the man page and shell completions. Docker: <code>docker run -d --name coddy -p 12345:12345 -e OPENAI_API_KEY -e CODDY_CONFIG=/home/user/.coddy/config.yaml -v "$PWD/workspace:/workspace" -v "$PWD/coddy_home:/home/user/.coddy" ghcr.io/coddy-project/coddy-agent:latest</code> opens the web UI on <code>localhost:12345</code>, and the Docker tab of the install block also carries a <code>docker-compose.yaml</code> to copy; the multi-arch images (amd64, arm64) are published to the GitHub Container Registry, not Docker Hub. <code>coddy update -y</code> upgrades an existing install.</p>
         </div>
         <div class="faq-item">
           <h3>Can Coddy run on-premises with local models?</h3>
@@ -714,11 +739,11 @@
         </div>
         <div class="faq-item">
           <h3>How do I run Coddy on more than one machine?</h3>
-          <p>Run <code>coddy serve</code> on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel. The console, <code>coddy acp</code>, and the web UI can also drive a single remote server with <code>--remote</code>, and <code>coddy serve --daemon</code> keeps a server running in the background with <code>status</code>, <code>stop</code> and <code>restart</code>.</p>
+          <p>Run <code>coddy serve</code> on each machine and enable the swarm relay on one of them: it lists every node's sessions in one place, routes to nodes across rings, and pulls in machines that can only dial out through a reverse tunnel, an Android phone in Termux included. The console and <code>coddy acp</code> can also drive a single remote server with <code>--remote</code>, and the web UI switches to one from its composer. On Linux <code>coddy serve install</code> keeps a server running as a systemd user service, elsewhere <code>coddy serve --daemon</code> does, with <code>status</code>, <code>stop</code> and <code>restart</code>.</p>
         </div>
         <div class="faq-item">
           <h3>How is Coddy different from other coding agents?</h3>
-          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor-style rules, skills, and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at <a href="/compare/">coddy.dev/compare/</a>.</p>
+          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor and Claude Code rules, skills and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at <a href="/compare/">coddy.dev/compare/</a>.</p>
         </div>
       </div>
     </section>

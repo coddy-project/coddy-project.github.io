@@ -105,6 +105,15 @@ class RussianBuildTest(unittest.TestCase):
                 built, _ = build_ru.build(source)
                 self.assertTrue(read(target) == built, f"{target} is out of date, run python3 scripts/build_ru.py")
 
+    def test_attributes_of_self_closing_tags_are_translated(self) -> None:
+        # <img ... /> goes through handle_startendtag, which kept the English
+        # alt of every poster and of the logo on the Russian page.
+        built, _ = build_ru.build("index.html")
+        for img in re.findall(r"<img\b[^>]*/>", built):
+            alt = re.search(r'alt="([^"]*)"', img)
+            if alt and html.unescape(alt.group(1)) in build_ru.ATTRIBUTE_TRANSLATIONS:
+                self.fail(f"untranslated alt on the Russian page: {alt.group(1)}")
+
     def test_every_table_entry_is_used(self) -> None:
         used: set[str] = set()
         for source in build_ru.PAGES:

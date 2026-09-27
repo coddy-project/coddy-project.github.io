@@ -23,6 +23,10 @@
       <image:loc>https://coddy.dev/assets/demo/poster-zed.jpg</image:loc>
       <image:title>Coddy inside Zed over ACP</image:title>
     </image:image>
+    <image:image>
+      <image:loc>https://coddy.dev/assets/demo/poster-android.jpg</image:loc>
+      <image:title>Coddy on an Android phone in a swarm</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://coddy.dev/compare/</loc>

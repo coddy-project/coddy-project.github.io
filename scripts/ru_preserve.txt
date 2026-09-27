@@ -7,9 +7,7 @@
 /on-prem-llms
 /subagents
 /swarm
-2:22
 2:57
-3:46
 :
 Aider
 All Hands AI
@@ -61,13 +59,10 @@ coddy.dev/compare/
 docker run
 docker-compose.dev.yml
 docker-compose.yml
-docs/homebrew.md
-docs/install.md
 earendil-works
 omp.sh
 pip
 pip, Docker
-v1.0.1
 v1.0.8
 xAI
 ~0.14k
@@ -87,3 +82,10 @@ xAI
 ~54k
 ~68k
 ~86k
+v1.2.31
+Android (Termux)
+·
+1:47
+2:58
+3:21
+Android
