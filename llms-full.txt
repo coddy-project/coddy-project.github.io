@@ -100,7 +100,7 @@ That opens the interactive console: type a request, press Enter, and watch the t
 
 ![The console after a finished turn](../assets/screenshot-console-chat.png)
 
-*A finished turn in the console: the `read` tool box, the thinking block, the answer and the footer counters.*
+*A finished turn in the console: the `read` tool box, the thinking blocks, the answer, and the footer with the token and context counters, the model and the account usage of its provider.*
 
 The same agent runs without a terminal, for a script or a cron job:
 
@@ -120,15 +120,15 @@ coddy serve
 ```
 
 ```text
-coddy serve 1.1.1
+coddy serve 1.2.31
   httpserver  http://127.0.0.1:12345  (no auth)
 ```
 
-Open **http://127.0.0.1:12345/**. The empty screen is a new chat: pick a mode and a model in the composer, type, send. Sessions live under the same `~/.coddy` whichever surface created them, so the console and the browser share one history. Settings live at `#/settings`, the OpenAI-compatible API at `/v1/*` and its Swagger UI at `/docs/`.
+Open **http://127.0.0.1:12345/**. The empty screen is a new chat: pick the mode, the model, the reasoning level and the permission mode in the composer, type, send. Sessions live under the same `~/.coddy` whichever surface created them, so the console and the browser share one history. Settings live at `#/settings`, the OpenAI-compatible API at `/v1/*` and its Swagger UI at `/docs/`.
 
 ![A session in the web UI](../assets/screenshot-fullhd-chat.png)
 
-*A session in the web UI, with an expanded `edit` tool call showing the diff it applied.*
+*A session in the web UI, with an expanded "editing a file" row showing the diff it applied.*
 
 The server binds loopback on purpose. To reach it from another machine, bind wider and require a token: `coddy serve -H 0.0.0.0 --auth-token <secret>` (or `httpserver.host` and `httpserver.auth_token` in the file). `coddy serve --daemon` keeps it running in the background and `coddy serve status | stop | restart` control it; see [coddy serve and the daemon](../operate/serve.md).
 
@@ -750,7 +750,7 @@ memory:
   dir: "" # long-term memory root; empty = $CODDY_HOME/memory. Supports ${CODDY_HOME} and ~ when set.
   wait_seconds: 20      # how long a turn waits for the report before its first model call; 0 never waits
   timeout_seconds: 300  # hard limit of one memory run
-  keep_runs: 20         # finished memory runs kept per session in the Tasks drawer; 0 keeps all
+  keep_runs: 20         # finished memory runs kept per session in the Tasks panel; 0 keeps all
   recall_max_turns: 6   # the child's round cap is the larger of the two
   persist_max_turns: 12
   copilot_max_tokens: 4096
@@ -1414,7 +1414,7 @@ Bind mounts (override host paths with env vars before **`up`**):
 
 | Host (default) | Container | Variable |
 |----------------|-------------|----------|
-| **`./config.yaml`** | **`/home/user/.coddy.yaml`** (read-only) | **`CODDY_CONFIG`** |
+| **`./config.yaml`** | **`/home/user/.coddy/config.yaml`** (read-only) | **`CODDY_CONFIG`** |
 | **`./workspace`** | **`/workspace`** | **`CODDY_CWD`** |
 | **`./coddy_home`** | **`/home/user/.coddy`** | **`CODDY_HOME`** |
 
@@ -1422,7 +1422,7 @@ Fixed inside the container (set by compose **`environment`**):
 
 | Variable | Value | Role |
 |----------|-------|------|
-| **`CODDY_CONFIG`** | **`/home/user/.coddy.yaml`** | Points the loader at the mounted file (not **`$CODDY_HOME/config.yaml`**) |
+| **`CODDY_CONFIG`** | **`/home/user/.coddy/config.yaml`** | Points the loader at the mounted file; the image alone sets **`/home/user/.coddy.yaml`**, outside the home volume |
 | **`CODDY_HOME`** | **`/home/user/.coddy`** | Sessions, skills, scheduler store |
 | **`CODDY_CWD`** | **`/workspace`** | Default cwd for new sessions and tool paths |
 
@@ -1892,6 +1892,10 @@ Android stops the processes of an app it considers idle. While the server has to
 Termux's wake lock (**`termux-wake-lock`**, or from the Termux notification) and let Termux run
 unrestricted in the battery settings. Android 12 and later also kill the background processes of an
 app beyond a limit (the "phantom process killer"); Termux's documentation describes how to lift it.
+
+A phone can also be a node of a swarm: it dials a relay on a laptop or a server, and the relay's
+web UI and the console drive it like any other machine, with no open port on the phone. The whole
+path is in [Android phones as swarm nodes](../tutorials/swarm-android-nodes.md).
 
 ## Limitations
 
@@ -3752,9 +3756,9 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/su
 
 # Interactive console TUI (`coddy` / `coddy cli`)
 
-https://github.com/user-attachments/assets/4d3a3632-004f-4014-909d-9f0275547be3
+https://github.com/user-attachments/assets/0fc63d52-94ca-4927-9c88-29dec02a8767
 
-*A four-minute recording of a console session, from launch and the model picker through file work with permission prompts to `coddy -c` and `--remote`. The file is in the repository as [console.mp4](../assets/video/console.mp4).*
+*A three-minute recording of a console session on 1.2.31: the header with the project's `AGENTS.md` and the skills, the footer with the account usage, the model picker, file work with permission prompts, a `/commit` skill, the built-in documentation on F1 and `coddy -c`. The file is in the repository as [console.mp4](../assets/video/console.mp4).*
 
 The console surface is a terminal UI over the same machinery every other
 surface uses: `session.Manager`, the agent runner, and ACP session updates.
@@ -3857,7 +3861,8 @@ Top to bottom:
 
 - **Header**: `coddy` (bold accent) + dim version; a dim hint line
   (`escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ctrl+o more`);
-  `[Context]` (instruction files) and `[Skills]` (loaded skill names).
+  a dim welcome line; `[Context]` (the files `instructions.files` names) and
+  `[Skills]` (the loaded skills, the bundled ones first).
   `ctrl+o` expands the full hint list and adds `[Rules]` and `[MCP]` sections.
 - **Transcript**: user messages in full-width background boxes; assistant
   markdown (headings, bold/italic, inline code, ``` fences with borders,
@@ -3922,7 +3927,7 @@ Top to bottom:
   `@Dockerfile:21-31` or `@f.go#L21-31`, absolute paths included. In remote mode the
   list comes from the server that runs the session. The grammar, what each kind
   attaches and the limits are in [Mentions](../features/mentions.md).
-- **Footer**: dim `cwd (git-branch) • title [• plan] [• MCP N/M] [• N tasks running (/tasks)] [• accept edits|bypass]`,
+- **Footer**: dim `cwd (git-branch) [• plan|ask] [• MCP N/M] [• N tasks running (/tasks)] [• accept edits|bypass]`,
   then `↑in ↓out  N.N%/ctx (auto)` left and `(provider) model [• reasoning]`
   right. The permission mode closes the first line when it is not `ask`,
   `bypass` in the warning colour, so a session that approves everything never
@@ -3935,8 +3940,8 @@ Top to bottom:
   count is there only while a configured server is still connecting after
   the first frame - connected out of the ones being dialed, a held project
   declaration not counted - and leaves the line once every one has
-  answered. When the line does not fit, the path and the title give way and
-  the notes stay.
+  answered. When the line does not fit, the path gives way and the notes
+  stay.
   A third line appears while the active model's provider reports account
   usage (today: `neuraldeep`, read from the hub's `GET /v1/limits`; `codex`,
   read from the Codex backend's usage endpoint; `devin`, read from the
@@ -4162,7 +4167,8 @@ offers the same tools; under `--remote` the server owns the reload.
 
 | Key | Action |
 |-----|--------|
-| enter | send |
+| enter | send when idle; during a turn, queue the draft in `agent.queue_mode` (the first time asks which) |
+| tab | during a turn with a draft, queue it in the other mode |
 | shift+enter / ctrl+j | newline (backslash+enter also splits) |
 | escape | interrupt the running turn (`HandleSessionCancel`), or stop a `!!` command |
 | ctrl+c | clear editor; twice within 2 s exits |
@@ -4531,11 +4537,11 @@ and is visible via `coddy mcp list` (approve with `coddy mcp trust <name>`).
 
 ![The launch line, header, editor and footer of a fresh console](../assets/screenshot-console-start.png)
 
-*The launch line with the header, the `[Context]` and `[Skills]` sections, the editor and the footer*
+*The launch line with the header, the `[Context]` and `[Skills]` sections, the editor and the footer with the account usage of the model's provider*
 
 ![The ctrl+l model selector](../assets/screenshot-console-models.png)
 
-*The ctrl+l model selector*
+*The ctrl+l model selector: every configured model, the current one marked with the arrow*
 
 ![The first frame with the MCP count in the footer while a server is still connecting](../assets/cli-tui/21-mcp-connecting.png)
 
@@ -4590,13 +4596,17 @@ launch line and header with `[Context]` / `[Skills]`
 (`screenshot-console-models.png`), and a finished turn with a tool box, a
 thinking block, and the footer counters (`screenshot-console-chat.png`). Use
 these in README and on the site: they show what a user actually sees in a
-terminal emulator.
+terminal emulator. They are taken on a clean `CODDY_HOME` with two skills of
+its own and a small project with an `AGENTS.md`, so the header lists what a
+new user sees.
 
-`docs/assets/cli-tui/` is the deterministic set produced by
-`examples/cli/capture.py`, which drives the shared e2e driver and renders each
-state from the pyte buffer as `.txt`, styled `.html`, and `.png`. Those are
-regression references for colors and cell layout, not marketing images;
-regenerate them when the transcript chrome changes. The four usage states
+`docs/assets/cli-tui/` holds PNGs rendered from the pyte buffer by one
+`examples/cli/capture_*.py` script per feature, each driving the shared e2e
+driver against a scripted stand-in model. Those are references for colors and
+cell layout, not marketing images; regenerate the ones whose chrome changed.
+`examples/cli/capture.py` renders the basic states (startup, the slash menu, the
+model selector, a turn) for a comparison on your own machine; none of them is
+committed. The four usage states
 (`09-usage-footer`, `10-usage-warning`, `12-usage-resuming`,
 `11-usage-blocked`) come from `examples/cli/capture_usage.py`, which stands
 a fake hub `GET /limits` behind `CODDY_NEURALDEEP_BASE_URL`, plus one chat
@@ -4614,8 +4624,6 @@ and types `@ment` against a provider that is never asked anything.
 `/model --once /reasoning --count=3`, with a temporary home standing in for
 `HOME` too, so the header lists the bundled skills only.
 
-`docs/assets/pi-tui-reference/` holds captures of the pi original for
-comparison, as described under **Visual model**.
 
 ## Testing
 
@@ -4717,9 +4725,9 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/su
 
 This page captures the original UI requirements and the intended end state. It is a functional spec and a design contract, with a screenshot of each surface next to the section that specifies it. The visual tokens and component contracts are in [DESIGN.md](../../DESIGN.md).
 
-https://github.com/user-attachments/assets/55e9e66f-8a8d-47be-af75-596b8b00fafa
+https://github.com/user-attachments/assets/34752734-2715-4aa3-936b-acfb5c7233bf
 
-*A two-and-a-half-minute recording of the web UI, from the model picker through streamed tool calls and the permission card to the History drawer and the environment switch. The file is in the repository as [web-ui.mp4](../assets/video/web-ui.mp4).*
+*A three-minute recording of the web UI on 1.2.31: the model picker, tool calls as rows that name their action, the permission card with the diff of an edit, a `/commit` skill from the slash menu, and History grouped by folder, from which the session is continued. The file is in the repository as [web-ui.mp4](../assets/video/web-ui.mp4).*
 
 ## Constraints
 
@@ -4735,9 +4743,9 @@ https://github.com/user-attachments/assets/55e9e66f-8a8d-47be-af75-596b8b00fafa
 
 *Settings, Appearance tab: the theme swatches and the language picker*
 
-![The Russian dictionary applied to the settings and the conversation](../assets/localization-ru-wide.png)
+![The Russian dictionary applied to the conversation: the chat header, the tool rows and the composer](../assets/localization-ru-wide.png)
 
-*The Russian dictionary applied to the settings and the conversation*
+*The Russian dictionary applied to the conversation: the chat header, the tool rows and the composer*
 
 - **Default:** dark theme on first visit; language resolves from **`navigator.language`** (RU if Russian, else EN).
 - **Theme cookie:** **`coddy_ui_theme`** with the seven theme ids (**`dark`**, **`light`**, **`midnight`**, **`solarized-dark`**, **`monokai`**, **`nord`**, **`rose-pine`**; path **`/`**, **`SameSite=Lax`**, 1-year `Max-Age`).
@@ -4749,7 +4757,7 @@ https://github.com/user-attachments/assets/55e9e66f-8a8d-47be-af75-596b8b00fafa
 - **Plural copy:** counted strings use **`translatePlural`** / **`tp(key, count)`** with one dictionary entry per CLDR category (**`key.one`**, **`key.few`**, **`key.many`**, **`key.other`**), so Russian declines the noun by the number instead of falling back to one form. Each locale must supply exactly the categories its own **`Intl.PluralRules`** produces; the parity test derives that set per locale.
 - **Coverage:** Appearance + Settings surfaces are translated (Settings shell, sections, MCP, Skills, CodexAuth, ModelField/Picker, Combobox), schema-driven settings field labels and descriptions are translated too (see below), and the conversation surfaces are translated too: nav rail, hero title, composer (modes, model picker, attachments, slash/@ menus, environment and folder modals), message rendering (thinking, tool calls, compaction, copy controls), permission and question prompts, plan document card, History sidebar, scheduler drawer and job editor, background tasks panel, the env health banner, and the swarm screen with its topology graph. Shared destructive confirmations for drafts, chats, and scheduler jobs are translated as well.
 - **Schema field localization:** settings sections rendered from the server JSON Schema (providers, models, agent, tools, subagents, hooks, memory, compaction, scheduler, logger, gateways, sessions, and the parts of the Prompts tab) localize their field labels and descriptions client-side via **`settings/schemaI18n.ts`**: the dictionary key derives deterministically from the section id and the dotted field path (**`settings.schema.<section>.<path>.label` / `.desc`**, the parts of the Prompts tab, folded in from the `prompts` and `instructions` keys, as **`settings.schema.system.<child>.<path>`**). A key no dictionary defines falls back to the schema's own English text, so unmapped or newly added server fields never leak a raw key. Array item rows inherit the domain for their nested fields but keep their own fallback for the row label, so the enclosing fieldset legend and description are not repeated per row.
-- **Settings sub-panels (Appearance / Skills) are mutually exclusive** — opening one closes the other. Only one sub-panel may be expanded at a time.
+- **Settings shows one tab at a time**: Appearance and Skills are tabs of the same list as the configuration sections.
 - **Persistence:** switching theme writes the cookie and sets **`document.documentElement.dataset.theme`**; reload must keep the chosen theme.
 - **CSS contract:** **`--text`** and **`--bg`** on **`[data-theme="light"]`** are **`#18181b`** and **`#f8f8fa`**; glass panels use **`rgba(255, 255, 255, 0.9)`** (not dark tint). Dark defaults remain on **`:root`** / **`[data-theme="dark"]`**.
 
@@ -4766,7 +4774,7 @@ Clear the field to use the session model for summarization.
 
 ## Settings: Codex OAuth
 
-- In **Settings → LLM Providers**, a row with **`type: codex`** hides the generic **API base URL**, **API key**, and **API key command** fields and renders **Sign In with ChatGPT**. The sign-in works before Save, on a new row and on a saved row whose type picker was just switched to codex alike; the latter keeps only its **`proxy`** for the sign-in.
+- In **Settings → LLM providers**, a row with **`type: codex`** hides the generic **API base URL**, **API key**, and **API key command** fields and renders **Sign In with ChatGPT**. The sign-in works before Save, on a new row and on a saved row whose type picker was just switched to codex alike; the latter keeps only its **`proxy`** for the sign-in.
 - The button starts **`POST /coddy/providers/{name}/codex-auth/device`**, opens the returned official verification page, displays the one-time code, and polls **`GET .../device/{loginID}`** until completion or failure. The displayed link remains available if the browser blocks the automatic tab.
 - Connected state comes from **`GET /coddy/providers/{name}/codex-auth`**. A row the server's Codex CLI login does not serve (several codex rows: that login stands in for the row named **`codex`** only) is not connected until it signs in, and the field names the row the login serves (**`cli_login_row`** of the status). **Sign Out** deletes only the Coddy-managed credential through **`DELETE`** and cancels a sign-in still waiting for confirmation, so approving it in a tab left open afterwards stores nothing; pressing **Sign In** again replaces a pending sign-in the same way. A server-side Codex CLI login may still appear as a compatibility connection.
 - OAuth tokens never enter the settings document or browser. They are stored by the server under **`$CODDY_HOME/providers/<name>/codex-auth.json`**.
@@ -4781,7 +4789,7 @@ Clear the field to use the session model for summarization.
 
 *The endpoint dropdown warning that the stored login came from the other deployment*
 
-- In **Settings → LLM Providers**, a row with **`type: neuraldeep`** replaces the free-text **API base URL** with a dropdown of the two official deployments - **`https://api.neuraldeep.ru/v1`** (Russia) and **`https://api.neuraldeep.tech/v1`** (the international mirror) - written to **`providers[].api_base`**; the pick also decides which hub the sign-in below talks to, and the sign-in follows the dropdown as it stands in the form (the device start carries the picked endpoint), so Save is not required first. That holds for a saved row whose type picker was just switched to neuraldeep too, such as the **`openai`** row **`config.example.yaml`** ships: the sign-in is not refused for the type the row was saved with, and only that row's **`proxy`** carries over to it, since its endpoint and key belong to the other type. A stored **`api_base`** that is not one of the two is flagged under the field and ignored by the server. The row keeps the manual **API key** field and renders **Sign In with NeuralDeep** below the endpoint picker (**`NeuralDeepAuthField`**). Signing in is the no-paste alternative; an explicit key always wins and the widget says so instead of pretending the login is active (**`source`** from the status endpoint). When the key that wins is the server's **`<NAME>_API_KEY`** variable (**`OPENAI_API_KEY`** for a row named **`openai`**), the note names that variable instead of pointing at the empty **API key** field.
+- In **Settings → LLM providers**, a row with **`type: neuraldeep`** replaces the free-text **API base URL** with a dropdown of the two official deployments - **`https://api.neuraldeep.ru/v1`** (Russia) and **`https://api.neuraldeep.tech/v1`** (the international mirror) - written to **`providers[].api_base`**; the pick also decides which hub the sign-in below talks to, and the sign-in follows the dropdown as it stands in the form (the device start carries the picked endpoint), so Save is not required first. That holds for a saved row whose type picker was just switched to neuraldeep too, such as the **`openai`** row **`config.example.yaml`** ships: the sign-in is not refused for the type the row was saved with, and only that row's **`proxy`** carries over to it, since its endpoint and key belong to the other type. A stored **`api_base`** that is not one of the two is flagged under the field and ignored by the server. The row keeps the manual **API key** field and renders **Sign In with NeuralDeep** below the endpoint picker (**`NeuralDeepAuthField`**). Signing in is the no-paste alternative; an explicit key always wins and the widget says so instead of pretending the login is active (**`source`** from the status endpoint). When the key that wins is the server's **`<NAME>_API_KEY`** variable (**`OPENAI_API_KEY`** for a row named **`openai`**), the note names that variable instead of pointing at the empty **API key** field.
 - The button starts **`POST /coddy/providers/{name}/neuraldeep-auth/device`** (the hub's RFC 8628 device flow for client **`coddy`** — the browser and the Coddy server may be different machines), opens the returned portal page with the pre-filled code, displays the one-time code, and polls **`GET .../device/{loginID}`** until completion or failure.
 - Connected state comes from **`GET /coddy/providers/{name}/neuraldeep-auth`** (masked key only), read for the endpoint currently picked (**`?api_base=`**). When the stored login was issued by the other deployment's hub (**`hub`** differs from **`endpoint_hub`**), a note under the status says requests with it are rejected and asks to sign in again for this endpoint; the note is suppressed while an explicit key shadows the login. A login already in progress keeps polling if the endpoint is changed meanwhile (the key comes from the hub the flow started with), and the status read afterwards flags the mismatch. **Sign Out** best-effort revokes the key on the hub, then deletes the local credential through **`DELETE`**.
 - The key never enters the settings document or browser; it is stored by the server under **`$CODDY_HOME/providers/<name>/neuraldeep-auth.json`**. Tier models are added under **Logical models** from the **Models** list at the end of the provider form, which fetches the provider catalog with this login before the row is saved (see [Settings: provider models](#settings-provider-models)); the CLI flow (**`coddy providers login neuraldeep`**) appends them to the config automatically.
@@ -4792,7 +4800,7 @@ Clear the field to use the session model for summarization.
 
 *A provider row set to connect directly, its proxy URL field disabled*
 
-- Every row in **Settings → LLM Providers**, codex included, carries an **Ignore system proxy** switch above the **Proxy URL** field (**`ProxySettingField`**). Both edit **`providers[].proxy`**, the route of every request of the row: its completions, its model list, its account usage and its sign-in ([Provider proxy](../getting-started/configuration.md#provider-proxy)). The Telegram bot's **`gateways.telegram.proxy`** reads the same way and has the same pair in **Settings → Gateways**, in the Telegram block ([Telegram gateway](gateway.md#proxy)).
+- Every row in **Settings → LLM providers**, codex included, carries an **Ignore system proxy** switch above the **Proxy URL** field (**`ProxySettingField`**). Both edit **`providers[].proxy`**, the route of every request of the row: its completions, its model list, its account usage and its sign-in ([Provider proxy](../getting-started/configuration.md#provider-proxy)). The Telegram bot's **`gateways.telegram.proxy`** reads the same way and has the same pair in **Settings → Gateways**, in the Telegram block ([Telegram gateway](gateway.md#proxy)).
 - The switch writes **`none`**: the row connects directly and ignores **`HTTPS_PROXY`**, **`HTTP_PROXY`** and **`NO_PROXY`** of the Coddy process. While it is on, the URL field is disabled and reads **Direct connection**.
 - With the switch off, a URL in the field sends every request of the row through that proxy, and an empty field (or a stored **`inherit`**) reads **Follows the system proxy**, the default route.
 - Turning the switch off brings back what the row held before it went on, for as long as the form is open. The document keeps one value, so after **Save** a row set to **`none`** no longer remembers the URL it replaced.
@@ -4895,7 +4903,7 @@ Server behaviour, the cookie and the CSRF rule: [HTTP API](../reference/http-api
 
 ## Environment (local / remote server)
 
-- **Workspace-row chip:** an environment selector sits in the composer workspace-context row above the input, next to the folder / branch / worktree chips (**`EnvironmentChip.tsx`**, rendered inside **`.composer-context-row`**, styled as a **`.workspace-chip--env`**, **`data-testid="composer-env-btn"`**), Claude-Code style — **not** in Settings. The chip shows **`Local`** or the remote's name. It opens a portal menu (**`data-testid="composer-env-menu"`**, mode-menu family; bottom sheet on mobile) with an **Environment** section (**Local**) and a **Remote** section (configured remotes + **`+ Add remote…`**).
+- **Workspace-row chip:** an environment selector sits in the composer workspace-context row above the input, next to the folder / branch / worktree chips (**`EnvironmentChip.tsx`**, rendered inside **`.composer-context-row`**, styled as a **`.workspace-chip--env`**, **`data-testid="composer-env-btn"`**), Claude-Code style — **not** in Settings. The chip shows **`Local`** or the remote's name. It opens a portal menu (**`data-testid="composer-env-menu"`**, mode-menu family; bottom sheet on mobile) with an **Environment** section (**Local**) and a **Remote** section (configured remotes + **`+ Add remote…`**). The menu hangs from the chip's left edge and stays inside the window: in the swarm header of a relay the chip is the last control on the right.
 - **Select = connect:** choosing **Local** or a remote connects **immediately** (no confirm step) and reloads; there is no per-select token prompt. A **bearer token** is entered only in **`+ Add remote…`** (name / URL / token) and remembered per-remote.
 - **Reachability dots:** each remote shows a status dot probed on menu open — **green** reachable+authorized (a cross-origin **`GET /v1/models`**), **red** unreachable / CORS-blocked / unauthorized, **amber** while probing. **Local** is always green.
 - **Purpose:** point the UI at a remote, already-running **`coddy serve`** server, or use the local one. Offered remotes come from the local server's **`httpserver.remotes`** (**`[{name, url}]`**); **`+ Add remote…`** takes an ad-hoc name/URL/token.
@@ -4939,7 +4947,7 @@ Mobile layout
 
 - On mobile the left rail becomes a top bar to preserve horizontal space; the top bar is **`position: fixed`** at the viewport top (**`shell-main`** is padded with **`--coddy-mobile-top-inset`**) while **`body`** scrolls the chat.
 - On mobile the brand stays on a single line.
-- On **`max-width: 1199px`** (phones and tablets alike) the **Settings** drawer keeps one inline inset, **14px**, for every band it stacks: the **SETTINGS** head, the status band under it (shown only for a load or save result), the section tiles, the opened section and the reload / save footer all start and end on the same edge. Check it by measuring `getBoundingClientRect().left` of `.settings-tile` and `.settings-body` against `.settings.drawer` - the two must agree.
+- On **`max-width: 1199px`** (phones and tablets alike) the **Settings** drawer keeps one inline inset, **14px**, for every band it stacks: the **SETTINGS** head, the status band under it (shown only when loading failed or a save was refused), the section tiles, the opened section and the reload / save footer all start and end on the same edge. Check it by measuring `getBoundingClientRect().left` of `.settings-tile` and `.settings-body` against `.settings.drawer` - the two must agree.
 
 Phone layout (**`max-width: 599px`**)
 
@@ -4965,7 +4973,7 @@ Header links
 
 - GitHub link to `https://github.com/coddy-project/coddy-agent` (**new tab**, `rel=noopener`).
 - API docs link to `/docs/` (**new tab**, `rel=noopener`).
-- Links live in the nav rail for this milestone.
+- Both links sit in the footer of the start screen (**GitHub** | **API docs**) and are gone once a chat is open; the nav rail carries neither.
 
 Narrow-rail tooltips (desktop)
 
@@ -5040,7 +5048,7 @@ Session title
 
 - The composer mirrors the session's settings snapshot ([Session settings](../features/session-settings.md)): **`settings`** on **`GET /coddy/sessions/{id}/messages`** and on the **`PATCH /coddy/sessions/{id}`** answer, and **`event: session_settings`** on the turn stream and on **`GET /coddy/events`**. **`chat/sessionSettings.ts`** parses it; **`App.tsx`** keeps the highest **`version`** per session (**`isNewerSettings`**), so the same change arriving down both connections, or an answer arriving after the event of a later change, is applied once and never rolled back.
 - **Mode**, **Model** and **Reasoning** follow a change made anywhere - a typed command, the permission dialog, the model's **`switch_model`**, a console or an editor on the same session. Every **`POST /v1/responses`** carries **`metadata.settingsVersion`**, the version the tab last applied; the server ignores the tab's **`model`** / **`reasoning`** / mode when a newer snapshot has been published since, so a stale tab cannot undo a change it has not seen.
-- The **permission chip** (**`data-testid="composer-permission"`**) sits after **Mode**: **Ask first**, **Accept edits** or **Bypass**, the last in red with a glow, its tooltip naming the configuration's mode the session returns to after a restart. Its menu calls **`PATCH`** **`permissionMode`**. On a new chat the pick is held and sent as a **`/permissions <mode>`** line ahead of the first message.
+- The **permission chip** (**`data-testid="composer-permission"`**) is the last selector of the row, after **Model** and **Reasoning**: **Ask first**, **Accept edits** or **Bypass**, the last in red with a glow, its tooltip naming the configuration's mode the session returns to after a restart. Its menu calls **`PATCH`** **`permissionMode`**. On a new chat the pick is held and sent as a **`/permissions <mode>`** line ahead of the first message.
 - The **overrides line** (**`data-testid="composer-overrides"`**) lists what is changed for the next turns (**`stub/qwen3.8-demo, 2 turns left`**, **`plan this turn`**), with the full list in its tooltip; it shrinks with an ellipsis on narrow shells rather than pushing the send button off the bar.
 - A prompt of settings commands only runs no turn: the stream ends with **`coddy_meta.settings_only`**, the tab drops its optimistic user and assistant rows and re-reads the transcript, where each change is one **SYSTEM** notice row.
 
@@ -5145,10 +5153,9 @@ Session rename UX
 Session delete UX
 
 - Delete is a line of the row's **⋮** menu, set apart and in the destructive colour.
-- Clicking delete shows one confirm dialog and then calls `DELETE /coddy/sessions/{id}`. The dialog opens with **Delete** focused here, so **Enter** finishes what the click started: the row's trash does one thing and the dialog asks about that one thing. Everywhere else the shared dialog still opens on **Cancel**, where a stray Enter must not confirm something nobody meant (**`initialFocus`** on **`confirm({...})`**).
+- Clicking delete shows one confirm dialog and then calls `DELETE /coddy/sessions/{id}`. The dialog opens with **Delete** focused here, so **Enter** finishes what the click started: **Delete** in the row's menu does one thing and the dialog asks about that one thing. Everywhere else the shared dialog still opens on **Cancel**, where a stray Enter must not confirm something nobody meant (**`initialFocus`** on **`confirm({...})`**).
 - If the deleted session is **not** the one currently shown in the main chat, remove it from the list (and refresh from the server) and **keep the History drawer open**. Do not change the URL or clear the transcript for the session that stayed on screen.
 - If the deleted session **is** the one currently shown, navigate to **new chat** (empty start screen, session hash cleared), **close** the History drawer, and clear composer-related state as for a normal home transition.
-- For a short interval after the user confirms delete, **ignore** shell **backdrop** pointer-driven close so a stray event from the native confirm does not dismiss History or alter the route.
 - Deleting more than one conversation at a time, and reading what each one cost, is **Settings -> Sessions** (below). History stays the place to *open* a session.
 
 ## Settings: session management
@@ -5245,9 +5252,9 @@ Scrolling up in a long chat leaves the newest messages off screen, and dragging 
 
 ## Composer primary action (`#btn-send`)
 
-![The improve-prompt wand next to the send button](../assets/composer-improve-prompt.jpg)
+![The improve-prompt wand at the right end of the composer's chip row](../assets/composer-improve-prompt-dark-1280.png)
 
-*The improve-prompt wand next to the send button*
+*The improve-prompt wand at the right end of the composer's chip row, lit while the draft has text*
 
 Context ring and breakdown popover
 
@@ -5259,7 +5266,7 @@ Shape and glyphs
 
 - The control sits to the **right** of the context ring (**`.composer-icon`** on **`Composer.tsx`**).
 - The hit target is a **perfect circle**: equal **width** and **height**, **`border-radius: 50%`**, **`box-sizing: border-box`** (currently **42×42px** in **`styles.css`**). Do **not** ship a rounded square or squircle for this control unless the visual spec explicitly changes again.
-- **Play** (**idle**, draft non-empty): Unicode triangle **`▶`**, enlarged vs body text (**`~22px`** glyph via **`composer-send-glyph`**), slight horizontal nudge for optical centering.
+- **Play** (**idle**, draft non-empty): an SVG triangle, **17x17px**, inside **`composer-send-glyph`**, its path set right of centre for optical balance.
 - **Stop** (**while the session has an active turn, draft empty**): filled square **`.composer-stop-square`** (**14x14px**, centered in the **42px** circle). Stays in **`composer-bar-actions`** on the right, next to the context ring, even when this tab has no stream reader.
 - **Queue** (**while the session has an active turn, draft or attachment present**): the **play** glyph returns on an accent fill (**`.composer-run-icon--queue`**, **`data-queue="true"`**). Emptying the field and attachments brings **Stop** back. See **Composer message queue** below.
 - **Disabled** idle state when textarea is whitespace-only **and no files are attached** (**`:disabled`** on **`composer-send-play`**); an attachment alone unlocks Send (see **Composer file attachments (multimodal)**).
@@ -5356,6 +5363,7 @@ Picker and segmentation
 - The **Commands** group lists the built-ins from **`GET /coddy/commands`** with their argument hint (**`.slash-row-hint`**). Picking **`/model`**, **`/reasoning`** or **`/permissions`** opens that composer selector instead of inserting text, and picking **`/agent`**, **`/plan`** or **`/ask`** switches the mode; a settings command typed out with its value is sent as prompt text and applied by the server.
 - Typing **`/mcp`** in the composer opens **Settings → MCP servers** without sending a turn; words after the command are ignored, as in the console, while a word that only starts with it (`/mcpx`) is an ordinary prompt. The command appears beside `/docs` in the local Commands group; it works from the home composer and from a session.
 - Menu visibility and **`prefix`** derive from **`slashMenuDraftAtCaret`** in **`external/ui/src/ui/skills/draftSlash.ts`** (line-start or whitespace before **`/`**, optional suffix, not inside fences or blockquotes).
+- A draft emptied from outside - sent with **Send**, queued during a turn, run as a browser command - closes the slash, **`@`** and option menus with it: the textarea fires no change event for a value its parent set, so the composer watches the draft itself (**`Composer.test.tsx`**, **`features/web_ui_menus.feature`**).
 - Mirror highlighting uses **`segmentComposerSlashSpans`** in **`external/ui/src/ui/skills/segmentComposerSlashSpans.ts`** (mid-line **`/`** supported; **`x/foo`** is not a command token).
 
 Mirror and caret alignment
@@ -5454,8 +5462,8 @@ The chat transcript renders a flat list of UI message blocks. Each block has a `
   - Built from the **`background_wake`** frame of the relay while the turn streams and from the **`background_wake`** field of the message after a reload (**`parseBackgroundWakeTasks`** in **`chat/backgroundWake.ts`** reads both shapes). It opens a turn like a user message: the live status line counts from it, the next edit counts it the way the server counts user messages, and a failed woken turn offers no retry - nothing typed to send again.
 - `thinking`
   - Renders model reasoning as a lightweight disclosure row.
-  - Status `in_progress` shows label `thinking...` and a spinner.
-  - Status `completed` shows label `thinking` and preserves the text for review.
+  - Status `in_progress` shows label `thinking...` and a running clock.
+  - Status `completed` shows label `thinking` with the measured duration (none when nothing was measured) and preserves the text for review.
   - Multiple `thinking` blocks may appear in one turn (reasoning can resume after tool calls).
 - `tool_call`
   - A single tool execution row, same disclosure chrome as **thinking** / **memory** (**chevron**, **`thinking-label`**, **`thinking-dur`** for duration or **`-`**).
@@ -5471,7 +5479,7 @@ The chat transcript renders a flat list of UI message blocks. Each block has a `
 
 For the whole of a running turn, streaming text included, the typing dots carry a live status line (`TypingDotsMessage.tsx`, pure derivation in `chat/liveStatus.ts`, visual contract in `DESIGN.md`):
 
-![A running turn: 29s, 415 tokens, 1 running task, Writing the answer](../assets/turn-progress-live-line-dark-1280.png)
+![A running turn: 1m 54s, 2.6k tokens, 1 running task, Writing the answer](../assets/turn-progress-live-line-dark-1280.png)
 
 *The live line of a running turn: the turn clock, the generated tokens, the running background task and what the agent is doing*
 
@@ -5488,9 +5496,9 @@ For the whole of a running turn, streaming text included, the typing dots carry 
 
 ## Tool call card (bundled SPA, current)
 
-![Approval prompts and expanded tool cards](../assets/screenshot-tool-previews-dark.png)
+![The permission card of an edit: the diff, then Allow, Allow always, the two session switches and Reject](../assets/screenshot-tool-previews-dark.png)
 
-*Approval prompts and expanded tool cards*
+*The permission card of an edit: the diff it is about to apply, then the answers, the two session switches before Reject*
 
 ![A long tool result collapsed behind More and expanded with Less](../assets/screenshot-tool-previews-overflow-dark.png)
 
@@ -5502,7 +5510,7 @@ Every other built-in tool that answers in a known shape, and every tool of an MC
 
 - `http_request` names the address it really fetched, query included, and everything that changes where it went or what it trusted: the call's headers with credential-bearing ones masked (the headers `tools.http_request.default_headers` adds to every request are not arguments of the call; its permission prompt lists them), the body (its kind, its file or form fields, and the JSON or text it sent), the proxy with its credentials hidden, a skipped certificate check in the failure colour, followed redirects, the timeout, the output file and the rationale. The response - status, masked headers, the body in monospace, the tool's notes - sits under a rule;
 - `switch_model` shows the model, the reasoning level and how long it applies, as the tool reported them after the switch;
-- the `background_*` tools show one row per task with its status in the Tasks drawer's words, and `background_output` / `background_wait` the output in monospace; `preview_server` is its address as a link, the task and when it stops;
+- the `background_*` tools show one row per task with its status in the Tasks panel's words, and `background_output` / `background_wait` the output in monospace; `preview_server` is its address as a link, the task and when it stops;
 - `coddy_docs_search` links each hit into the documentation reader, and `coddy_docs_read` renders the section it read with a link to it and its line range;
 - `plan_list` / `plan_read` / `plan_write` show the plans, a plan's name and overview over its body, and the plan a write wrote; `session_describe` the title, the tags and what changed; the `config_*` tools their answer as fields, with the values the server redacted; the `coddy_memory_*` tools a `.md` note as a document and search hits as rows; `keep_result` and `compact_context` their arguments as fields;
 - an MCP server's call shows its server and tool in the bar, its arguments as fields, and its answer by its shape: a JSON object as fields, other JSON indented, Markdown as a document, anything else as monospace text. Numbers and JSON are shown as the server wrote them, never printed back from a parsed value: an id past 2^53 such as `12345678901234567891` is not rounded, a repeated key is a row per value, and an escape such as `\u00e9` stays in the indented JSON (`chat/jsonSource.ts`). The same holds for the arguments and for the JSON body of `http_request`.
@@ -5649,7 +5657,7 @@ Automated checks:
 
 ### Hooks
 
-**Settings > Hooks** is a schema-driven object tab (`settings-tab-hooks`): the `hooks` config section (`enabled`, `files`, `project_trust`, `default_timeout_seconds`, `stop_loop_limit`, `max_output_chars`) with localized labels and blurbs (`settings.section.hooks.*`, `settings.schema.hooks.*`) and the defaults of `SchemaExampleConfigJSON` as placeholders. Definitions themselves live in JSON files (`docs/features/hooks.md`); the tab edits where they are read from and how project files are trusted.
+**Settings > Hooks** is a schema-driven object tab (`settings-tab-hooks`): the `hooks` config section (`enable`, `files`, `project_trust`, `default_timeout_seconds`, `stop_loop_limit`, `max_output_chars`) with localized labels and blurbs (`settings.section.hooks.*`, `settings.schema.hooks.*`) and the defaults of `SchemaExampleConfigJSON` as placeholders. Definitions themselves live in JSON files (`docs/features/hooks.md`); the tab edits where they are read from and how project files are trusted.
 
 ![Settings Hooks tab](../assets/screenshot-fullhd-settings-hooks.png)
 
@@ -5740,7 +5748,7 @@ Automated checks:
   under the composer never reads through it, and when it appears over a
   chat that was at its newest message the chat moves up to keep that
   message in view.
-- The row's **Usage limits panel** switch in Settings → LLM Providers
+- The row's **Usage limits panel** switch in Settings → LLM providers
   (`providers[].usage_limits_panel`, on by default) hides the section and
   the banner and stops the reads behind them: the route then answers
   `unsupported` with `disabled: true`, and the hook drops the snapshot it
@@ -5812,13 +5820,13 @@ Automated checks:
 - `external/ui/src/ui/chat/PlanDocumentSection.test.tsx`
 - `external/ui/src/ui/messages/MessageList.test.tsx` (handler forwarding, read-only transcript)
 
-## Plan and todo list (legacy rail)
+## Todo checklist (tool card)
 
-![The todo checklist rendered from a coddy_todo tool call](../assets/todo-tool-preview-dark.png)
+![The checklist of the todo tools: the plan replaced in one call, then one item marked in progress](../assets/todo-tool-preview-dark.png)
 
-*The todo checklist rendered from a coddy_todo tool call*
+*The checklist of the todo tools: the plan replaced in one call, then one item marked in progress*
 
-- Optional right-rail plan entries (if present in a build) use **`GET /coddy/sessions/{id}/plan`**, **`PUT`**, **`POST .../plan/archive`**.
+- The **`coddy_todo_*`** tools show their checklist as the preview of their transcript row (**`chat/todoToolPreview.ts`**). The web UI does not read **`GET /coddy/sessions/{id}/plan`** (**`PUT`**, **`POST .../plan/archive`**); the routes stay for other clients.
 - Distinct from the **`plan_document`** transcript card above.
 
 ## Long term memory
@@ -5915,7 +5923,7 @@ a project-local one awaiting workspace approval):
 Guide: `docs/operate/swarm.md`. Visual contract: `DESIGN.md` (**Swarm screen**).
 
 - The **Swarm** rail entry appears only where `GET /swarm/info` answers, so a plain
-  agent never shows it. It sits at the foot of the rail, next to Settings.
+  agent never shows it. It sits at the foot of the rail, above **Docs** and **Settings**.
 - On a relay the swarm map **is** the home screen: no composer, no `ChatScreen`,
   no History entry and no Scheduler entry, because a relay holds no sessions of
   its own. Its header carries the environment selector, which normally lives in
@@ -6061,7 +6069,7 @@ CODDY_URL=http://127.0.0.1:12345 CODDY_FOLDER=/a/folder/with/many/subdirs npm --
 
 ### Checking the fold chevron against its label
 
-The chevron is an SVG whose ink is centred in its viewBox (**`DESIGN.md`**, *Chevron*), because as a text glyph its ink sat wherever the platform's font put it and the reports of a chevron riding above its label kept coming back. Where a mark actually lands is a layout fact, and jsdom has none, so the vitest suite cannot answer it. **`external/ui/scripts/chevron-align-check.mjs`** measures it in a real engine: for a thinking row, a tool row and the Tasks drawer's **Finished N** toggle it compares the ink centre of the chevron with the ink centre of the label's text (a **`Range`** over the text node, so neither the element's padding nor a line height of its own can hide the error), and exits non-zero when they differ by more than **1px**.
+The chevron is an SVG whose ink is centred in its viewBox (**`DESIGN.md`**, *Chevron*), because as a text glyph its ink sat wherever the platform's font put it and the reports of a chevron riding above its label kept coming back. Where a mark actually lands is a layout fact, and jsdom has none, so the vitest suite cannot answer it. **`external/ui/scripts/chevron-align-check.mjs`** measures it in a real engine: for a thinking row, a tool row and the Tasks panel's **Finished N** toggle it compares the ink centre of the chevron with the ink centre of the label's text (a **`Range`** over the text node, so neither the element's padding nor a line height of its own can hide the error), and exits non-zero when they differ by more than **1px**.
 
 It drives **`src/chevron-align-check.html`**, a stand that mounts those three surfaces from the real components against the real stylesheet, so it needs a **`vite`** dev server and no backend at all.
 
@@ -6108,7 +6116,7 @@ Whether a queued message reaches the model in the right mode, and whether every 
 - **after the answer** the model reads the steer message, then the deferred one as a prompt of its own with its image, and the live transcript shows the deferred message above its answer;
 - **the image loads through the relay**: its thumbnail after the turn and after a reload, the original in the lightbox, with no asset asked of the relay's own origin and no URL carrying the token;
 - **Stop** keeps an after-turn message waiting without starting it, and it runs after the next answer;
-- **Settings → Agent** shows the saved mode.
+- **Settings → ReAct loop** shows the saved mode.
 
 ```bash
 make build TAGS="http ui swarm"
@@ -6136,10 +6144,10 @@ The Playwright install is the one of the chevron check above. **`CODDY_BROWSER_P
 These scenarios are intended to be automated via Playwright against the Vite dev server.
 
 - Desktop navigation has no width toggle
-  - Given viewport width is at least 1024px
+  - Given viewport width is 1200-1919px
   - When the app loads
-  - Then `data-testid="nav-menu"` is visible
-  - And `data-testid="nav-toggle-width"` is not present
+  - Then `data-testid="nav-history"` is visible
+  - And no `.rail-toggle-width` is present
 
 - Escape closes the screen the rail opened
   - Given a chat is open at `#/s/<sessionId>`
@@ -6154,7 +6162,7 @@ These scenarios are intended to be automated via Playwright against the Vite dev
   - Given any desktop viewport
   - When the app loads
   - Then `data-testid="sessions"` is not visible
-  - When user clicks `data-testid="nav-menu"`
+  - When user clicks `data-testid="nav-history"`
   - Then `data-testid="sessions"` becomes visible
   - When user clicks `data-testid="sessions-close"`
   - Then the sessions drawer is hidden
@@ -6164,7 +6172,7 @@ These scenarios are intended to be automated via Playwright against the Vite dev
   - When the app loads
   - Then the nav width toggle is not present
   - And the nav rail height is 78px
-  - And sessions can still be opened from the menu button
+  - And sessions can still be opened from **History** in the top bar
 
 - A phone fits the start screen and the chat
   - Given viewport width is 360, 390 or 430px
@@ -6191,7 +6199,7 @@ These scenarios are intended to be automated via Playwright against the Vite dev
   - Given a session has tool calls executed
   - When the user reloads the page
   - Then tool call cards are visible in the transcript
-  - And expanding a tool card shows a structured args preview and a separate raw **Result** panel, without approval buttons
+  - And expanding a tool card shows its preview with the output joined under it, or the tool's structured card, without approval buttons
   - And if the server marked the preview truncated, **More…** then **Less** behave as in the table above; if not truncated, there is no overflow-toggle row and no **`tool-result-viewport--tall`** on the result panel
 
 - Tool result truncation (Playwright MCP)
@@ -6204,16 +6212,16 @@ These scenarios are intended to be automated via Playwright against the Vite dev
 - Token usage survives restart
   - Given a session has non zero token usage
   - When the user reloads the page
-  - Then the token usage HUD shows the persisted totals
+  - Then the context ring's tooltip shows the persisted Input, Output and Total
 
-- Memory run in the Tasks drawer (Playwright MCP)
+- Memory run in the Tasks panel (Playwright MCP)
   - Given **`memory.enable: true`** on the **`coddy serve`** process and at least one Markdown file under global or workspace memory so recall can run
   - When the user sends a chat message that completes a full ReAct turn
   - Then the transcript shows no memory row, and while the run is in flight the live status line reads **Working with memory**
-  - When the user opens the Tasks drawer
+  - When the user opens the Tasks panel
   - Then a task labelled **`memory: <first line of the message>`** carries the **memory** tag (**`bgtask-tag-<id>`**), its card offers **Show transcript** to the read-only child session without being opened, and its open card shows the child's log ending with **`=== subagent report ===`** and the delivery line
 
-For Playwright MCP against a live gateway, start **`make build TAGS="http ui memory"`** then **`./build/coddy serve`** with a disposable **`--home`** so config can enable memory; open **`http://127.0.0.1:<port>/`**, navigate to a session, send a prompt, open the Tasks drawer and assert the **memory** badge on the run's row.
+For Playwright MCP against a live gateway, start **`make build TAGS="http ui memory"`** then **`./build/coddy serve`** with a disposable **`--home`** so config can enable memory; open **`http://127.0.0.1:<port>/`**, navigate to a session, send a prompt, open the Tasks panel and assert the **memory** badge on the run's row.
 
 
 # Surfaces / Editors (ACP)
@@ -7765,7 +7773,8 @@ node.
 
 **Tunnel** — leave `advertise_url` out. The node dials the relay, the relay takes over that
 connection, and from then on the relay sends requests down it while the node answers them.
-This is the only way in when a network accepts no inbound connections.
+This is the only way in when a network accepts no inbound connections, a phone on a mobile
+network among them ([Android phones as swarm nodes](../tutorials/swarm-android-nodes.md)).
 
 The tunnel is prior-knowledge HTTP/2 over a connection that started as an ordinary HTTP
 request, so there is no bespoke frame protocol and no new dependency. Everything above the
@@ -8073,11 +8082,11 @@ REST routes under **`/coddy/scheduler`** require **`-tags=http,scheduler`**; see
 
 ![The scheduler drawer with three jobs, one paused](../assets/screenshot-fullhd-scheduler.png)
 
-*The scheduler drawer with three jobs, one paused*
+*The scheduler drawer: three jobs with their next run, one paused, one with the outcome of its last run, and Runs and Run now on every row*
 
-![The job editor: cron hint, mode and model, the markdown body](../assets/screenshot-fullhd-scheduler-job.png)
+![The job editor: cron hint, mode, model, subagent and permission mode, the markdown body](../assets/screenshot-fullhd-scheduler-job.png)
 
-*The job editor: cron hint, mode and model, the markdown body*
+*The job editor: the cron hint, the mode, the model, the subagent and the permission mode of a run, the markdown body, and Runs, Pause and Delete at the foot*
 
 Jobs are **`*.md`** files **directly** under **`scheduler.dir`**. Nested subdirectories are not used for discovery.
 
@@ -8353,7 +8362,7 @@ The allowlists are fixed in `internal/agent.ToolSetForMode`; agent mode is unres
 
 ![The mode menu in the web UI composer](../assets/modes-menu-dark-1280.png)
 
-*The Mode menu of the web UI composer lists Agent, Plan and Ask; the Model selector sits next to it.*
+*The Mode menu of the web UI composer lists Agent, Plan and Ask; the model, the reasoning level and the permission mode follow it on the row.*
 
 ## Plan mode and the plan document
 
@@ -8369,9 +8378,9 @@ The web UI renders that row as the plan document card in the chat column:
 
 The portable route, for a client without that hook, is to switch to agent mode and mention `@plans/<slug>.plan.md` in the prompt. Details: [Web UI](../surfaces/web-ui.md#plan-document-card-plan-mode-transcript), [ACP protocol](../reference/acp-protocol.md#design-plans-plan-mode).
 
-![The transition from plan mode to agent mode in the web UI](../assets/plan-exit-preview-dark.png)
+![The plan document card in the web UI, with Discard and Run plan](../assets/plan-document-card-dark-1280.png)
 
-*The card the web UI draws when a session leaves plan mode for agent mode (shown in the Russian locale).*
+*The card `plan_write` leaves in a plan-mode chat: the plan's name and summary with Discard and Run plan; the model's answer below repeats the plan.*
 
 ## Ask mode at execution time
 
@@ -8619,12 +8628,12 @@ Browsers and consoles connected through `--remote` to the same server can stop a
 |---|---|
 | Console | `coddy -c` (`--continue`) reopens the most recent session recorded for the current folder and fails when there is none; `--session-id <id>` reopens that session or creates one under that id; `--resume` and `/resume` open a picker of the folder's sessions by title and last update; `-c -p "..."` continues in print mode. Quitting prints the id and the command that resumes it. Under `--remote` all of them work on the server's list, without the folder filter ([Console](../surfaces/console.md)). |
 | Telegram | `/resume` opens an inline keyboard over the sessions the server keeps, newest first, with their titles and the chat's own session marked; `/resume <id or title>` continues the session the words name and offers the keyboard when several match. The chat is bound to the choice in `gateway_sessions.json`, so it holds across a restart of the gateway ([Telegram gateway](../surfaces/gateway.md#commands)). |
-| Web UI | The **History** drawer (`#/history`) lists sessions newest first, with a search over the title and the first prompt, a spinner on a session still generating, a dot on one that finished while you were elsewhere and a question mark on one waiting for a permission; a row opens `#/s/<id>`, and that URL alone brings the session back ([Web UI](../surfaces/web-ui.md#session-list)). |
+| Web UI | The **History** drawer (`#/history`) lists sessions by last activity, pinned ones first, grouped by folder unless the filter menu says otherwise, and the archive out of the way; a search goes over the title, the folder, the tags and the first prompt, and a row carries a dot while its session is working, another when it finished while you were elsewhere and a question mark when it waits for a permission or an answer; a row opens `#/s/<id>`, and that URL alone brings the session back ([Web UI](../surfaces/web-ui.md#session-list)). |
 | ACP editors | `session/load` restores `session.json` and `messages.json`, replays the turns and the tool call summaries, sends a `plan` update when `todos/active.md` exists, then the command catalog; `session/list` lists the bundles with an optional `cwd` filter that matches the folder however its path is spelled, and `loadSession` is advertised whenever a store is configured. `coddy acp --session-id <id>` makes the next `session/new` reopen that bundle, or create one under that name ([ACP protocol](../reference/acp-protocol.md#sessionload)). |
 | HTTP | `GET /coddy/sessions` (`limit`, `cursor`, `q`, `include_scheduler`, `include_subagents`, `include_activity`), `GET /coddy/sessions/{id}/messages`, and `X-Coddy-Session-ID` on `POST /v1/responses` to continue a session ([HTTP API](../reference/http-api.md)). |
 
 ![History drawer](../assets/screenshot-fullhd-history.png)
-*The History drawer over the start screen.*
+*The History drawer over the start screen: the pinned conversation first, one group per folder, the tags under the titles and the filter button beside the search.*
 
 Listings sort by `updatedAt`, newest first; the stamp moves when something is persisted - a turn, a pinned title - and not when a bundle is merely loaded to serve a read. Reopening a session runs the `SessionStart` hooks again with `source: resume` ([Hooks](hooks.md#events)).
 
@@ -8648,7 +8657,7 @@ A subagent run is a child session: a real bundle under `<parent>/subagents/<chil
 
 ## Deleting a session
 
-The trash icon on a History row, after one confirmation, and `DELETE /coddy/sessions/{id}` remove the session tree: the session plus every child it spawned, their background tasks stopped first, the bundles removed deepest first. A running turn is cancelled and awaited before anything is removed. There is no delete verb on the command line; deleting the directory by hand is equivalent for a session no process holds.
+**Delete** in the ⋮ menu of a History row, after one confirmation, and `DELETE /coddy/sessions/{id}` remove the session tree: the session plus every child it spawned, their background tasks stopped first, the bundles removed deepest first. A running turn is cancelled and awaited before anything is removed. Several at once, the archive included, go from **Settings → Sessions**. There is no delete verb on the command line; deleting the directory by hand is equivalent for a session no process holds.
 
 ## The sessions CLI
 
@@ -9135,9 +9144,9 @@ Private repositories rely on your ambient `git` credentials; API URLs are checke
 
 ## Directory layout
 
-![Settings, Skills tab: the resolved skills.dirs, remote sources and installed skills](../assets/screenshot-fullhd-settings-skills.png)
+![Settings, Skills tab: auto-discovery, the resolved skills.dirs, remote sources and installed skills](../assets/screenshot-fullhd-settings-skills.png)
 
-*Settings, Skills tab: the resolved skills.dirs, remote sources and installed skills*
+*Settings, Skills tab: auto-discovery, the resolved skills.dirs, the remote sources with the built-in one greyed out, and the installed skills, the bundled ones among them*
 
 Coddy searches all directories in `skills.dirs` and deduplicates by skill name. **Later directories have higher priority** — if the same skill name appears in multiple directories, the version from the directory listed last wins.
 
@@ -9596,7 +9605,7 @@ agent: explore | task: bg_3 | session: sess_9f1c… | outcome: end_turn | turns:
 
 The runtime starts one child of its own: with `memory.enable` on, every user turn launches the **memory subagent**, which recalls and persists the long-term notes ([Long-term memory](memory.md)). It is built on the same machinery as a `spawn_agent` child - a task of kind `agent` in the pool, a child session inside the parent's bundle, the same transcript and log - through a launcher of its own, so not every spawn rule holds for it:
 
-- its task row carries `agent.system: true` and the name `memory`; the Tasks drawer tags its card `memory` where a delegation carries its agent's name, and the model-facing pool tools omit it and refuse its id;
+- its task row carries `agent.system: true` and the name `memory`; the Tasks panel tags its card `memory` where a delegation carries its agent's name, and the model-facing pool tools omit it and refuse its id;
 - it is admitted past `tools.background.max_concurrent` and never counted against it, and `subagents.max_concurrent` does not count it either; its own bounds are two runs per session and sixteen per process;
 - it has six tools its parent does not have, the one exception to the rule that a child's set only narrows: the set is fixed in code, granted only to this child, never through a definition file, and it reaches nothing but the two note roots. Its mode is always `agent`; an ask-mode turn narrows it to the three recall tools;
 - `SubagentStart` and `SubagentStop` do not fire for it (they describe delegations the model chose); inside the child the ordinary events fire with `"kind": "memory"` in the `subagent` block of the payload;
@@ -9663,9 +9672,9 @@ The Subagents tab is shown under [Scopes and project trust](#scopes-and-project-
 
 *The spawn_agent tool card in the transcript*
 
-![The Tasks drawer with a subagent run in progress](../assets/subagents/tasks-panel-agent-running-dark.png)
+![The Tasks panel with a subagent run in progress](../assets/subagents/tasks-panel-agent-running-dark.png)
 
-*The Tasks drawer with a subagent run in progress*
+*The Tasks panel with a subagent run in progress*
 
 ![The card of a finished run opened in place: Show transcript, the log and the report](../assets/subagents/tasks-detail-agent-finished-dark.png)
 
@@ -11635,7 +11644,7 @@ It is also the one kind of task with no hard limit. A page the operator asked to
 
 ## System tasks
 
-A task the runtime starts on its own behalf, today the memory subagent of a user turn ([Long-term memory](memory.md)), is a `kind: agent` task whose `agent` object carries `system: true`. It is admitted past `tools.background.max_concurrent` and never counted toward it, because that cap bounds the work the model starts and a run per turn would refuse the model's next command; the model-facing tools (`background_list`, `background_output`, `background_wait`, `background_stop`) omit it and refuse its id, while the REST rows and the Tasks drawer show it, its card tagged `memory`. Drain stops it like any task, after a grace for a run that is still persisting.
+A task the runtime starts on its own behalf, today the memory subagent of a user turn ([Long-term memory](memory.md)), is a `kind: agent` task whose `agent` object carries `system: true`. It is admitted past `tools.background.max_concurrent` and never counted toward it, because that cap bounds the work the model starts and a run per turn would refuse the model's next command; the model-facing tools (`background_list`, `background_output`, `background_wait`, `background_stop`) omit it and refuse its id, while the REST rows and the Tasks panel show it, its card tagged `memory`. Drain stops it like any task, after a grace for a run that is still persisting.
 
 ## Subagent runs
 
@@ -11834,7 +11843,7 @@ Such a history is now folded in passes. Each pass carries the summary of everyth
 Every compaction, whichever way it started, draws the row a tool call draws: announced as `compact_context` when it begins, updated with the pass it is on while a multi-pass fold runs (`compacting context: pass 3 of 7`), and closed with what it folded. Before this the session simply went quiet for as long as the summariser took, which a fold of several calls over a large history makes hard to sit through.
 
 ![The compact_context row while a compaction runs](../assets/compaction/compact-row-running-dark-1280.png)
-*`/compact` sent from the composer: the row says what is running, above the answer of the compaction before it. Captured from the running UI.*
+*`/compact` sent from the composer: the row says the context is being compacted while the summarizer writes, under the turns it is about to fold. Captured from the running UI.*
 
 The row a compaction draws for itself is live: it reaches whoever is watching the session - the composer that sent `/compact`, a second browser tab, a console on `--remote` - and what stays in the transcript afterwards is the compaction summary row. A compaction the model asked for is different, because there the row already exists: the `compact_context` call reuses it, so the passes appear under the call that ordered them, and it stays in the transcript like any other tool call.
 
@@ -11964,7 +11973,7 @@ The run is a background task, so the turn does not depend on it. What the turn d
 
 1. Right after the launch, before its first model call, the turn waits up to `memory.wait_seconds` (default 20, never longer than the run's own timeout) for the task to settle. A report that is in by then rides in the turn context block of the first request and of every later step of the turn. A Stop of the turn ends the wait; the run goes on.
 2. A run still going when the wait is over does not hold the turn: the main model starts without memory context. The loop asks the run before every later step, and once the report is in it joins the `<turn_context>` block appended after the history (see *The turn context block* in [The ReAct agent](../contributing/react-agent.md)), for the rest of the turn. A template under `prompts.dir` that prints the clock or the checklist itself is re-rendered every step and gets neither after the history, but the report stays out of its system message too: its turn context block carries the memory section alone.
-3. A report that lands after the turn ended is not carried into the next turn: a recall answers the message it was asked about, and the next message gets its own run. It stays readable in the Tasks drawer.
+3. A report that lands after the turn ended is not carried into the next turn: a recall answers the message it was asked about, and the next message gets its own run. It stays readable in the Tasks panel.
 
 `wait_seconds: 0` never waits, so the report can only reach a turn through a later step. A run that failed, timed out, was stopped or produced no final message injects nothing; the agent log and the task record say why. The task log records when the report reached the turn: `report delivered to the turn (first request)`, `report delivered to the turn (a later step)` or `turn ended before the report`.
 
@@ -11978,15 +11987,15 @@ The memory subagent itself is a separate conversation with a short prompt of its
 
 ## Watching a run
 
-A memory run is an ordinary task of the session, flagged as a **system task**: the Tasks drawer of the web UI lists it as a card tagged `memory` where a `spawn_agent` child carries its agent's name, titled with the first line of your message; the open card shows its progress log (the tool calls, the child's text, the `=== subagent report ===` block, then the delivery line above) and **Show transcript** opens the child session read-only, with the composer replaced by a link back to the chat. Finished runs stay in the drawer's finished list; `memory.keep_runs` bounds how many a session keeps (default 20, `0` keeps every run): when a run finishes, the oldest beyond that number are removed, task record and child bundle alike. Deleting the session removes its memory children with it.
+A memory run is an ordinary task of the session, flagged as a **system task**: the Tasks panel of the web UI lists it as a card tagged `memory` where a `spawn_agent` child carries its agent's name, titled with the first line of your message; the open card shows its progress log (the tool calls, the child's text, the `=== subagent report ===` block, then the delivery line above) and **Show transcript** opens the child session read-only, with the composer replaced by a link back to the chat. Finished runs stay in the drawer's finished list; `memory.keep_runs` bounds how many a session keeps (default 20, `0` keeps every run): when a run finishes, the oldest beyond that number are removed, task record and child bundle alike. Deleting the session removes its memory children with it.
 
 On the wire the run is one update, `memory_run` (ACP `sessionUpdate`, HTTP SSE event of the same name): `started` with the `taskId` and `childSessionId`, `finished` with the task's `taskStatus`, `durationMs` and `delivered` (whether a non-empty report reached the model in this turn), or `skipped` with a `reason`. `finished` is sent while the turn is running, at the delivery or at the turn's end when the run had already settled; a run that outlives the turn sends nothing more, because the turn's stream is gone. No text travels on it, it is not persisted and not replayed: a client that reconnects mid-run, or one that wants a run the turn did not wait out, reads `GET /coddy/sessions/{id}/background-tasks` ([ACP protocol](../reference/acp-protocol.md), [HTTP API](../reference/http-api.md)). The web UI shows `Working with memory` on its live status line between the two updates and adds nothing to the transcript. The console sets the same status while the turn waits and prints one dim line when the run settles (`memory: recalled in 3.2s (task bg_3)`, `memory: finished in 3.2s, nothing reached this turn (task bg_3)`, `memory: failed after 1.2s (task bg_3) - <error>`, `memory: skipped - <reason>`); the transcript is the child bundle under the session's `subagents/` folder.
 
 The model-facing pool tools do not see the run: `background_list` omits system tasks, and `background_output`, `background_wait` and `background_stop` refuse their ids. A parent that waited on a memory run would stall its own turn on work that was never meant to wake it.
 
-![The Tasks drawer with a memory run in flight: the memory tag and the elapsed time](../assets/memory/memory-tasks-running-dark-1280.png)
+![The Tasks panel with a memory run in flight: the memory tag and the elapsed time](../assets/memory/memory-tasks-running-dark-1280.png)
 
-*The Tasks drawer with a memory run in flight: the `memory` tag and the elapsed time*
+*The Tasks panel with a memory run in flight: the `memory` tag and the elapsed time*
 
 ![The card of a finished memory run opened in place: the child's log, the report block and the delivery line](../assets/memory/memory-tasks-detail-dark-1280.png)
 
@@ -12850,7 +12859,7 @@ Optional memory subagent (implementation in external/memory; enable at runtime w
 | `memory.model` | string | "" | Exact models[].model id the memory subagent runs on; empty uses the session's model. |
 | `memory.fallback_models` | list of strings |  | Memory subagent models tried in order when the one before them fails before answering (models[].model ids). The session's own model is the last resort whether or not it is listed, so one unreachable deployment does not take the memory run down with it. |
 | `memory.dir` | string | "" | Long-term memory root. Empty resolves to ${CODDY_HOME}/memory. Supports ${CODDY_HOME} and ~. |
-| `memory.wait_seconds` | integer or null | 20 | How long a user turn waits for the memory subagent's report before its first model call. An explicit 0 never waits: the report then reaches the turn only through a later step, or stays in the Tasks drawer. |
+| `memory.wait_seconds` | integer or null | 20 | How long a user turn waits for the memory subagent's report before its first model call. An explicit 0 never waits: the report then reaches the turn only through a later step, or stays in the Tasks panel. |
 | `memory.timeout_seconds` | integer | 300 | Hard limit of one memory run in seconds, capped by tools.background.max_timeout_seconds like every task of the pool. |
 | `memory.keep_runs` | integer or null | 20 | Finished memory runs kept per session, task record and child transcript alike; the oldest beyond this number are removed when a run finishes. An explicit 0 keeps every run. |
 | `memory.recall_max_turns` | integer | 6 | Bounds the memory subagent's ReAct rounds together with persist_max_turns; the child's cap is the larger of the two. |
@@ -13302,7 +13311,7 @@ Read by the Android build only (`internal/platform/android.go`, `android_init.go
 
 ## Docker and compose
 
-These are read by the compose files and the `Dockerfile`, not by the binary. Inside the container the image sets `CODDY_HOME=/home/user/.coddy`, `CODDY_CWD=/workspace` and `CODDY_CONFIG=/home/user/.coddy.yaml`, and `docker-compose.yml` overrides `CODDY_CONFIG` with the mounted `/home/user/.coddy/config.yaml`.
+These are read by the compose files and the `Dockerfile`, not by the binary. Inside the container the image sets `CODDY_HOME=/home/user/.coddy`, `CODDY_CWD=/workspace` and `CODDY_CONFIG=/home/user/.coddy.yaml`, and both compose files override `CODDY_CONFIG` with the mounted `/home/user/.coddy/config.yaml`.
 
 | Variable | Read by | Meaning | Documented in |
 |---|---|---|---|
@@ -13900,7 +13909,7 @@ header where the client can set one, since a query token reaches proxy access lo
 | POST | `/v1/chat/completions` | **`stream`**, **`messages`** (last **`user`**), optional **`stream_options.include_usage`**. With **`stream: true`** the body is the strict OpenAI **`chat.completion.chunk`** stream described under [Two stream dialects](#two-stream-dialects). **`409`** when another **agent**, **plan**, or **ask** turn already holds the session turn lock (exclusive per persisted bundle), and **`409`** when **`X-Coddy-Session-ID`** names a child session spawned by **`spawn_agent`**: those transcripts are read-only for every model kind, and the error names the parent session to prompt instead. |
 | POST | **`/v1/responses`** | **`model`**, **`input`**, optional **`stream`**, optional **`attachments`** ( **`path`** workspace-relative under session cwd - except with **`source.literal`**, where it only names the body and may be an editor's **`file://`** URI or an absolute path - **`agent`** / **`plan`** / **`ask`** only; file bodies are hydrated as text - a file stored in another detected encoding, such as Windows-1251, is converted to UTF-8; server rejects traversal, oversized, non-text (binary or undetectable encoding), and folder **`path`**; optional **`source.startLine`** / **`source.endLine`** narrow a file to a 1-based inclusive line range that the model sees as **`lines="N-M"`**, and a range the file cannot honour is a **`400`**; optional **`kind: "stdin"`** with a **`source.literal`** marks the body as data piped into a one-shot run - what **`coddy -p --remote`** sends for its stdin - which the model reads as a **`kind="stdin"`** attachment that no mention or command is read from, and any other **`kind`** is a **`400`**), optional **`inline_files`** (array of **`{name, data_url}`**; **`data_url`** is a `data:<mime>;base64,...` URI; works for all modes — direct YAML model and **`agent`** / **`plan`** / **`ask`**). For **`agent`** / **`plan`** / **`ask`**: each file is saved to the session **`assets/`** directory (`~/.coddy/sessions/<id>/assets/`) with **`0o444`** (read-only) permissions; the model receives a `<coddy_session_assets>` annotation in the user message so it can `read` or `cp` the files without re-transmitting their bytes over the API. For direct YAML model: each entry becomes an image content part on the user message so multimodal models receive the file inline. **`input`** remains the full composer text, and its **`@`** mentions are resolved by the server when the turn starts (an attachment already sent for the same path and range is not read twice). Keeps history between turns when using headers. **`409`** when another **agent**, **plan**, or **ask** turn already holds the session turn lock, for streaming and non-streaming calls alike, and **`409`** when **`X-Coddy-Session-ID`** names a child session spawned by **`spawn_agent`**: those transcripts are read-only for every model kind, and the error names the parent session to prompt instead. Every **agent** / **plan** / **ask** turn is published to the session's composer relay whatever **`stream`** is set to, so other clients can watch it over **`GET /coddy/sessions/{id}/composer-stream`**; with **`stream: false`** the response body is unchanged. A **`stream: false`** turn is cancelled when its HTTP request is dropped, a streamed one keeps running. A streamed response that has produced no frame for 15s sends an SSE comment keepalive, so a turn on a YAML model with **`stream: false`** - silent on the wire until the whole answer is generated - is not dropped by an idle-timeout proxy. Note the two unrelated meanings of **`stream`**: this request field selects the response shape for the client, while **`models[].stream`** in **config.yaml** selects the transport coddy uses to reach the LLM. |
 | GET | `/v1/responses/{id}` | Session metadata snapshot. |
-| GET | **`/coddy/sessions`** | Pagination via **`limit`/`cursor`** (cursor is numeric offset token). Optional **`cwd`** keeps only the sessions of that workspace, matched as a folder (cleaned, symlinks resolved, case-insensitive on Windows and macOS) rather than as the stored string; a parent or a child folder does not match. Optional **`q`** substring filter (**case-insensitive**) over **`session.json` title OR the **first persisted `user`** message **`content`** in `messages.json` order (`system`, `assistant`, `tool`, etc. before that first `user` are ignored). **`q` is not full-text search** over the transcript. Pagination applies **after** filtering. Rows sort by **`session.json` `updatedAt`** (newest first), then **`id`** for stable ties; **`updatedAt`** moves forward on persistence (new turns, title pin, etc.), not when the server only loads a bundle to serve **GET** requests. **`include_scheduler=true`** includes the **job sessions** of the scheduler (they set **`schedulerRun`** with **`schedulerJobId`** in **`session.json`**, hold the job's runs as children and are **omitted** from the default composer list). **`include_subagents=true`** includes child sessions spawned by **`spawn_agent`** (**`subagentRun`** in **`session.json`**, stored inside the parent's bundle and hidden by default); each such row carries **`subagent`** **`{parentSessionId, name, taskId}`** read from that bundle, and the default listing never descends into one. **`include_activity=true`** adds **`turnActive`**, **`activitySeq`**, **`readActivitySeq`**, **`unreadComplete`**, **`permissionPending`** and **`backgroundRunning`** to each row for multi-tab UI. **`backgroundRunning`** counts the session's background tasks still in flight - the model's own work, nothing finished and no system errand such as the per-turn memory run - and detached work outlives the turn that started it, so it can be above zero while **`turnActive`** is **`false`**. **`include_stats=true`** adds what the session management table renders: **`messageCount`** (persisted transcript rows of every role), **`tokenUsage`** **`{inputTokens, outputTokens, totalTokens}`** read from the bundle's **`stats.json`** (zeroes for a session that never completed a model call), **`createdAt`** and **`model`**. **`createdAt`** is **omitted** for a bundle stored before the field existed - when a session was started is not recoverable and is not invented - and **`model`** is **omitted** for a session that never overrode **`agent.model`**, so a client shows those as unknown instead of as a value. Optional **`archived`** selects which side of the archive is listed: **`exclude`** (the default working list), **`only`** or **`all`**; a row that is archived carries **`archived: true`** and **`archivedAt`**. Optional **`tags`** is a comma separated list and keeps the sessions carrying **any** of them, normalized the way stored tags are, so **`Backend`** finds **`backend`**; a row carries its **`tags`** when it has any. Optional **`origin`** keeps the sessions of one surface: **`local`** for the ones opened on this host, **`gateway`** for the chats a messenger gateway is holding; a row started by a gateway carries **`origin`** (**`gateway:telegram`**). Optional **`sort`** (**`updated`** by default, or **`created`**, **`title`**, **`messages`**, **`tokens`**) and **`order`** (**`desc`** by default, or **`asc`**) replace the default ordering; they are applied to the **whole filtered listing before paging**, so page two of a sorted listing continues page one. A **pinned** session leads the listing whatever **`sort`** says, and the pins are ordered among themselves by **`pinnedRank`** - the order the operator dragged them into - newest pin first until one is dragged. A session the sort column says nothing about (no creation stamp, no title) sorts **last in both directions**, ties break by id, and **`tokens`** reads each bundle's **`stats.json`**, so it costs one extra small file read per session and only when it is the column asked for. An unknown **`archived`**, **`origin`**, **`sort`** or **`order`** value is a **`400`** rather than a silent default. |
+| GET | **`/coddy/sessions`** | Pagination via **`limit`/`cursor`** (cursor is numeric offset token). Optional **`cwd`** keeps only the sessions of that workspace, matched as a folder (cleaned, symlinks resolved, case-insensitive on Windows and macOS) rather than as the stored string; a parent or a child folder does not match. Optional **`q`** substring filter (**case-insensitive**) over the **`session.json`** title, the session's working directory, its tags, OR the **first persisted `user`** message **`content`** in `messages.json` order (`system`, `assistant`, `tool`, etc. before that first `user` are ignored). **`q` is not full-text search** over the transcript. Pagination applies **after** filtering. Rows sort by **`session.json` `updatedAt`** (newest first), then **`id`** for stable ties; **`updatedAt`** moves forward on persistence (new turns, title pin, etc.), not when the server only loads a bundle to serve **GET** requests. **`include_scheduler=true`** includes the **job sessions** of the scheduler (they set **`schedulerRun`** with **`schedulerJobId`** in **`session.json`**, hold the job's runs as children and are **omitted** from the default composer list). **`include_subagents=true`** includes child sessions spawned by **`spawn_agent`** (**`subagentRun`** in **`session.json`**, stored inside the parent's bundle and hidden by default); each such row carries **`subagent`** **`{parentSessionId, name, taskId}`** read from that bundle, and the default listing never descends into one. **`include_activity=true`** adds **`turnActive`**, **`activitySeq`**, **`readActivitySeq`**, **`unreadComplete`**, **`permissionPending`** and **`backgroundRunning`** to each row for multi-tab UI. **`backgroundRunning`** counts the session's background tasks still in flight - the model's own work, nothing finished and no system errand such as the per-turn memory run - and detached work outlives the turn that started it, so it can be above zero while **`turnActive`** is **`false`**. **`include_stats=true`** adds what the session management table renders: **`messageCount`** (persisted transcript rows of every role), **`tokenUsage`** **`{inputTokens, outputTokens, totalTokens}`** read from the bundle's **`stats.json`** (zeroes for a session that never completed a model call), **`createdAt`** and **`model`**. **`createdAt`** is **omitted** for a bundle stored before the field existed - when a session was started is not recoverable and is not invented - and **`model`** is **omitted** for a session that never overrode **`agent.model`**, so a client shows those as unknown instead of as a value. Optional **`archived`** selects which side of the archive is listed: **`exclude`** (the default working list), **`only`** or **`all`**; a row that is archived carries **`archived: true`** and **`archivedAt`**. Optional **`tags`** is a comma separated list and keeps the sessions carrying **any** of them, normalized the way stored tags are, so **`Backend`** finds **`backend`**; a row carries its **`tags`** when it has any. Optional **`origin`** keeps the sessions of one surface: **`local`** for the ones opened on this host, **`gateway`** for the chats a messenger gateway is holding; a row started by a gateway carries **`origin`** (**`gateway:telegram`**). Optional **`sort`** (**`updated`** by default, or **`created`**, **`title`**, **`messages`**, **`tokens`**) and **`order`** (**`desc`** by default, or **`asc`**) replace the default ordering; they are applied to the **whole filtered listing before paging**, so page two of a sorted listing continues page one. A **pinned** session leads the listing whatever **`sort`** says, and the pins are ordered among themselves by **`pinnedRank`** - the order the operator dragged them into - newest pin first until one is dragged. A session the sort column says nothing about (no creation stamp, no title) sorts **last in both directions**, ties break by id, and **`tokens`** reads each bundle's **`stats.json`**, so it costs one extra small file read per session and only when it is the column asked for. An unknown **`archived`**, **`origin`**, **`sort`** or **`order`** value is a **`400`** rather than a silent default. |
 | POST | **`/coddy/describe`** | JSON **`{"text"}`** to get a short description phrase and the **`tags`** the model proposed for filing the conversation. The tags ride on the call that already names a new chat, so a session is filed without a second request to the model; a model that ignores the instruction answers the phrase alone and **`tags`** is an empty array. Every text is asked about, however short: a first message of two words is the one that needs the labels most. |
 | POST | **`/coddy/enhance-prompt`** | JSON **`{"text"}`** — rewrites the user's draft into a clearer, more specific prompt through one direct LLM completion without tools. The draft is source text only: it is never answered or executed. Optional **`X-Coddy-Session-ID`** selects that session's effective model; otherwise the endpoint falls back to **`agent.model`**, then the first configured **`models[]`** row. JSON **`{"object":"coddy.enhance_prompt","text"}`**; **`400`** for a blank draft, **`502`** for an LLM failure, and **`503`** when no model is available. The composer replaces the draft with the result and **Ctrl+Z**/**⌘Z** restores the original. |
 | GET | **`/coddy/slash-commands`** | Paginated slash commands derived from configured skills (**`page`**, **`page_size`** required). Optional **`prefix`** filters by **`name`** (case-insensitive). Optional **`X-Coddy-Session-ID`** resolves **`${CWD}`** expansion for **`skills.dirs`** like other session-scoped lookups. JSON **`items[].name`** and **`items[].description`**, **`total`**, **`has_more`**. Built-in commands (**`/compact`**, **`/export`**, **`/plugin`**) are not listed here; they are served separately by **`/coddy/commands`**, advertised to editors via the ACP available-commands update, and run deterministically when sent as a prompt (e.g. **`POST /v1/responses`** with **`input:"/plugin marketplace list"`**). |
@@ -15820,6 +15829,166 @@ coddy --remote http://127.0.0.1:12346/swarm/nodes/node-a --remote-token "$T"
 - **A second client gets `409` on the same session.** A session is one turn at a time; the first client holds the lock until its turn ends.
 
 
+# Tutorials / Android phones as swarm nodes
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tutorials/swarm-android-nodes.md
+
+# Android phones as swarm nodes
+
+https://github.com/user-attachments/assets/c1e1d306-d5d3-40db-a84b-77e3cd5ddd46
+
+*A two-minute recording: Coddy in Termux on an Android phone joins a relay, shows up on the relay's map, runs `getprop` and writes a file on the phone for a browser on the laptop. The file is in the repository as [android-swarm.mp4](../assets/video/android-swarm.mp4).*
+
+**Goal.** A phone that runs Coddy in Termux joins a relay you run on a laptop or a server, and you drive it from the relay's web UI or from the console like any other node: prompts, tools that run on the phone, permission prompts, the phone's own sessions. The phone opens the connection itself, so it needs no public address, no open port and no VPN; a phone on a mobile network behind the carrier's NAT joins the same way as one on your Wi-Fi.
+
+**Environment.** A machine for the relay with Coddy 1.2.31 or later: a laptop on the same Wi-Fi, or a server with a public address. An Android phone with [Termux](https://termux.dev), 64-bit, Android 7.0 or later. A model the phone can reach and a key for it: the phone runs the model calls and the tools itself, the relay only carries the traffic. The background is in [Android (Termux)](../getting-started/android.md) and [Swarm](../operate/swarm.md); the shape of a relay with nodes is the one of [A relay and its nodes in Docker](swarm-relay-and-nodes.md).
+
+## 1. The relay
+
+Two tokens decide who may use the relay and who may join it ([Security](../operate/swarm.md#security)). Mint them on the relay's machine:
+
+```bash
+mkdir -p ~/.coddy
+printf 'SWARM_CLIENT_TOKEN=%s\nSWARM_PAIRING_TOKEN=%s\n' "$(openssl rand -hex 16)" "$(openssl rand -hex 16)" >> ~/.coddy/.env
+chmod 600 ~/.coddy/.env
+```
+
+`~/.coddy/config.yaml` of the relay runs nothing but the relay:
+
+```yaml
+httpserver:
+  enable: false
+
+swarm:
+  enable: true
+  host: "0.0.0.0"
+  port: 12346
+  name: "home"
+  auth_token: "${SWARM_CLIENT_TOKEN}"
+  pairing_tokens: ["${SWARM_PAIRING_TOKEN}"]
+```
+
+```bash
+coddy serve
+```
+
+The relay listens on every address of the machine, so the phone reaches it at the machine's address on the Wi-Fi, for example `http://192.168.1.10:12346`. From the phone's browser, `http://192.168.1.10:12346/swarm/info` answers without a token and says the relay is up.
+
+A relay on a server the phone reaches over the internet takes a certificate (`swarm.tls`, [Encryption and proxies](../operate/swarm.md#encryption-and-proxies)) and the phone joins `https://...`: the tokens travel in the request headers, and a mobile network may pass plain HTTP through a proxy that re-frames it, which the tunnel does not survive ([Two transports](../operate/swarm.md#two-transports)).
+
+## 2. Coddy in Termux
+
+On the phone, in Termux:
+
+```bash
+pkg install curl tmux
+curl -fsSL https://coddy.dev/install.sh | bash
+source ~/.bashrc
+coddy -v
+```
+
+The script fetches the Android build for the phone's processor ([Install](../getting-started/android.md#install)).
+
+## 3. The phone's configuration
+
+The phone is an ordinary `coddy serve` with a model, a token on its own API and one `swarm.join` entry. There is no `advertise_url`, so the phone dials the relay and the relay drives it back down that connection (the tunnel transport). `~/.coddy/config.yaml` in Termux:
+
+```yaml
+providers:
+  - name: openai
+    type: openai
+    api_key: "${OPENAI_API_KEY}"
+
+models:
+  - model: "openai/gpt-5.6-terra"
+
+agent:
+  model: "openai/gpt-5.6-terra"
+
+httpserver:
+  enable: true
+  auth_token: "${NODE_TOKEN}"
+
+swarm:
+  join:
+    - url: "http://192.168.1.10:12346"
+      name: "pixel"
+      pairing_token: "${SWARM_PAIRING_TOKEN}"
+      token: "${NODE_TOKEN}"
+```
+
+The secrets go into `~/.coddy/.env` next to it: the model key, the pairing token of the relay and a token of the phone's own, which the relay presents when it forwards a request to the phone.
+
+```bash
+cat >> ~/.coddy/.env <<'EOF'
+OPENAI_API_KEY=sk-...
+SWARM_PAIRING_TOKEN=<the relay's pairing token>
+NODE_TOKEN=<a token for this phone>
+EOF
+chmod 600 ~/.coddy/.env
+```
+
+Any provider from [Configuration](../getting-started/configuration.md) works the same way. `name` becomes the phone's path on the relay, so give every phone its own.
+
+Before starting anything, the dry run checks the file, the model and the relay:
+
+```bash
+coddy serve --dry-run
+```
+
+## 4. Start it and keep it running
+
+```bash
+termux-wake-lock
+tmux new -s coddy 'coddy serve'
+```
+
+Detach with **Ctrl+B**, then **D**; `tmux attach -t coddy` brings the log back. `coddy serve --daemon` is the alternative without tmux ([coddy serve](../operate/serve.md)).
+
+Within a few seconds of the start the phone's log says `swarm: joining relay` with `transport=tunnel`, and the relay's log says `swarm node registered` and `swarm tunnel established` for `pixel`. On the relay's machine:
+
+```bash
+export T=<the relay's client token>
+curl -s -H "Authorization: Bearer $T" http://127.0.0.1:12346/swarm/nodes
+```
+
+The list names `pixel` with `"transport": "tunnel"` and `"online": true`.
+
+Android stops the processes of an app it considers idle. The wake lock keeps Termux running with the screen off; also let Termux run unrestricted in the battery settings, and on Android 12 and later lift the limit on background processes that Termux's documentation describes ([Running coddy serve](../getting-started/android.md#running-coddy-serve)).
+
+## 5. Drive the phone
+
+**The browser.** Open the relay, `http://192.168.1.10:12346/`. The page says the relay needs a token: open the environment chip in its header, **+ Add remote...**, and give it a name, the relay's address and the client token, then **Connect**. The swarm map shows `pixel` under the relay, marked as a node that dials out.
+
+![The swarm map of the relay with the phone as a node that dials out](../assets/swarm/android-node-map-dark-1280.png)
+
+*The relay `home` with the phone `pixel` under it; the dotted line is the connection the phone opened.*
+
+Click `pixel`, and the History drawer, the composer and the settings are the phone's: the environment chip reads `pixel` and the folder is the Termux home. A turn started there runs on the phone: its model calls, its commands in Termux's `bash`, its files. The permission prompts come to you, in the browser.
+
+![A command on the phone waiting for approval in the browser](../assets/swarm/android-node-permission-dark-1280.png)
+
+*Asked which device it runs on, the agent wants to run `getprop` in Termux's `bash` on the phone, and the approval is asked in the browser.*
+
+**The console.** The phone's mount is a base URL like any other remote ([Working with remote nodes](swarm-remote-nodes.md)):
+
+```bash
+coddy --remote http://192.168.1.10:12346/swarm/nodes/pixel --remote-token "$T"
+coddy -p "Which Android version is this? Use getprop." --remote http://192.168.1.10:12346/swarm/nodes/pixel --remote-token "$T"
+```
+
+The phone's workspace is the Termux home, where `coddy serve` was started. The phone's shared storage (downloads, photos) becomes reachable after `termux-setup-storage`, which asks Android for the permission once; a session's folder can then point under `~/storage/shared`.
+
+## What tends to go wrong
+
+- **The relay exits at startup with a message about binding off loopback without a client token.** `SWARM_CLIENT_TOKEN` did not reach it: the file is `~/.coddy/.env` of the account that runs the relay.
+- **The phone never appears.** Its pairing token is not one of the relay's `pairing_tokens`, or the phone cannot reach the address: `curl http://192.168.1.10:12346/swarm/info` in Termux answers when the network is right. A guest Wi-Fi often keeps devices apart.
+- **The phone drops out when the screen goes off.** The wake lock is missing, or the battery settings still restrict Termux; the relay marks the node offline once its lease runs out, and it returns by itself when the process runs again.
+- **A request through the phone's mount answers 401.** The `token` in `swarm.join` is not the phone's `httpserver.auth_token`; both read `NODE_TOKEN` in the configuration above for that reason.
+- **`swarm tunnel established` never follows `swarm node registered` on a mobile network.** Something between the phone and the relay re-frames HTTP. Give the relay TLS and join `https://...`.
+- **Two phones claim one name.** Only the first keeps it: the relay proves a name with a per-lease secret, not with the shared pairing token. Name every phone differently.
+
+
 # Contributing / Contributing guide
 
 Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/CONTRIBUTING.md
@@ -16020,16 +16189,16 @@ Capture the real surface, never a mockup and never a re-used older image that no
 - **On the page**: an image line followed by a one-line caption in italics, placed next to the paragraph that explains what the image shows. One image per view and state; a table with two images side by side when the page compares them.
 
   ```markdown
-  ![The Tasks drawer with a subagent run in progress](../assets/subagents/tasks-panel-agent-running-dark.png)
+  ![The Tasks panel with a subagent run in progress](../assets/subagents/tasks-panel-agent-running-dark.png)
 
-  *The Tasks drawer with a subagent run in progress*
+  *The Tasks panel with a subagent run in progress*
   ```
 
 Screenshots taken as evidence for a pull request (before and after pairs, every theme, every width) belong to the pull request: drag them into the description on GitHub, which stores them under `user-attachments`, or push them to the orphan `screenshots` branch and link the raw file. They never go under `docs/assets/`.
 
 ## Videos
 
-The five demos under `docs/assets/video/` (console, web UI, Zed and VS Code over ACP, swarm) were recorded with the rig in the demo-videos repository: scripted XTEST takes on Xvfb, post-production with `post.py` (zooms, captions, hotkey badges, intro and outro), then re-encoded for the repository:
+The six demos under `docs/assets/video/` (console, web UI, Zed and VS Code over ACP, the swarm, an Android phone as a swarm node) were recorded with the rig in the demo-videos repository: scripted XTEST takes on Xvfb, post-production with `post.py` (zooms, captions, hotkey badges, intro and outro), then re-encoded for the repository:
 
 ```bash
 ffmpeg -i take.mp4 -vf "scale=1280:-2" -c:v libx264 -preset slow -crf 31 -pix_fmt yuv420p -movflags +faststart -an docs/assets/video/<name>.mp4
@@ -18234,7 +18403,7 @@ The expanded body uses the same tool-specific visual preview as the permission g
 
 - **`http_request`** - the bar is the method and the address the request really fetches: the **`query`** object appended the way the tool appends it (names sorted), the password of a userinfo hidden. Under it: the rationale, the request headers with credential-bearing ones (**`authorization`**, **`cookie`**, **`token`**, **`secret`**, **`password`**, **`api-key`**) shown as **`•••`** and an emptied one as removed, the kind of body with its file, its form fields (a credential-named value hidden) or its byte count, then the JSON (indented) or text payload itself in monospace, the proxy with its credentials hidden, **not verified** in the failure colour (**`.structured-tool-warning`**) when **`verify_tls`** is false, followed redirects, the timeout and **`output_file`**. Everything that changes where the request goes or what it trusts is on the card: the generic preview showed all of it as JSON, and a card that drops a skipped certificate check is a card that hides it. The response - status, headers masked the same way, the body in monospace, the tool's bracketed notes (**`followed redirects: …`**, **`body: saved …`**) as muted lines - sits under the rule.
 - **`switch_model`** - the model, the reasoning level and how long it applies, read from the answer (what took effect), not from the arguments (what was asked); the sentence written for the model is not repeated.
-- **Background tasks** - one row per task: id, the status through the Tasks drawer's own labels (**`taskStatusLabel`**, so it is translated), label, address, the elapsed / estimate / exit detail and the pool's note, muted. **`background_output`** / **`background_wait`** add the output in monospace and say when it is still running or its start was dropped; **`background_reap`** lists what it killed by pid. **`preview_server`** is the address as a link (http and https only), the task and when the server stops; the lines telling the model to invite the user are not shown.
+- **Background tasks** - one row per task: id, the status through the Tasks panel's own labels (**`taskStatusLabel`**, so it is translated), label, address, the elapsed / estimate / exit detail and the pool's note, muted. **`background_output`** / **`background_wait`** add the output in monospace and say when it is still running or its start was dropped; **`background_reap`** lists what it killed by pid. **`preview_server`** is the address as a link (http and https only), the task and when the server stops; the lines telling the model to invite the user are not shown.
 - **Documentation** - a search is one row per hit, the title a link into the reader (**`docsHrefFromCoddyLink`**, never Markdown built from the title: a title is text); a read is the section as a document, a link to it in the reader and its line range, with **Continues at line N** when the tool paged it.
 - **Plans, session filing, configuration, memory** - a plan read shows its name and overview above the body (a preview cut inside a long frontmatter stays monospace text until **More…**), a plan write the plan it wrote (the plan card in the chat has the latest version, the transcript keeps each one), a plan list one row per plan with its update time; **`session_describe`** the title, the tags as chips and what changed; a **`config_*`** answer its JSON as fields, with the values the server redacted, in place of the arguments it repeats; a memory note as a document when it is a **`.md`** file or has Markdown's structure and as monospace text otherwise, a memory search one row per hit.
 - **MCP** - the bar is the server, muted, and the tool as its server spells it (**`.structured-tool-mcp-server`**, **`.structured-tool-mcp-tool`**). The arguments are fields: text as text, numbers and booleans in monospace, a short list of scalars as chips, anything nested as indented JSON. The answer is read by its shape (**`resultNode`**): a JSON object as the same fields, other JSON indented, text with Markdown's own structure (a heading, a fence, a list - **`looksLikeMarkdown`**) as a document, anything else as monospace text. MCP servers answer the model in Markdown or JSON far more often than in plain text, and neither reads as its source. **Every value is the text the server wrote.** **`JSON.parse`** only validates: **`chat/jsonSource.ts`** reads the document into nodes that carry their own slice of it (**`parseJsonSource`**), a number, a boolean and nested JSON are shown as that slice and nested or top-level JSON is re-indented as text (**`indentJson`**, the layout of **`JSON.stringify(value, null, 2)`**, a document past 1 MiB shown as it came). Printed back from a parsed value, an id past 2^53 - a Discord or Twitter snowflake - came out rounded (**`12345678901234567891`** as **`12345678901234567000`**), an escape came out decoded and of two equal keys only the last survived; now a repeated key is a row per value and the JSON panels keep **`\u00e9`** as written. A text row shows the string its literal encodes. The arguments of every card that lists them as fields, and the JSON body of **`http_request`**, are read the same way.
@@ -18493,7 +18662,7 @@ A long conversation keeps a bounded slice of its rows in the DOM and holds only 
 
 - Control **`#btn-send`** (**`.composer-icon`**) sits **directly right** of the context ring (**`.composer-context-tip-host`**).
 - **Circular button** (**not** pill or squircle): fixed equal **width** and **height**, **`border-radius: 50%`**, **`box-sizing: border-box`**. Intended diameter **42px** in production CSS (**may track token scale**, but stays a **circle**).
-- **Glyphs** live in **`composer-send-glyph`**. **Play** state uses **`~22px`** **▶**; **stop** uses **`.composer-stop-square`** (**14×14px** filled block, centered in the circle by **`.composer-run-icon--stop .composer-send-glyph`**, which fills the button and zeroes **`font-size`** and **`line-height`** so no text baseline is left to push the square off centre; the composer, the background task cards and the scheduler's job rows share that one rule). **Every stop glyph is that drawn square, never a text character**: the same rule zeroes the font, so a **`■`** written into the wrapper renders nothing - which is how a running scheduler job came to show an empty red circle. Ring + stop stay **right-aligned** in **`composer-bar-actions`** (same row as mode tabs). Keep contrast high (**`composer-send-play`** vs **`composer-send-stop`**).
+- **Glyphs** live in **`composer-send-glyph`**. **Play** state is an **SVG triangle**, **17×17px**, its path set right of centre for optical balance (a text **▶** sat wherever the platform's font put it); **stop** uses **`.composer-stop-square`** (**14×14px** filled block, centered in the circle by **`.composer-run-icon--stop .composer-send-glyph`**, which fills the button and zeroes **`font-size`** and **`line-height`** so no text baseline is left to push the square off centre; the composer, the background task cards and the scheduler's job rows share that one rule). **Every stop glyph is that drawn square, never a text character**: the same rule zeroes the font, so a **`■`** written into the wrapper renders nothing - which is how a running scheduler job came to show an empty red circle. Ring + stop stay **right-aligned** in **`composer-bar-actions`** (same row as mode tabs). Keep contrast high (**`composer-send-play`** vs **`composer-send-stop`**).
 - **Focus.** The app puts the caret in the composer by itself on the start screen, on switching to a conversation and on closing History, except on a **touch-only** device (**`(any-hover: none) and (any-pointer: coarse)`**: phones and tablets without a pointer), where a focused field opens the on-screen keyboard over half of the screen; there the keyboard waits for a tap on the field (**`chat/composerFocus.ts`**, **`composerAutoFocusAllowed`**). Like Enter below, this follows the input device, not the width: a narrow desktop window keeps the focus.
 - **Keyboard.** Enter sends (or queues while a turn runs) wherever a keyboard is attached, a narrow desktop window included; **Shift+Enter** is the browser's newline and **Ctrl+Enter** / **Alt+Enter** put a newline at the caret. On a **touch-only** device (**`(any-hover: none) and (any-pointer: coarse)`**) Return stays a newline and this button sends, since a phone keyboard has no Shift+Enter; **`enterkeyhint`** is **`send`**, or **`enter`** there. Enter that confirms an input-method candidate never sends. Rule: **`chat/composerEnter.ts`**.
 - Idle **disabled** when the message field is empty **and no sendable files are attached** (a disabled attachment under a non-multimodal model does not unlock Send); an active session turn shows **Stop** with an empty draft and **Queue** with text or sendable files, whether or not this tab has a stream reader (see **`docs/surfaces/web-ui.md`**, section **Composer primary action**).
@@ -18520,7 +18689,7 @@ The app has **one chevron**, **`<Chevron />`** (**`ui/components/Chevron.tsx`**)
 
 It is an **inline SVG**, never a text glyph and never a triangle. A **stroked polyline** on a **14×14** viewBox - the points **`5.5,4 8.5,7 5.5,10`** at **1.6** stroke width, **round** cap and join, **`currentColor`** - mirrors about the centre of that viewBox on both axes, so its ink is centred in the box by construction and the box is the only thing the CSS has to place. The reason is the whole history of this mark: as the text **`›`** its ink sat wherever the platform's font put it inside the line box, so the same CSS placed the chevron differently on every machine and every fix that nudged **`top`** was undone by the next font. **`chevronContract.test.tsx`** fails if the geometry stops being symmetric, if a stylesheet puts a chevron back into **`content`**, or if a second implementation appears; **`external/ui/scripts/chevron-align-check.mjs`** measures the result in a real browser, which is the only place layout exists.
 
-Its vertical placement is **centred on the first line of the label beside it**, never on the row's box: **`.thinking-chevron`** is placed at **`top: 10px`** - half the **20px** line box of **`.thinking-label`** - with **`translateY(-50%)`**. The row's box is not one line tall on every row: a tool row aligns its 14px label, 12px monospace target and 12px duration on one baseline (**`.thinking-head`**), which lowers the smaller boxes by a pixel or two and makes the box taller than the label's line, and a phone wraps a background chip onto a second line. Centred on that box (**`top: 50%`**) the chevron sank below the label on every tool row while the thinking row kept it level. The two numbers move together; **`toolRowBaselineCss.test.ts`** holds the chevron's **`top`** to half the label's **`line-height`**, and the browser check above measures the chevron's ink centre against the ink centre of the label's text - within **1px** on a transcript row and on the Tasks drawer's finished counter.
+Its vertical placement is **centred on the first line of the label beside it**, never on the row's box: **`.thinking-chevron`** is placed at **`top: 10px`** - half the **20px** line box of **`.thinking-label`** - with **`translateY(-50%)`**. The row's box is not one line tall on every row: a tool row aligns its 14px label, 12px monospace target and 12px duration on one baseline (**`.thinking-head`**), which lowers the smaller boxes by a pixel or two and makes the box taller than the label's line, and a phone wraps a background chip onto a second line. Centred on that box (**`top: 50%`**) the chevron sank below the label on every tool row while the thinking row kept it level. The two numbers move together; **`toolRowBaselineCss.test.ts`** holds the chevron's **`top`** to half the label's **`line-height`**, and the browser check above measures the chevron's ink centre against the ink centre of the label's text - within **1px** on a transcript row and on the Tasks panel's finished counter.
 
 ### Close control
 
@@ -18665,7 +18834,7 @@ A file-tree over combined **global** (**`memory.dir`** / `$CODDY_HOME/memory`) a
 
 ### Memory runs
 
-When **`memory.enable`** is true, each user turn starts a memory subagent in the background task pool. The transcript shows nothing for it: the run is an invisible **`memory_run`** item of the turn (from the `memory_run` events of the stream, `chat/memoryRun.ts`) that the live status line reads (**Working with memory** while it is in flight). Its record is the **Tasks drawer**: an agent task whose card carries the **`memory`** tag (**`bgtask-tag`**, keyed on **`agent.system`**) where a `spawn_agent` child carries its agent's name, the first line of the message as its title, **Show transcript** to the read-only child session on the card itself, and the child's log in the open card.
+When **`memory.enable`** is true, each user turn starts a memory subagent in the background task pool. The transcript shows nothing for it: the run is an invisible **`memory_run`** item of the turn (from the `memory_run` events of the stream, `chat/memoryRun.ts`) that the live status line reads (**Working with memory** while it is in flight). Its record is the **Tasks panel**: an agent task whose card carries the **`memory`** tag (**`bgtask-tag`**, keyed on **`agent.system`**) where a `spawn_agent` child carries its agent's name, the first line of the message as its title, **Show transcript** to the read-only child session on the card itself, and the child's log in the open card.
 
 ### Component boundaries
 
@@ -18722,7 +18891,11 @@ is the screen: there is no list of nodes under it, because everything the list d
 - **Header.** Title (relay name) and a subtitle counting relays, agents and offline nodes, then
   **`.swarm-header-actions`** holding the **`headerSlot`** - **`App.tsx`** passes
   **`<EnvironmentChip/>`** there at the relay root, because the composer that normally carries it
-  is not on screen.
+  is not on screen. There the chip is the last thing on the right, so its menu, which hangs from
+  the chip's left edge, is kept inside the window with a **12px** margin (its **300px** width is
+  known from the stylesheet); hung from the chip alone it ran past the window at 1280 px and hid
+  the entries a token is added with. Pinned by **`EnvironmentChip.test.tsx`** and
+  **`features/web_ui_menus.feature`**.
 - **The click lands on the question.** Spotting on the map that a box is asking is half the job:
   clicking a node whose sessions include one waiting on a permission prompt opens *that* session,
   then one with a turn in flight, freshest first; only a node with neither opens its own home
@@ -19243,7 +19416,7 @@ Short map for automation-friendly contributors.
 | `internal/agent` | ReAct orchestration, MCP/tool wiring, and the opt-in wait for a hit usage limit (**`limit_wait.go`**: a **`llm.QuotaResetError`** from the resilient wrapper makes a top-level turn wait for the reset under **`agent.wait_for_limit_reset`**, sending **`provider_usage`** updates with **`resuming`** every 20 s, then re-issue the same call). |
 | `internal/mcp` | MCP transports, merged server list, and the **workspace trust gate** for project-local **`.coddy/mcp.json`** (**`trust.go`**, **`gate.go`**; policy **`mcp.project_trust`**, approvals in **`<home>/mcp-trust.json`**). A server's `command` and `args` run exactly as written: nothing here knows `npx` or any other package runner. **`mcptest`** serves test MCP servers of every kind a user configures - the test binary re-executed on stdio, a local npm package started by the real `npx`, streamable HTTP and SSE - each answering one tool with its token. The dial itself lives in **`internal/session/mcp_dial.go`** (every configured server under its own 20 s bound, one more try at the next turn for one that did not answer) and the console's background connect in **`internal/session/mcp_background.go`**. Guide: **`docs/features/mcp.md`**. |
 | `internal/remote` | Go client for a remote `coddy serve` server: SSE frames back into ACP updates, `/coddy` REST, permission/question answers, and the permission prompts of background subagents the server announces on its events stream (**`detached_prompts.go`**). Powers `--remote` on the console and `coddy acp`. Guide: **`docs/surfaces/console.md`** (Remote mode), **`docs/plans/remote-control.md`**. |
-| `internal/bgtask` | Background task pool for detached shell commands (**`run_command`** **`background: true`** plus the **`background_*`** tools, the Tasks drawer, and **`/coddy/sessions/{id}/background-tasks`**), for subagent runs started by **`spawn_agent`** (**`Pool.Launch`**, kind **`agent`**, **`Agent {name, session_id}`** on the row), and for in-process servers the **`preview_server`** tool starts (**`Pool.Launch`**, kind **`server`**, **`Spec.URL`** / **`Snapshot.URL`**, **`Spec.NoTimeout`** - no hard limit unless the call names one). **`Pool.Adopt`** takes over a foreground command that outlived its timeout instead of killing it. **`Pool.CanWake`** says whether this process subscribed a waker (**`WakeWatcherKey`**), so **`run_command`** and **`spawn_agent`** promise a **`notify_on_finish`** wake only where one will happen, and **`Pool.MarkWokeAgent`** records on the row (**`woke_agent`**, persisted) that a task's end did start a turn, which is what keeps the bell on a finished card in the Tasks drawer and **`woke the agent`** in **`/tasks`**. Guide: **`docs/features/background-tasks.md`**. |
+| `internal/bgtask` | Background task pool for detached shell commands (**`run_command`** **`background: true`** plus the **`background_*`** tools, the Tasks panel, and **`/coddy/sessions/{id}/background-tasks`**), for subagent runs started by **`spawn_agent`** (**`Pool.Launch`**, kind **`agent`**, **`Agent {name, session_id}`** on the row), and for in-process servers the **`preview_server`** tool starts (**`Pool.Launch`**, kind **`server`**, **`Spec.URL`** / **`Snapshot.URL`**, **`Spec.NoTimeout`** - no hard limit unless the call names one). **`Pool.Adopt`** takes over a foreground command that outlived its timeout instead of killing it. **`Pool.CanWake`** says whether this process subscribed a waker (**`WakeWatcherKey`**), so **`run_command`** and **`spawn_agent`** promise a **`notify_on_finish`** wake only where one will happen, and **`Pool.MarkWokeAgent`** records on the row (**`woke_agent`**, persisted) that a task's end did start a turn, which is what keeps the bell on a finished card in the Tasks panel and **`woke the agent`** in **`/tasks`**. Guide: **`docs/features/background-tasks.md`**. |
 | `internal/subagents` | Subagent definitions (markdown + YAML frontmatter from **`subagents.dirs`**, built-ins **`general`** and **`explore`**), canonical **scopes**, the **trust receipts** for project-scope files (**`trust.go`**; policy **`subagents.project_trust`**, receipts in **`<home>/subagents-trust.json`**), the process-wide **`Limiter`**, and the catalog (**`coddy agents list`**, **`GET /coddy/subagents`** with the bounds each definition declares, the prompt block; the web UI lists it read-only under **Settings → Subagents**). The runtime that spawns a child is **`internal/agent/subagent.go`**; it also continues a finished run in its own child session when the parent passes **`spawn_agent`** **`resume`**, instead of a second child starting over (issue #389). Child sessions are owned by **`internal/session`**, which stores each one inside the bundle of the session that spawned it (**`<parent>/subagents/<child>/`**) under an ordinary **`sess_`** id and reopens it from that bundle for a resumed run (**`SubagentSpec.Resume`**). Guide: **`docs/features/subagents.md`**. |
 | `internal/hooks` | Operator lifecycle hooks: definition files in Claude Code's shape (**`definition.go`**, **`matcher.go`** with tool-name aliases), the loader with canonical **scopes** (**`loader.go`**; policy **`hooks.project_trust`**), the **trust receipts** for project-scope files (**`trust.go`**; **`<home>/hooks-trust.json`**, keyed by canonical workspace, file and digest; surfaces **`coddy hooks list|trust|untrust`**, **`GET /coddy/hooks`**, **`POST /coddy/hooks/trust|untrust`**), the **catalog** (**`catalog.go`**), and the **runner** (**`runner.go`**: stdin JSON payload, exit-code and JSON answer, timeouts and process groups through **`internal/platform`**). **`internal/agent/hooks.go`** wires `PreToolUse` / `PostToolUse` / `PostToolUseFailure` into **`executeToolCall`**, `UserPromptSubmit` and `Stop` into the loop, `PreCompact` / `PostCompact` into **`CompactSession`**, `SubagentStart` / `SubagentStop` into the spawn runtime and `Notification` into the permission gate; **`internal/session/hooks.go`** fires `SessionStart` from the manager and keeps its context on the session. **`hooktest`** re-executes a test binary as the hook process. Guide: **`docs/features/hooks.md`**, design: **`docs/plans/hooks.md`**. |
 | `internal/session` | Session manager, Filesystem persistence, Acp hooks, rules catalog, the **paged reads** of a history (**`message_window.go`**: **`PageMessages`** step-aligned pages and the counts a client numbers them from, **`MessagePage.UILog`**; behind **`GET /coddy/sessions/{id}/messages?limit=&before=&from=`**, issue #338), and the **provider usage** cache and schedule (**`provider_usage.go`**: the account quota behind a session's model, published as **`provider_usage`** at session ready and from every turn's release, served over **`GET /coddy/providers/{name}/usage`** and the events stream; **`provider_usage_sources.go`** picks the reader per provider type - **`internal/llm/neuraldeep_usage.go`** for the hub's `GET /v1/limits`, **`codex_usage.go`** for the Codex backend's usage endpoint, **`devin_usage.go`** for the seat-management status RPC). Design: **`docs/plans/neuraldeep-usage.md`**. |

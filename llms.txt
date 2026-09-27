@@ -81,6 +81,7 @@ Every page below is the Markdown kept in the repository, read straight from the 
 - [A relay and its nodes in Docker](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tutorials/swarm-relay-and-nodes.md): A Compose stand with a relay and nodes that dial out to it, the tokens, the checks, a mounted node from the console and the browser, scaling by adding nameless workers. (docs/tutorials/swarm-relay-and-nodes.md)
 - [A chain of relays](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tutorials/swarm-multi-hop.md): A second relay behind the first with its own nodes, two-hop mounts, the recursive session list, rings and alternates. (docs/tutorials/swarm-multi-hop.md)
 - [Working with remote nodes](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tutorials/swarm-remote-nodes.md): Driving a node behind a relay from the console, an editor and the browser, what runs where, and which credential opens what. (docs/tutorials/swarm-remote-nodes.md)
+- [Android phones as swarm nodes](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tutorials/swarm-android-nodes.md): A phone running Coddy in Termux joins a relay on a laptop or a server and is driven from the relay's web UI and the console, with no open port on the phone. (docs/tutorials/swarm-android-nodes.md)
 
 ## Contributing
 
