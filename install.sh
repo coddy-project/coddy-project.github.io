@@ -22,7 +22,8 @@ Usage: install.sh [options]
 
 Installs the release binary (http + ui + scheduler + memory), its man page and
 its shell completions, and bootstraps \$CODDY_HOME (default ~/.coddy) with
-config.yaml from config.example.yaml when the file is missing.
+config.yaml from config.example.yaml when the file is missing. In Termux on
+Android it installs the Android build, which is published for arm64.
 
 Unless --no-shell-setup is given, a user-level install also writes a small
 guarded block to the rc file of your login shell so that a new terminal finds
@@ -88,11 +89,21 @@ case "$OS" in
   Darwin) GOOS=darwin ;;
   *) die "unsupported OS: $OS (use install.ps1 on Windows)" ;;
 esac
+# Termux reports Linux from uname -s and Android from uname -o. The Linux build
+# does not start there: a Termux that targets Android 10 or later runs every
+# program through the system linker, which refuses a static executable with
+# "has unexpected e_type: 2". Android has a build of its own.
+if [ "$GOOS" = linux ] && [ "$(uname -o 2>/dev/null || true)" = Android ]; then
+  GOOS=android
+fi
 case "$ARCH" in
   x86_64|amd64) GOARCH=amd64 ;;
   aarch64|arm64) GOARCH=arm64 ;;
   *) die "unsupported CPU: $ARCH" ;;
 esac
+if [ "$GOOS" = android ] && [ "$GOARCH" != arm64 ]; then
+  die "the Android build of Coddy is published for arm64 (aarch64) only, and this device is $ARCH"
+fi
 
 if [ -z "$CODDY_INSTALL_DIR" ]; then
   CODDY_INSTALL_DIR="${HOME}/.local/bin"
@@ -139,6 +150,18 @@ TAG="${TAG#v}"
 
 ASSET="coddy_${TAG}_${GOOS}_${GOARCH}.tar.gz"
 DOWNLOAD_URL="${CODDY_DOWNLOAD_BASE%/}/${CODDY_REPO}/releases/download/${TAG}/${ASSET}"
+
+# A release that predates a platform has no archive for it, and the download
+# below would only say 404.
+case "$REL_JSON" in
+  *"\"${ASSET}\""*) ;;
+  *)
+    if [ "$GOOS" = android ]; then
+      die "release ${TAG} has no ${ASSET}: Android builds start with a later release (pass --version to pick one)"
+    fi
+    die "release ${TAG} has no ${ASSET}"
+    ;;
+esac
 
 DEST="${CODDY_INSTALL_DIR}/coddy"
 # Running the installer over an existing binary is the consent: an update is
@@ -214,6 +237,13 @@ case "$CODDY_DATA_DIR" in
   /usr/*|/opt/*) SYSTEM_PREFIX=1 ;;
   *) SYSTEM_PREFIX=0 ;;
 esac
+# Termux's prefix plays the part of /usr: its bin, man and completion
+# directories are searched already.
+if [ "$GOOS" = android ] && [ -n "${PREFIX:-}" ]; then
+  case "$CODDY_DATA_DIR" in
+    "$PREFIX"/*) SYSTEM_PREFIX=1 ;;
+  esac
+fi
 
 login_shell="$(basename "${SHELL:-sh}")"
 
