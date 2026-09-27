@@ -23,7 +23,8 @@ Usage: install.sh [options]
 Installs the release binary (http + ui + scheduler + memory), its man page and
 its shell completions, and bootstraps \$CODDY_HOME (default ~/.coddy) with
 config.yaml from config.example.yaml when the file is missing. In Termux on
-Android it installs the Android build, which is published for arm64.
+Android it installs the Android build, which is published for arm64 and
+x86_64.
 
 Unless --no-shell-setup is given, a user-level install also writes a small
 guarded block to the rc file of your login shell so that a new terminal finds
@@ -101,9 +102,6 @@ case "$ARCH" in
   aarch64|arm64) GOARCH=arm64 ;;
   *) die "unsupported CPU: $ARCH" ;;
 esac
-if [ "$GOOS" = android ] && [ "$GOARCH" != arm64 ]; then
-  die "the Android build of Coddy is published for arm64 (aarch64) only, and this device is $ARCH"
-fi
 
 if [ -z "$CODDY_INSTALL_DIR" ]; then
   CODDY_INSTALL_DIR="${HOME}/.local/bin"
