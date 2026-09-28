@@ -4393,8 +4393,9 @@ workspace.
 remote `coddy serve` server instead of running the agent in-process. The
 target is a configured remote name (`httpserver.remotes`), a bare
 `host:port` (scheme defaults to http), or a full http(s) URL. The bearer
-token comes from `--remote-token` or `CODDY_REMOTE_TOKEN`; tokens are
-deliberately never read from config.yaml. The same pair of flags works on
+token is the first of `--remote-token`, the `token` of the matching
+`httpserver.remotes` entry (a node mount under a configured relay takes the
+relay's) and `CODDY_REMOTE_TOKEN`. The same pair of flags works on
 `coddy acp`, so an ACP editor can drive a remote coddy too.
 
 Turns execute on the server in its workspace. For a turn this console starts,
@@ -4904,16 +4905,19 @@ Server behaviour, the cookie and the CSRF rule: [HTTP API](../reference/http-api
 
 ## Environment (local / remote server)
 
-- **Workspace-row chip:** an environment selector sits in the composer workspace-context row above the input, next to the folder / branch / worktree chips (**`EnvironmentChip.tsx`**, rendered inside **`.composer-context-row`**, styled as a **`.workspace-chip--env`**, **`data-testid="composer-env-btn"`**), Claude-Code style — **not** in Settings. The chip shows **`Local`** or the remote's name. It opens a portal menu (**`data-testid="composer-env-menu"`**, mode-menu family; bottom sheet on mobile) with an **Environment** section (**Local**) and a **Remote** section (configured remotes + **`+ Add remote…`**). The menu hangs from the chip's left edge and stays inside the window: in the swarm header of a relay the chip is the last control on the right.
-- **Select = connect:** choosing **Local** or a remote connects **immediately** (no confirm step) and reloads; there is no per-select token prompt. A **bearer token** is entered only in **`+ Add remote…`** (name / URL / token) and remembered per-remote.
-- **Reachability dots:** each remote shows a status dot probed on menu open — **green** reachable+authorized (a cross-origin **`GET /v1/models`**), **red** unreachable / CORS-blocked / unauthorized, **amber** while probing. **Local** is always green.
-- **Purpose:** point the UI at a remote, already-running **`coddy serve`** server, or use the local one. Offered remotes come from the local server's **`httpserver.remotes`** (**`[{name, url}]`**); **`+ Add remote…`** takes an ad-hoc name/URL/token.
+- **Workspace-row chip:** an environment selector sits in the composer workspace-context row above the input, next to the folder / branch / worktree chips (**`EnvironmentChip.tsx`**, rendered inside **`.composer-context-row`**, styled as a **`.workspace-chip--env`**, **`data-testid="composer-env-btn"`**), Claude-Code style — **not** in Settings. The chip shows **`Local`** or the remote's name. It opens a portal menu (**`data-testid="composer-env-menu"`**, mode-menu family; bottom sheet on mobile) with an **Environment** section (**Local**) and a **Remote** section (configured remotes + **`Connect to…`**). The menu hangs from the chip's left edge and stays inside the window: in the swarm header of a relay the chip is the last control on the right. It is as tall as the room between the chip and the window's edge and scrolls past it, since a relay's agents and the hints under a remote that cannot be used can outgrow the window.
+- **Select = connect:** choosing **Local** or a remote connects **immediately** (no confirm step); there is no per-select token prompt. Between two remotes the app starts over on the new one in place, without reloading the page (**`EnvScope`**, **`onEnvironmentSwitch`**); to or from Local the page reloads. A **bearer token** comes from the remote's `httpserver.remotes` entry when it carries one, else it is entered in **`Connect to…`** (name / URL / token) and remembered per-remote in the browser. A remote that refuses its token and has none in the configuration offers **Enter token**, which opens that form filled in for it.
+- **Where each environment was left:** switching the environment starts the app over, so the route is remembered per environment (**`coddy_env_routes`**): back on Local the app opens the conversation Local was left in, a remote opens where it was left or at its home, and a relay's map never follows the app to a plain agent.
+- **Reachability dots:** each remote is probed on menu open (**`env/remoteProbe.ts`**) - **green** when it answers and accepts the token, **red** when it does not, **amber** while probing; **Local** is always green. A red remote says why on a line under it: it does not answer, it refuses the token (an agent's **`httpserver.auth_token`**, a relay's **`swarm.auth_token`**), or the browser keeps its answer from the page, which is how a CORS setting that leaves this origin out looks from a browser (the line names the origin and the two keys). An agent is asked for **`GET /v1/models`**; a relay, which serves no **`/v1`**, is recognised by its public **`GET /swarm/info`** and its token is checked on **`GET /swarm/nodes`**, and a no-CORS request tells a remote that answers from one that does not.
+- **A relay's agents:** once a relay accepts the token, its agents are listed under it (every hop deep, from **`GET /swarm/topology`**), each a menu item that enters that node through the relay.
+- **An entry without a name** is shown by the name the remote reports (**`reportedName`** in **`env/remoteProbe.ts`**): a relay's name from its public **`GET /swarm/info`** (its host name unless **`swarm.name`** sets one), an agent's host name from **`GET /coddy/info`**. Its address stays on the right of the row; with no reported name the address is the name, and it is not said twice.
+- **Purpose:** point the UI at a remote, already-running **`coddy serve`** server or swarm relay, or use the local one. Offered remotes come from the local server's **`httpserver.remotes`** (**`[{name, url, token?}]`**), read when the menu opens and again on every configuration reload; **`Connect to…`** takes an ad-hoc name/URL/token.
 - **Client-side state:** the active env lives in **`localStorage`** key **`coddy_env`**; per-remote tokens in **`coddy_env_tokens`**. Never persisted to server config; leave empty for a remote without auth. Workspace **folder recents** are namespaced per environment (**`envStorageSuffix()`**) so each remote remembers its own last paths; **models** and defaults come from the remote's **`GET /v1/models`** after the reload.
-- **Mechanism:** a global **`fetch`** shim (**`external/ui/src/ui/env/remoteEnv.ts`**, installed in **`main.tsx`**) rewrites same-origin API requests (**`/v1/*`**, **`/coddy/*`**, **`/openapi*`**) to the selected remote base URL and adds **`Authorization: Bearer <token>`**. Local mode is a transparent pass-through. Selecting an entry persists the choice and reloads so all state re-fetches from the chosen backend; the SPA shell always loads from the local origin, so you can always switch back to **Local** from the chip even if the remote is down.
+- **Mechanism:** a global **`fetch`** shim (**`external/ui/src/ui/env/remoteEnv.ts`**, installed in **`main.tsx`**) rewrites same-origin API requests (**`/v1/*`**, **`/coddy/*`**, **`/openapi*`**) to the selected remote base URL and adds **`Authorization: Bearer <token>`**. Local mode is a transparent pass-through. Selecting an entry persists the choice and starts the app over (in place between two remotes, with a reload to or from Local) so all state re-fetches from the chosen backend; the SPA shell always loads from the local origin, so you can always switch back to **Local** from the chip even if the remote is down.
 - **Images the browser loads by itself:** an **`<img>`** never goes through the shim, so a picture the server names by an API path - the thumbnail of an image a user message carries (**`preview_url`**) and its original (**`url`**) - would be asked of the page's own origin, without the token: through a swarm relay that origin serves no **`/coddy/`** route and the picture broke. In a remote environment those pictures are fetched through it instead (**`useApiImageSrc`** in **`external/ui/src/ui/env/apiImage.ts`**, the same **`remoteApiRequest`** mapping the shim uses: the base URL in front, the token in the **`Authorization`** header, never in a URL) and shown from an object URL that is released when the picture leaves the screen; until the bytes arrive the image has no **`src`** rather than a broken one. On the local origin, and for **`blob:`** / **`data:`** / other addresses, the URL is used as it is. The lightbox reads the original the same way when it opens.
 - **CORS:** the remote must allow the UI's origin via **`httpserver.cors`** (see [http-api.md](../reference/http-api.md)). SSE re-attach (**`GET /coddy/sessions/{id}/composer-stream`**) is fetched (not `EventSource`), so the bearer header applies; that route also accepts **`?access_token=`** for external `EventSource` clients.
 - **Failure surfacing (issue #60):** a `fetch()` to a remote that is unreachable / refused / TLS-or-DNS-failed / CORS-blocked rejects with a `TypeError` (no `Response`); the send flow's final `catch` now distinguishes that from the user's own `AbortError` and emits an error `system_notice` (**`remoteSendErrorMessage`**), and a readable `401/403` gets an auth-specific message (**`remoteHttpErrorMessage`**) instead of a bare status. Pure helpers live in **`external/ui/src/ui/env/remoteErrors.ts`**.
-- **Active-env health (issue #60):** a shared monitor (**`external/ui/src/ui/env/activeHealth.ts`**, started in **`main.tsx`**) probes the *selected* environment's **`GET /v1/models`** on load, on a 30 s interval, and on window focus. The composer chip dot is driven by that health (green up / red down / amber checking, **`.env-status`**), and **`EnvHealthBanner`** shows a persistent alert with a **Switch to Local** action when the active remote is down or unauthorized, so the app never silently renders empty against a dead backend.
+- **Active-env health (issues #60, #401):** a shared monitor (**`external/ui/src/ui/env/activeHealth.ts`**, started in **`main.tsx`**) probes the *selected* environment on load, on a 30 s interval, and on window focus, with the same probe as the menu (**`probeRemote`**): an agent's **`GET /v1/models`**, a relay's **`GET /swarm/info`** and **`GET /swarm/nodes`**. The composer chip dot is driven by that health (green up / red down / amber checking, **`.env-status`**), and **`EnvHealthBanner`** shows a persistent alert with a **Switch to Local** action when the active remote is down, refuses its token or answers in a way the browser keeps from the page, so the app never silently renders empty against a dead backend. The alert says which of the three it is and names the setting that fixes it: the agent's or the relay's token key, or the CORS key with this page's origin (a node reached through a relay is answered by the relay's CORS). On the stacked shell the rail is a bar fixed at the top of the page and the alert hangs under it; its height (**`--coddy-env-banner-h`**) moves the page down, so the bar never covers it. Asked again - on the interval, on focus, or when the same remote is chosen again - a remote keeps its verdict until an answer changes it, so the alert does not blink off for the length of a probe; only the newest ask's answer is kept, and a token rotated in the configuration is asked with at once.
 
 ## Layout
 
@@ -4974,7 +4978,8 @@ Header links
 
 - GitHub link to `https://github.com/coddy-project/coddy-agent` (**new tab**, `rel=noopener`).
 - API docs link to `/docs/` (**new tab**, `rel=noopener`).
-- Both links sit in the footer of the start screen (**GitHub** | **API docs**) and are gone once a chat is open; the nav rail carries neither.
+- The version of the server the page is talking to, on the right (**`GET /coddy/info`**): a release reads **`v1.2.36`** and links to its notes on GitHub, a build between releases is shown as it is. In a remote environment or inside a node reached through a relay it is that server's version, not the page's.
+- The three sit in the footer of the start screen (**GitHub** | **API docs** | **v1.2.36**, **`chat/HeroFooter.tsx`**) and are gone once a chat is open; the nav rail carries none of them.
 
 Narrow-rail tooltips (desktop)
 
@@ -5028,7 +5033,7 @@ Session title
 - **New chat** defaults **Model** from cookie **`coddy_llm_model`** when it names a configured backend, else the alphabetically first YAML row. A typed **`/model <id>`** in a sent message is a pick on this surface too and writes the same cookie (turn-scoped **`--once`** / **`--count`** forms do not).
 - **Opening a session** restores **Model** from the **`settings`** snapshot of **`GET /coddy/sessions/{id}/messages`** (the session's own model; the top-level **`model`** names what a running turn holds), never from the cookie: the cookie and the start page's pick are the default of a new chat only.
 - Changing **Model** writes the cookie (default for the next **New chat**) and **`PATCH`** **`selectedModelId`** on the active session. ReAct turns still send **`metadata.model`** on **`POST /v1/responses`**.
-- **Many models / long names** — backend ids are **`vendor/model`**. When more than one vendor is configured the menu groups rows under an uppercase vendor header and each row shows only the model name (full id stays in the row tooltip). On desktop the list scrolls with a ~5-row cap. When there are **more than 5** backends a **filter input** appears at the top (auto-focused) that matches the vendor, model name, or full id (case-insensitive); **Enter** picks the first match, **Escape** closes, and an empty result shows a “No models match …” notice. Every menu of the composer (**Mode**, **Model**, **Reasoning**, **Permission**) closes on **Escape**, with the filter or without it, wherever the focus is. Filter/group/threshold logic is in **`chat/llmModelMenu.ts`** (unit-tested in **`llmModelMenu.test.ts`**; menu wiring covered by **`ComposerModelMenu.test.tsx`**).
+- **Many models / long names** — backend ids are **`vendor/model`**. When more than one vendor is configured the menu groups rows under an uppercase vendor header and each row shows only the model name (full id stays in the row tooltip). The vendors keep the order of the configuration and each vendor's models read alphabetically, versions compared as numbers (**`gpt-5.6-luna`**, **`gpt-5.10`**, **`gpt-6-astra`**), so a model added to **`models[]`** later lands where its name puts it rather than at the bottom of its group; **Enter** in the filter takes the first row in that order. On desktop the list scrolls with a ~5-row cap. When there are **more than 5** backends a **filter input** appears at the top (auto-focused) that matches the vendor, model name, or full id (case-insensitive); **Enter** picks the first match, **Escape** closes, and an empty result shows a “No models match …” notice. Every menu of the composer (**Mode**, **Model**, **Reasoning**, **Permission**) closes on **Escape**, with the filter or without it, wherever the focus is. Filter/group/threshold logic is in **`chat/llmModelMenu.ts`** (unit-tested in **`llmModelMenu.test.ts`**; menu wiring covered by **`ComposerModelMenu.test.tsx`**).
 - **Mobile sheet** — on narrow/mobile shells (the **`max-width: 1199px`** shell-stack breakpoint) the **Mode** / **Model** / **Reasoning** menus open as a **full-width bottom sheet** over a dimmed scrim — the same pattern as the slash (**`/`**) and **`@`** pickers — instead of a cramped anchored dropdown. The filter and grouping still apply inside the sheet. Desktop keeps the anchored dropdown.
 
 ### Per-session reasoning level
@@ -5936,16 +5941,23 @@ Guide: `docs/operate/swarm.md`. Visual contract: `DESIGN.md` (**Swarm screen**).
   no History entry and no Scheduler entry, because a relay holds no sessions of
   its own. Its header carries the environment selector, which normally lives in
   the composer.
-- **Clicking a node on the map connects to it.** There is no list of nodes under
-  the map and no filter chips: from a node, every ordinary screen (chat,
-  history, scheduler, settings, workspace) works against it, and **Swarm** in
-  the rail returns to the relay.
-- Clicking a node that is **asking a question** opens that session, not an empty
-  chat; a node that is merely busy opens its running session; an idle one opens
-  its home.
-- The map marks the node the app is on as *you are here* and draws the route to
-  it from the attached relay as one connected accent path; everything off that
-  route recedes. Hovering another node previews where a click would take you.
+- **Clicking a node on the map switches to it** and leaves the map open over
+  it, the node now ringed; what to do there is the next click. There is no list
+  of nodes under the map and no filter chips: from a node, every ordinary screen
+  (chat, history, scheduler, settings, workspace) works against it, and
+  **Swarm** in the rail returns to the relay. The node the app is on, and the
+  relay on its own map, are not buttons.
+- A switch between two remotes does not reload the page: the app starts over on
+  the new one in place, the map drawn at once from its last picture, the rail
+  as it was.
+- The map rings the node the app is on (on the relay itself, the relay's card)
+  and draws the route to it from the attached relay as one connected accent path; everything off that route
+  recedes. Hovering another node previews where a click would take you, and its
+  tooltip names what the drawing shows: what the node is, whether it dials out,
+  what it is doing. The map writes words under a node only for trouble
+  (*offline*, *no route*) and counts a relay's links on its card; wires carry
+  no arrowheads, and a wire is named only when the relay knows the node under
+  another name.
 - Each node says what it is doing: a session count when idle, a running count
   while a turn is in flight, and *needs an answer* when something there waits on
   a permission prompt. A running node pulses, a waiting node pulses differently,
@@ -5974,7 +5986,11 @@ Guide: `docs/features/built-in-docs.md`. Visual contract: `DESIGN.md` (**Documen
 
 - **Docs** in the rail (above Settings), **F1** anywhere in the app, or an address
   **`#/docs/<page>#<section>`** opens the reader (**`ui/docs/DocsView.tsx`**) in the
-  same glass dock the swarm screen uses. The rail entry reopens the page the
+  same glass dock the swarm screen uses, one width for both (**`--coddy-dock-width`**).
+  The pages are read from the server the page came from, whatever environment is active:
+  on a remote, a node or a relay the reader still shows the local binary's own
+  documentation. A relay that serves its own page has none, so there the rail leaves
+  **Docs** out. The rail entry reopens the page the
   reader was left on; **`#/docs`** alone settles on the first page of the
   contents with **`replaceState`**, so Back does not return to an empty reader.
   **F1** again, **Escape** or the **×** control closes it and returns to where it was
@@ -6352,7 +6368,7 @@ The only requirement is that the processes agree on the home: an editor started 
 coddy acp --remote nas02 --remote-token "$CODDY_REMOTE_TOKEN"
 ```
 
-With `--remote` the process keeps no store, runs no scheduler and no agent loop: every session call is proxied to a remote `coddy serve`, its streamed answer is translated back into ACP updates, and permission and question prompts are answered through the server's REST routes. The target is a configured remote name, a `host:port` or an `http(s)://` URL; the token comes from `--remote-token` or `CODDY_REMOTE_TOKEN` and is never read from `config.yaml`. Sessions persist on the server only, `--session-id` still names the bundle to reopen there, and the model selector lists the server's catalog. An editor entry for a remote server is the same entry with the two flags appended to `args`. Details, the token and CORS: [Remote mode](../operate/remote.md).
+With `--remote` the process keeps no store, runs no scheduler and no agent loop: every session call is proxied to a remote `coddy serve`, its streamed answer is translated back into ACP updates, and permission and question prompts are answered through the server's REST routes. The target is a configured remote name, a `host:port` or an `http(s)://` URL; the token comes from `--remote-token`, the `token` of the matching `httpserver.remotes` entry or `CODDY_REMOTE_TOKEN`, in that order. Sessions persist on the server only, `--session-id` still names the bundle to reopen there, and the model selector lists the server's catalog. An editor entry for a remote server is the same entry with the two flags appended to `args`. Details, the token and CORS: [Remote mode](../operate/remote.md).
 
 ## Troubleshooting
 
@@ -7519,12 +7535,12 @@ What happens next depends on what moved:
 | Change | Effect |
 |--------|--------|
 | models, providers, skills, permissions, most settings | the live configuration is swapped; `GET /coddy/events` carries `config_reloaded` and open clients re-read (see [the SPA notes](../surfaces/web-ui.md)) |
-| the Telegram token, the scheduler's directory or timeout | that subsystem alone is rebuilt in place |
-| a subsystem's `enable` | it is started or stopped |
+| the Telegram token, the scheduler's directory or timeout, a relay's `swarm` settings other than its address | that subsystem alone is rebuilt in place |
+| a subsystem's `enable` | it is started, on the address the new configuration gives it, or stopped |
 | a listen address (`httpserver.host` / `port`, `swarm.host` / `port`) | under a dispatcher the process restarts on the new address; in the foreground it is logged as needing a restart |
 
-Everything else a surface reads once when it is constructed - the relay's own
-credentials and TLS, the `swarm.join` registrations - still needs a restart you ask for,
+Everything else a surface reads once when it is constructed - such as the `swarm.join`
+registrations the HTTP server of a node makes - still needs a restart you ask for,
 `coddy serve restart` or Ctrl-C and up again. Only the address is picked up on its own,
 because it is the one an operator changes from the screen that the address is serving.
 
@@ -7551,6 +7567,15 @@ logs that a restart is due and keeps the old listener. The unit `coddy serve ins
 sets that variable, plus `SuccessExitStatus=75` and `RestartForceExitStatus=75`, so the
 restart is not recorded as a failure. A unit or a supervisor of your own needs the
 variable too.
+
+A process started as a swarm relay alone opens no session store, so the HTTP server, the
+gateway and the scheduler - the surfaces that run agent turns - cannot start in it; a
+reload that turns one of them on asks for a fresh process the same way, or says a restart
+is due. A change that needs a fresh process is weighed before anything in it is applied:
+it goes through the pre-flight a fresh process runs, and one that pre-flight would refuse,
+such as a surface this binary was built without, is refused whole. Nothing is stopped,
+started or rebuilt, the log names the reason, and the process is not restarted into a
+configuration nothing can start.
 
 ## Which form to use
 
@@ -7592,13 +7617,16 @@ With `--remote` the local process keeps no session store, runs no scheduler and 
 - a bare **`host:port`**, which gets `http://` in front;
 - a full **`http://` or `https://` URL**, optionally with a path prefix.
 
-The address must be a bare origin: a query string, a fragment or user credentials in the URL are refused. Named remotes hold a name and a URL only:
+The address must be a bare origin: a query string, a fragment or user credentials in the URL are refused. A named remote holds a name, a URL and, when you choose to keep it there, the token to present:
 
 ```yaml
 httpserver:
   remotes:
     - name: nas02
       url: "https://nas02.example:12345"
+    - name: office-relay
+      url: "http://relay.lan:12346"
+      token: "${CODDY_RELAY_TOKEN}"   # optional, see The token below
 ```
 
 ```bash
@@ -7607,7 +7635,7 @@ coddy --remote 192.168.1.20:12345    # bare host:port, plain http
 coddy acp --remote https://nas02.example:12345
 ```
 
-The same `remotes` list is what a server offers in its web UI's environment menu, so the entry does double duty: put it in the config of the machine you type on.
+The same `remotes` list is what a server offers in its web UI's environment menu, so the entry does double duty: put it in the config of the machine you type on. A swarm relay is listed the same way; the menu recognises it and lists the agents behind it ([The environment chip](#the-environment-chip)).
 
 ## The token
 
@@ -7615,7 +7643,13 @@ On the server, authentication is off until a token is set. `httpserver.auth_toke
 
 A token is what an API client presents. A browser has no field to type one into, which is why a token alone leaves the web UI showing `Unauthorized (401)`; the sign-in form below is the browser's half of the same gate.
 
-On the client, the token comes from `--remote-token` or, when the flag is absent, from `CODDY_REMOTE_TOKEN`. It is deliberately never read from `config.yaml`, which is why `httpserver.remotes` has no token field. The web UI takes the token in its **+ Add remote...** form and keeps it in the browser only (`localStorage`, per remote).
+On the client, the token is the first of:
+
+- `--remote-token`;
+- the `token` of the `httpserver.remotes` entry the target belongs to: the entry named, the entry whose address it is, or a relay entry the target is a node mount of (`<relay>/swarm/nodes/<name>`, which takes the relay's client token);
+- `CODDY_REMOTE_TOKEN`.
+
+The entry's token wins over the variable because it is bound to one destination and the variable to none. It is optional, and keeping it in the file is a choice with a cost: every browser that reads this server's configuration (`GET /coddy/config`) receives it, as it receives a provider's `api_key`, and so does anyone who can read the file. Write it as a `${ENV}` reference so the secret itself lives in `.env`. Without it, the web UI takes the token in its **Connect to…** form and keeps it in the browser only (`localStorage`, per remote), and the console reads the flag or the variable.
 
 `coddy serve` has no TLS of its own, so a token sent to a non-loopback `http://` address travels in clear; the console and `coddy acp` print a warning when that is about to happen. Put a TLS-terminating reverse proxy in front of the server, or reach it through an SSH tunnel, which keeps the address on loopback:
 
@@ -7668,13 +7702,25 @@ httpserver:
       url: "https://box.example:12345"
 ```
 
-With `cors.enable` on, a preflight from an allowed origin gets `204` with `Access-Control-Allow-Origin` (the origin echoed, or `*` when configured) and `Access-Control-Allow-Headers: Authorization, Content-Type, X-Coddy-Session-ID`; an origin that is not listed gets no CORS headers, which the browser reports as a blocked request. The bearer token still applies to the real request. Because `EventSource` cannot send a header, the two SSE subscription routes, `GET /coddy/sessions/{id}/composer-stream` and `GET /coddy/events`, also accept `?access_token=`; the bundled UI fetches those streams instead, so its header applies and no token lands in a URL. Reference: [HTTP API](../reference/http-api.md#authentication-optional).
+With `cors.enable` on, a preflight from an allowed origin gets `204` with `Access-Control-Allow-Origin` (the origin echoed, or `*` when configured) and `Access-Control-Allow-Headers: Authorization, Content-Type, X-Coddy-Session-ID`; an origin that is not listed gets no CORS headers, which the browser reports as a blocked request. The bearer token still applies to the real request. A swarm relay has CORS of its own, `swarm.cors`, with the same two keys: a page served elsewhere that talks to a relay needs its origin there, and a node behind the relay is answered by the relay's CORS, never by the node's. Because `EventSource` cannot send a header, the two SSE subscription routes, `GET /coddy/sessions/{id}/composer-stream` and `GET /coddy/events`, also accept `?access_token=`; the bundled UI fetches those streams instead, so its header applies and no token lands in a URL. Reference: [HTTP API](../reference/http-api.md#authentication-optional).
 
 ## The environment chip
 
-The chip sits in the composer's workspace row, next to the folder, branch and worktree chips, and reads **Local** or the name of the active remote. Its menu has an **Environment** section with Local and a **Remote** section with the server's configured `remotes` plus **+ Add remote...** (name, URL, token). Choosing an entry connects at once and reloads the page, so the session list, the models and the defaults are re-read from the chosen backend; the SPA shell always comes from the local origin, so **Local** stays reachable from the chip even when the remote is down.
+The chip sits in the composer's workspace row, next to the folder, branch and worktree chips, and reads **Local** or the name of the active remote. Its menu has an **Environment** section with Local and a **Remote** section with the server's configured `remotes` plus **Connect to…** (name, URL, token). The list is read from the page's own server when the menu opens and again whenever that server's configuration is replaced, so a remote added by a settings save or the agent's `config_commit` shows up without reloading the page. An entry without a `name` is shown by the name the remote reports - a relay's name, which is its host name unless `swarm.name` sets one, or an agent's host name - with its address beside it, and by its address alone when it reports nothing. Choosing an entry connects at once and starts the app over on it, so the session list, the models and the defaults are re-read from the chosen backend: between two remotes in place, without reloading the page, and to or from Local with a reload. Choosing the entry the page is already on reads everything again, which is the way back after that remote was down; the SPA shell always comes from the local origin, so **Local** stays reachable from the chip even when the remote is down.
 
-Each remote shows a status dot probed on menu open with a cross-origin `GET /v1/models`: green when reachable and authorised, red when unreachable, blocked by CORS or unauthorised, amber while probing. The active environment is probed again on load, every 30 seconds and on window focus; when it fails, a banner offers **Switch to Local** rather than leaving an empty screen. The choice and the per-remote tokens live in the browser (`coddy_env`, `coddy_env_tokens`) and are never written to the server's config; folder recents are kept per environment.
+![The environment menu with a relay, its agents, and the remotes that cannot be used yet](../assets/env-menu-states-dark-1280.png)
+
+*A relay with its agents listed under it, a relay that wants its token, one that CORS keeps from the page, and one that does not answer*
+
+Each remote is asked on menu open whether it can be used, and a dot says the answer: green when it answers and accepts the token, red when it does not, amber while it is being asked. A red one says why on a line under it:
+
+- **does not answer**: nothing is listening at that address, or the address is wrong;
+- **refuses the token**: an agent wants its `httpserver.auth_token`, a relay its client token (`swarm.auth_token`); for a remote without a token in the configuration, **Enter token** opens the connect form filled in for it;
+- **blocked by CORS**: something answers, but the browser keeps the answer from this page, which is what CORS off (or this origin missing from it) looks like from a browser. The line names this page's origin and the key to add it to: `swarm.cors.allowed_origins` on a relay, `httpserver.cors.allowed_origins` on a coddy serve.
+
+A relay is recognised by its public `GET /swarm/info`: it serves no `/v1` of its own, so its model catalog is not what is asked. Its token is checked on `GET /swarm/nodes`, and once it is accepted the menu lists the agents behind it, every hop deep, so a node is one click away rather than behind the relay's map ([Swarm, The UI](swarm.md#the-ui)).
+
+The active environment is asked the same way on load, every 30 seconds and on window focus; when it cannot be used, a banner says which of the three it is, names the setting that fixes it, and offers **Switch to Local** rather than leaving an empty screen. The choice and the per-remote tokens typed into the form live in the browser (`coddy_env`, `coddy_env_tokens`); a token that comes from the configuration is not copied there. Folder recents are kept per environment, and so is the screen each environment was left on: switching back to Local returns to the conversation you left it in, and a remote opens where you left it or at its home.
 
 ## What runs where
 
@@ -7696,7 +7742,7 @@ Trust decisions are the server's too. A project MCP server, hooks file or subage
 - A permission mode a remote client switches (`/permissions`, `--permission-mode`, the dialog's session switch) applies to the server's session for every client of it, and lives in the server's memory: a restart of `coddy serve` returns the session to `tools.permission_mode`.
 - A dropped connection leaves the server turn, its children and any open prompt running; `/resume` shows the outcome once the turn ends, and an answer to a prompt the server has already withdrawn is ignored. Quitting the console mid-turn waits briefly for the cancel to reach the server.
 - A session is one turn at a time: a second client prompting the same session gets `409` while the first turn holds the lock.
-- The web UI reaches a remote only when that server lists the UI's origin in `cors.allowed_origins`; a red dot with a correct token usually means CORS.
+- The web UI reaches a remote only when that server lists the UI's origin in `cors.allowed_origins` (`swarm.cors.allowed_origins` on a relay); the menu says so on the remote's line when that is what stands in the way.
 
 ## Checking a remote from the command line
 
@@ -7705,7 +7751,7 @@ coddy --dry-run --remote nas02
 curl -sS -H "Authorization: Bearer $CODDY_REMOTE_TOKEN" https://nas02.example:12345/v1/models
 ```
 
-`--dry-run` (on the console and on `coddy acp`) runs the config check and then probes what the file points at, the `--remote` target included, and exits with status 1 when a probe fails; the `curl` line is the same request the UI's status dot makes. Server-side, `coddy serve --dry-run` reports the listen address it would bind and whether a port is already taken. See [coddy serve and the daemon](serve.md).
+`--dry-run` (on the console and on `coddy acp`) runs the config check and then probes what the file points at, the `--remote` target included, and exits with status 1 when a probe fails. Each configured remote is probed with the token of its entry; a relay is recognised as one, and a `--remote` that points at a relay's root is refused with the mounts of its agents to use instead (`<relay>/swarm/nodes/<name>`), since a relay drives nothing itself. The `curl` line is the first request the UI's status dot makes of an agent. Server-side, `coddy serve --dry-run` reports the listen address it would bind and whether a port is already taken. See [coddy serve and the daemon](serve.md).
 
 ## History
 
@@ -7795,6 +7841,11 @@ swarm:
 
 `swarm.join` is honoured by every `coddy serve` process, whether or not it runs a relay of its
 own. That symmetry is how relays chain.
+
+Names are optional. A join entry without `name` claims the host name of the machine it runs on
+(dots become dashes, since the name is a path segment), and a relay without `swarm.name` goes by
+its host name as well, in `/swarm/info`, on the map and in the routes of its sessions. Set a name
+when two machines share a host name, or when the host name says nothing useful.
 
 ## Two transports
 
@@ -7931,39 +7982,58 @@ like "this machine has no work".
 
 *A relay that needs a token before it lists anything*
 
-Connecting is the ordinary environment flow: the chip in the composer, **Add remote**, the
-relay's address and its client token. Because the environment answers as a relay, a **Swarm**
-entry appears in the rail - on a plain agent it is not there at all.
+Connecting is the ordinary environment flow: the chip in the composer, **Connect to…**, the
+relay's address and its client token - or an entry of `httpserver.remotes` that names the relay,
+with its `token` when you keep it there ([Remote mode](remote.md#the-token)). A page served from
+another machine, a laptop's `coddy serve` for one, also needs its origin in the relay's
+`swarm.cors.allowed_origins`; the environment menu says so on the relay's line when that is what
+stands in the way, and lists the relay's agents once it accepts the token, so a node is one click
+away from the menu too. Because the environment answers as a relay, a **Swarm** entry appears in
+the rail - on a plain agent it is not there at all.
 
-The Swarm screen shows the topology, a search box that goes to the relay, node filter chips,
-and sessions grouped under the node that owns them.
+The Swarm screen shows the topology and a search box that goes to the relay. It opens in a dock as
+wide as the documentation reader's, and the map fills it.
 
-**A relay's home screen is the swarm.** A relay serves no `/coddy/*` at all - no sessions, no
-workspace, no model - so there is nothing for a composer to send to and nothing for a history
-drawer to list. Pointed at a relay the app therefore drops the chat screen, hides History and
+**A relay's home screen is the swarm.** Of an agent's API a relay serves only its own settings
+(`/coddy/config*`) - no sessions, no workspace, no model, no documentation - so there is nothing
+for a composer to send to and nothing for a history drawer to list. Pointed at a relay the app therefore drops the chat screen, hides History and
 Scheduler in the rail, and shows the map instead. The environment selector moves into the
 map's header, since the composer that usually carries it is not on screen. Enter a node and
 all of it comes back, because the node does have those things.
 
-**Working on a node.** Click a node on the map and the app points at that node's mount. From
-there every screen that already existed drives it - the history drawer lists that node's
-sessions, the composer shows its working directory and its model catalog - with a relay in the
-middle and nothing aware of it. A long conversation on the node is read page by page there too:
-each read names its page in the query string, which the mount carries to the node unchanged,
-over a tunnel as well ([Long sessions](../surfaces/web-ui.md#long-sessions)). Coming back to the map, that node is marked *you are here* and
-the route to it is drawn as one connected path.
+**Working on a node.** Click a node on the map and the app points at that node's mount, with the
+map left open over it until you choose what to do there. From there every screen that already
+existed drives it - the history drawer lists that node's
+sessions, the composer shows its working directory and its model catalog, Settings edits that
+node's configuration - with a relay in the middle and nothing aware of it. A long conversation on
+the node is read page by page there too: each read names its page in the query string, which the
+mount carries to the node unchanged, over a tunnel as well
+([Long sessions](../surfaces/web-ui.md#long-sessions)). The documentation reader is the one
+screen that stays with the page's own server: the pages are the ones the local binary carries.
+
+![The swarm map opened over a node, with the local machine the connection starts from](../assets/swarm/map-over-node-dark-1280.png)
+
+*The map opened over a node: the machine the page runs on at the top, the route to the node the app is on drawn as one path*
 
 **Watching from the map.** Each node says what it is doing, from the same aggregated session
 list the search uses: how many sessions it holds, how many turns are in flight, and whether
 something there is waiting on a permission prompt. Start work on several machines, come back to
-the map, and it says which of them finished and which is asking you a question. Clicking the one
-that is asking opens that very session rather than a blank chat.
+the map, and it says which of them finished and which is asking you a question. Click the one
+that is asking and the app switches to it with the map still open; its History shows the session
+that waits for you.
 
 **Going back and switching.** The Swarm entry stays in the rail while you are inside a node,
-because the relay you came through is remembered; clicking it returns to the swarm, where
-another node is one click away. Without that memory there would be no way back but to type
-the relay's address again: from inside a node, the relay's own routes are no longer under the
-base URL.
+because the relay you came through is remembered. It opens the relay's map over the node without
+leaving it: the map is read from the relay directly, with the same client token, and the node's
+History, Scheduler and chat stay where they are, so nothing reloads. On that map the node you are
+on carries a ring, as the relay's card does when you are on the relay, with the route to it drawn
+as one connected path; another node is one
+click away, and a click on the node you are on does nothing. A switch between nodes, or between a
+node and its relay, does not reload the page. Above the relay the map draws the
+machine the page runs on, named by its host name, as where the connection starts: a click on it
+goes back to Local. A click on the relay connects to the relay itself, and a relay chained under it
+opens on its own map, reached through this one. On the relay itself the relay is not a button:
+there is nothing to connect to.
 
 **Where the SPA comes from.** Built with `-tags "swarm ui"` the relay serves the console at its
 own address, so a relay is something you open in a browser. It is the same bundle a node
@@ -7979,13 +8049,39 @@ opened from any node and pointed at the relay.
 | Whether this process relays at all | `swarm.enable` in `config.yaml`, or `--swarm` / `--swarm=false` |
 | Relay's own deployment: bind address, client and pairing tokens, TLS, static upstreams | `swarm:` in `config.yaml`, or the `--swarm-*` flags |
 | Which relays this process joins | `swarm.join` in `config.yaml` - honoured whether or not this process relays |
-| Relays offered in the UI environment menu | `httpserver.remotes` (name and URL only; tokens stay in the browser) |
-| Credentials out of the file | `CODDY_SWARM_TOKEN`, `CODDY_SWARM_PAIRING_TOKEN`, `--auth-token`, `--pairing-token` |
+| Relays offered in the UI environment menu | `httpserver.remotes` of the page's server: name, URL and, optionally, the client token (`token`, best as a `${ENV}` reference) |
+| Pages served elsewhere that may call the relay | `swarm.cors` (`enable`, `allowed_origins`) |
+| Credentials out of the file | `CODDY_SWARM_TOKEN`, `CODDY_SWARM_PAIRING_TOKEN`, `--swarm-auth-token`, `--swarm-pairing-token` |
 
-There is deliberately **no Settings page for the relay**. It is a deployment - a bind address
-and credentials for a whole fleet - and a page served by one of its own nodes is the wrong
-place to edit that. Node credentials are never returned by a config read, and a save preserves
-them by destination, so editing anything else in Settings cannot strip them.
+**The relay's own Settings.** Opened on the relay (its map is the page's home), the Settings
+drawer edits the relay's deployment and its log: the **Swarm relay** tab (name, listen address,
+client and pairing tokens, CORS, TLS, lease and fan-out timeouts, upstreams, joins) and **Logger**.
+There is no Sessions tab, because a relay holds no sessions. The routes are the agent's own -
+`GET /coddy/config/schema`, `GET /coddy/config`, `POST /coddy/config/validate`, `PUT
+/coddy/config` - served by the relay behind its client token, and they carry only those two
+sections: the rest of the host's configuration - a model provider's key, the HTTP server - is
+neither shown nor written through the relay, and a save naming another section is refused.
+
+![The Settings drawer on a relay](../assets/swarm/relay-settings-dark-1280.png)
+
+*The relay's settings: its deployment, with the credentials write-only*
+
+Every credential is write-only there, as a config read serves it: a token field shows whether one
+is set, an empty field keeps it, a value replaces it. Pairing tokens are a list replaced whole.
+A save is written over the relay's `config.yaml` with its comments and spellings kept, and the
+relay is rebuilt on it: nodes register and open their tunnels again within seconds, and a stream
+in flight through the relay is cut and resumed by the client. A new listen address takes a
+restart, which a relay under the dispatcher or systemd gets by itself. So does turning on the
+HTTP server, the gateway or the scheduler in the file of a process started as a relay alone: it
+opened no session store, and those surfaces run agent turns. A new client token signs
+out every client, the page you are saving from included: enter the new one in the environment menu.
+The **Logger** tab is saved like the rest, and the relay reads it when it starts next, as an agent
+does with its own logger settings.
+An edit of the file is picked up the same way, without a restart.
+
+Changing a relay's settings through another relay is refused: a relay chained under this one is
+reached through a mount like any node, but its tokens and its registration rules decide who joins
+it, and a client of the parent is not its operator. Reading them through the mount works.
 
 ## Security
 
@@ -7998,7 +8094,9 @@ Three credentials, three jobs:
 | per-node `token` | the relay | acting as that node |
 
 **A relay is a fleet-wide door.** It holds every node's credential, so whoever holds its
-client token controls every node it reaches, transitively through every hop. This is stated
+client token controls every node it reaches, transitively through every hop - its sessions, its
+tools and its settings, the secrets a node's `GET /coddy/config` hands back (provider keys,
+remote tokens) included. This is stated
 rather than mitigated: there are no per-node client ACLs in this version. Give each node a
 credential minted for its relay rather than your own, put TLS in front, and keep the pairing
 token secret.
@@ -8028,6 +8126,10 @@ aimed at a node's API would climb back out into the relay's own routes.
 
 Credentials are preserved across a config save by **destination**, not by label: renaming an
 entry keeps its token, pointing it at a new address does not.
+
+The relay's own Settings (above) edit it with the client token, which already controls every node
+it reaches; they add no power the token did not have, and they cannot be reached through a parent
+relay's mount.
 
 ## Encryption and proxies
 
@@ -8307,8 +8409,8 @@ A session that finds a held hooks file records a notice, so you learn that hooks
 - **Provider keys.** `providers[].api_key` is a literal, a `${ENV}` reference expanded when the file loads, or empty, in which case `NAME_API_KEY` (the provider name upper-cased, hyphens to underscores) is read at call time. `api_key_command` runs a credential helper through the host shell, bounded to 30 seconds, and uses its stdout when `api_key` is empty; the order is literal, then helper, then the environment variable. A `codex` row takes no key at all: it signs in with ChatGPT, and an `api_key_command` left on it never runs. Keep `config.yaml` free of literal keys and reference the environment.
 - **The `.env` file.** `$CODDY_HOME/.env` is read before `config.yaml` is parsed, one `KEY=VALUE` per line (`export`, quotes and comments accepted); a variable already set in the process environment is never overridden. A literal dollar sign in a value is written as `$$`. See [Configuration](../getting-started/configuration.md).
 - **Provider logins.** `coddy providers login codex`, `coddy providers login neuraldeep` and `coddy providers login devin` (and, for the first two, the sign-in buttons in the web UI) store the issued credentials under `$CODDY_HOME/providers/<name>/` - `codex-auth.json`, `neuraldeep-auth.json`, `devin-auth.json` - in a directory created `0700` with the file at `0600`. `coddy providers list` shows which source each request actually uses and `coddy providers logout <name>` revokes and forgets a login (for Devin it forgets the local token; the Devin session ends on Devin's side). A `devin` row also reads the Devin CLI's own `credentials.toml` when no Coddy login exists, and never writes to it; the Devin browser sign-in listens on `127.0.0.1` only and checks the `state` in constant time, like the NeuralDeep one.
-- **Redaction.** `GET /coddy/config` never returns `httpserver.auth_token`; a save from the Settings UI writes a `${VAR}` reference back as a reference rather than as the secret it resolved to; `coddy -t` and `--dry-run` never echo a value under a secret-shaped key (`api_key` and any `*_api_key` such as `tools.websearch.brave_api_key`, `auth_token`, `pairing_tokens`) and mask the Telegram token in errors; the config-commit prompt lists the staged commands with secrets redacted; the swarm proxy replaces the caller's `Authorization` header rather than forwarding it.
-- **Tokens on the wire.** `--remote-token` and `CODDY_REMOTE_TOKEN` are never read from `config.yaml`, and a token about to travel over plain `http://` to a non-loopback host produces a warning. The web UI keeps remote tokens in the browser only.
+- **Redaction.** `GET /coddy/config` never returns `httpserver.auth_token`, the sign-in password hash or a swarm token (`swarm.auth_token`, `swarm.pairing_tokens`, a join entry's `pairing_token` and `token`): it reports that one is set (`auth_configured`, `login_configured`, `pairing_configured`, `token_configured`), and a save that leaves the field empty keeps the stored value; a save from the Settings UI writes a `${VAR}` reference back as a reference rather than as the secret it resolved to; `coddy -t` and `--dry-run` never echo a value under a secret-shaped key (`api_key` and any `*_api_key` such as `tools.websearch.brave_api_key`, `auth_token`, `pairing_tokens`) and mask the Telegram token in errors; the config-commit prompt lists the staged commands with secrets redacted; the swarm proxy replaces the caller's `Authorization` header rather than forwarding it.
+- **Tokens on the wire.** The console and `coddy acp` take the token for `--remote` from `--remote-token`, then from the `token` of the matching `httpserver.remotes` entry, then from `CODDY_REMOTE_TOKEN`, and a token about to travel over plain `http://` to a non-loopback host produces a warning. A remote's `token` is optional and, unlike `auth_token`, is sent back by `GET /coddy/config`, because the web UI of the machine it is configured on presents it: every browser that opens that UI receives it, so write it as a `${ENV}` reference or leave it out. Without it, the web UI keeps a remote token in the browser only. See [The token](remote.md#the-token).
 - **Transcripts on disk.** Every session bundle under `$CODDY_HOME/sessions/<id>/` holds the full conversation in `messages.json`, tool output included, and the files attached to it under `assets/` (written read-only, `0444`). Whoever can read the home directory can read every conversation; `sessions.dir` moves the store, and `/export` writes a copy into the workspace on request.
 
 ## The HTTP surface
@@ -13092,9 +13194,10 @@ OpenAI-compatible HTTP API defaults (used only by binaries built with -tags http
 | `httpserver.cors` | object |  | Cross-origin access so a browser UI on another origin can call this API (e.g. the bundled UI pointed at a remote server). Bearer auth still applies. |
 | `httpserver.cors.enable` | boolean | false | Handle CORS preflight and emit Access-Control-* headers for allowed origins. |
 | `httpserver.cors.allowed_origins` | list of strings | [] | Exact origins permitted to call the API, e.g. "http://localhost:5173". A single "*" allows any origin. |
-| `httpserver.remotes` | list of objects | [] | Remote coddy serve servers offered in the UI environment selector. Tokens are not stored here; the UI keeps them client-side per remote. |
-| `httpserver.remotes[].name` | string |  | Display label for the remote. |
-| `httpserver.remotes[].url` | string |  | Base URL of the remote coddy serve server, e.g. "https://box.example:12345". |
+| `httpserver.remotes` | list of objects | [] | Remote coddy serve servers and swarm relays offered in the UI environment selector and resolved by `coddy --remote <name>`. An entry may carry the token to present; without one the UI keeps the token in the browser per remote and the console reads --remote-token or CODDY_REMOTE_TOKEN. |
+| `httpserver.remotes[].name` | string |  | Display label for the remote. Empty: the web UI shows the name the remote reports (a relay's swarm.name, else the host name it runs on; an agent's host name), else its address. |
+| `httpserver.remotes[].url` | string |  | Base URL of the remote coddy serve server or relay, e.g. "https://box.example:12345". |
+| `httpserver.remotes[].token` | string |  | Bearer token to present to this remote: a relay's client token (swarm.auth_token) or a server's httpserver.auth_token, usually a ${ENV} reference. Optional and opt-in: every browser that reads this configuration receives it, and coddy --remote <name> uses it when --remote-token is not given. A node mounted under a relay (<url>/swarm/nodes/<name>) takes the relay's token. |
 
 ### `swarm`
 
@@ -13105,7 +13208,7 @@ Stateless relay that nodes register into and that chains into other relays. The 
 | `swarm.enable` | boolean | false | Run the swarm relay in this process. Independent of swarm.join, which is how an agent registers into a parent relay. |
 | `swarm.host` | string | "" | Bind address for the relay when the CLI does not pass --swarm-host. Empty falls back to 0.0.0.0. |
 | `swarm.port` | integer | 0 | Listen port for the relay. 0 falls back to 12346. |
-| `swarm.name` | string | "" | Label for this relay in topology views and in a child's node path. |
+| `swarm.name` | string | "" | Label for this relay in topology views, in /swarm/info and in a child's node path. Empty: the host name it runs on. |
 | `swarm.auth_token` | string | "" | Bearer credential clients present to this relay. A relay reaches every node with that node's own credential, so an unauthenticated relay bound off loopback is a fleet-wide open door and the server refuses to start unless allow_insecure is set. Never echoed back. |
 | `swarm.pairing_tokens` | list of strings | [] | Credentials a node must present to register. Empty closes registration unless insecure_open_registration is set. Never echoed back. |
 | `swarm.allow_insecure` | boolean | false | Permit binding off loopback without a client token. |
@@ -13412,8 +13515,8 @@ These control config discovery itself, not individual fields (see [Configuration
 | `CODDY_HOME` | `--home` | Agent state directory (default `~/.coddy`). |
 | `CODDY_CWD` | `--cwd` | Default session working directory. |
 | `CODDY_CONFIG` | `--config` | Explicit path to `config.yaml`. |
-| `CODDY_SWARM_TOKEN` | `--auth-token` (swarm) | Client credential for `coddy serve` (see [`swarm`](#swarm)). |
-| `CODDY_SWARM_PAIRING_TOKEN` | `--pairing-token` | Registration credential for `coddy serve` (see [`swarm`](#swarm)). |
+| `CODDY_SWARM_TOKEN` | `--swarm-auth-token` | Client credential of the relay `coddy serve` runs (see [`swarm`](#swarm)). |
+| `CODDY_SWARM_PAIRING_TOKEN` | `--swarm-pairing-token` | Registration credential of that relay (see [`swarm`](#swarm)). |
 | `NAME_API_KEY` | - | Per-provider API key fallback (see [`providers`](#providers)). |
 | `TELEGRAM_BOT_TOKEN` | - | Telegram bot token fallback (see [`gateways.telegram`](#gatewaystelegram)). |
 
@@ -13465,7 +13568,7 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | `CODDY_HTTP_TOKEN` | `cmd/coddy/serve.go` | The bearer token `coddy serve` requires on `/v1/*` and `/coddy/*` when `--auth-token` is absent; `httpserver.auth_token` comes after both. A token from the flag or the environment survives a hot reload without being written to the file. | [Remote mode](../operate/remote.md#the-token), [HTTP API](../reference/http-api.md#authentication-optional) |
 | `CODDY_HTTP_USER` | `external/httpserver/serve.go` | The account name of the web UI sign-in form. With `CODDY_HTTP_PASSWORD` it enables the form on its own, the way `CODDY_HTTP_TOKEN` enables the bearer gate, and wins over `httpserver.login.user` in the file. An explicit `httpserver.login.enable: false` still switches the form off. | [Remote mode](../operate/remote.md#the-sign-in-form), [HTTP API](../reference/http-api.md#web-ui-sign-in-optional) |
 | `CODDY_HTTP_PASSWORD` | `external/httpserver/serve.go` | The password behind `CODDY_HTTP_USER`, in plaintext. It is hashed with argon2id as the server starts and never written into `config.yaml`, which is why `$CODDY_HOME/.env` is its natural home. There is no flag for it: a password on a command line is visible in `ps`. | [Remote mode](../operate/remote.md#the-sign-in-form), [HTTP API](../reference/http-api.md#web-ui-sign-in-optional) |
-| `CODDY_REMOTE_TOKEN` | `internal/remote/resolve.go` | The token the console and `coddy acp` send with `--remote` when `--remote-token` is absent. Never read from `config.yaml`. | [Remote mode](../operate/remote.md#the-token) |
+| `CODDY_REMOTE_TOKEN` | `internal/remote/resolve.go` | The token the console and `coddy acp` send with `--remote` when neither `--remote-token` nor the `token` of the matching `httpserver.remotes` entry gives one. | [Remote mode](../operate/remote.md#the-token) |
 | `CODDY_SWARM_TOKEN` | `external/swarm/serve.go`, read in `cmd/coddy/serve.go` | The bearer token clients present to the relay when `--swarm-auth-token` is absent; `swarm.auth_token` comes after both. | [Swarm](../operate/swarm.md#security), [config.yaml reference](../reference/config.md#related-environment-variables) |
 | `CODDY_SWARM_PAIRING_TOKEN` | `external/swarm/serve.go`, read in `cmd/coddy/serve.go` | The credential a node presents to register when `--swarm-pairing-token` is absent; appended to `swarm.pairing_tokens` on every reload. | [Swarm](../operate/swarm.md#security), [config.yaml reference](../reference/config.md#related-environment-variables) |
 | `CODDY_TELEGRAM_API_BASE` | `internal/config/gateway.go`, read in `external/gateway/telegram/bot.go` and `internal/dryrun/network.go` | The Bot API origin the Telegram gateway and the `--dry-run` probe talk to instead of `https://api.telegram.org`: a self-hosted Bot API server, or the offline stand `cmd/tgfake`. | [Telegram gateway](../surfaces/gateway.md#debugging-against-a-fake-bot-api), [Configuration](../getting-started/configuration.md#dry-run-probing-what-the-file-points-at) |
@@ -14072,13 +14175,17 @@ httpserver:
   remotes:                       # optional: offered in the UI environment selector
     - name: "prod box"
       url: "https://box.example:12345"
+      token: "${PROD_BOX_TOKEN}"   # optional: the bearer the UI and the console present
 ```
 
 When `cors.enable` is true, preflight `OPTIONS` requests for an allowed origin return `204` with
 `Access-Control-Allow-Origin` (echoed origin, or `*` when configured) and
 `Access-Control-Allow-Headers: Authorization, Content-Type, X-Coddy-Session-ID`; disallowed origins
-receive no CORS headers. Bearer auth still applies to the actual request. Tokens for remotes are
-**not** stored in `httpserver.remotes`; the UI keeps them client-side per remote.
+receive no CORS headers. Bearer auth still applies to the actual request. A remote's token is either the `token` of its
+`httpserver.remotes` entry, which **`GET /coddy/config`** hands to every page that reads it, or one
+typed into the UI's **Connect to…** form, which the UI keeps client-side per remote. A swarm relay
+answers a cross-origin page through `swarm.cors` instead (same shape), and the UI recognises it by
+its public **`GET /swarm/info`** rather than by **`/v1/models`**, which a relay does not serve.
 
 Because `EventSource` cannot send an `Authorization` header cross-origin, the two SSE
 subscription routes - **`GET /coddy/sessions/{id}/composer-stream`** and **`GET /coddy/events`**
@@ -14147,6 +14254,7 @@ header where the client can set one, since a query token reaches proxy access lo
 | DELETE | **`/coddy/mcp/{name}`** | Removes the named entry from the mcp.json file that defines it (project or global); a project entry's switches in **`<home>/mcp-overrides.json`** go with it. Live sessions close the server. **`400`** for config.yaml-defined or unknown servers. **`200`** **`{"ok":true}`**. |
 | GET | **`/coddy/workspace/files`** | Paginated workspace listing under session **cwd** (**`page`**, **`page_size`** required). Non-blank **case-insensitive** substring **`prefix`** on **`path_rel`**; omit or blank **`prefix`** yields empty **`items`**. **`dirs=true`** adds directory rows (**`kind`** **`dir`**, **`path_rel`** trailing **`/`**). JSON **`items[].name`**, **`items[].path_rel`**, **`items[].kind`** (**`file`** or **`dir`**), **`total`**, **`has_more`**. |
 | POST | **`/coddy/mentions/check`** | Which **`@`** mentions of a draft a sent prompt would attach, for the composer's highlight. Body **`{"text": "..."}`** (at most 256 KiB, else **`413`**); **`X-Coddy-Session-ID`** names the session it would be sent to. The resolver runs dry - a file is looked at and never read, a folder is not listed, a session is found and not summarised, a page is not fetched. JSON **`mentions[]`**, one per **`@`** token in document order (a token in a fenced block, an inline code span or a quoted line is prose and left out): **`token`**, the whole token; **`typed`**, the part that resolves (**`@src/a.go`** of **`@src/a.go b.go`**); **`kind`** (**`file`**, **`directory`**, **`session`**, **`rule`**, **`agent`**, **`plan`**, **`url`**, **`doc`**). **`typed`** and **`kind`** are absent for a token that names nothing, such as **`@google/genai`** in **`npm install @google/genai`**. **`400`** for a broken body. |
+| GET | **`/coddy/info`** | Which build serves this API, and where: **`{"object":"coddy.info","version":...,"hostname":...}`**. **`version`** is the string **`coddy -v`** prints; **`hostname`** is the machine's host name (empty when the system does not say). The web UI shows the version at the right of the start screen's footer, for the server the page is talking to (the local one, a remote, a node reached through a relay), and names the machine the page runs on by its host name on the swarm map, where the connection to a relay starts. |
 | GET | **`/coddy/docs`** | The contents of the documentation built into the binary ([Built-in documentation](../features/built-in-docs.md)): **`version`** (the binary's) and **`groups[]`** of **`docs/nav.yaml`**, each with **`id`**, **`title`**, **`summary`** and **`pages[]`** (**`slug`**, **`title`**, **`summary`**). A **`slug`** is the page's path under **`docs/`** without **`.md`**. No site is contacted. |
 | GET | **`/coddy/docs/page`** | One page. **`ref`** (required) takes a slug, a path with or without **`docs/`** and **`.md`**, a **`coddy:`** link, an **`@coddy:`** mention, a **`coddy.dev/docs`** address, a file name one page has or a title, optionally with **`#section`**. JSON **`slug`**, **`title`**, **`summary`**, **`group`** (**`id`**, **`title`**), **`anchor`** (the section **`ref`** named, else empty), **`markdown`** (links to other pages rewritten to **`coddy:<slug>#<anchor>`**, images and repository files to GitHub at the release tag), **`headings[]`** (**`level`**, **`text`**, **`anchor`**), **`prev`** and **`next`** (**`slug`**, **`title`**, or null), **`url`** (the public address). **`400`** without **`ref`**; **`404`** for a page or a section that does not exist, naming the closest pages or the page's sections. |
 | GET | **`/coddy/docs/search`** | Sections of the documentation ranked against **`q`** with BM25 over the page title, the section heading and the text; a word of three letters or more also finds the words it begins; at most three sections per page. Optional **`limit`** (1 to 50, default 10). JSON **`query`**, **`version`**, **`hits[]`** (**`slug`**, **`title`**, **`group`**, **`anchor`** and **`heading`** unless the hit is the part above the first section, **`snippet[]`** of **`text`** fragments with **`hit`** on the matched words). An empty **`q`** answers no hits; **`400`** for a bad **`limit`**. |
@@ -14155,9 +14263,9 @@ header where the client can set one, since a query token reaches proxy access lo
 | GET | **`/coddy/workspace/context`** | Workspace context for the composer chips: **`path`**, **`name`**, **`is_git_repo`**, **`is_worktree`**, plus **`repo_root`**, **`branch`**, **`branches`**, **`worktrees[]`** (**`path`**, **`branch`**, **`main`**) inside a git repository. **`shell`** carries the interpreter **`run_command`** executes through on the server host (**`/usr/bin/bash`**, **`cmd.exe`**, ...) - a host fact rather than a folder one, served here because this is the call the SPA already makes; the tool card names it instead of the word Shell. Uses the session **cwd** from **`X-Coddy-Session-ID`** (server default cwd without the header). Optional **`path`** query describes an explicit folder instead (pre-session preview); a missing folder yields **`400`**. Git data degrades gracefully when the **`git`** binary is absent (**`is_git_repo:false`**). |
 | GET | **`/coddy/workspace/folders`** | Direct subfolders of **`path`** (default: session **cwd**) for the workspace folder picker: **`{"path","parent","folders":[{"name","path"}]}`**. Hidden folders and **`node_modules`** are skipped; rows sorted by name. Missing folder yields **`400`**. **`path=:drives:`** returns the machine's drive roots instead (**`{"drives":true,"folders":[{"name":"C:","path":"C:\\"}]}`**, **`path`** = **`parent`** = **`:drives:`**); on a host with no drive letters (Linux, macOS) the sentinel is just an unknown folder (**`400`**). A drive root reports **`"parent":":drives:"`**, which is how the picker walks up out of a volume — everywhere else **`parent`** stays the real parent directory. |
 | POST | **`/coddy/workspace/folders`** | Creates one subfolder for the folder picker: **`{"path","name"}`** makes **`name`** inside **`path`** (default: session **cwd**) and answers with the **listing of the new folder** (**`{"path","parent","folders":[]}`**), so the picker steps into it and **Open** picks it. **`name`** is a single entry: empty, **`.`**, **`..`**, a volume name, or anything containing **`/`** or **`\`** yields **`400`**. A parent that does not exist yields **`400`** and the chain is never created; **`path=:drives:`** yields **`400`** because the volume level has no directory behind it. A name already taken yields **`409`**. |
-| GET | **`/coddy/config/schema`** | JSON Schema (draft 2020-12) for the settings editor. Describes the same logical fields as **`ConfigJSON`** with **`description`**, **`default`**, **`pattern`** on **`providers[].name`**, optional **`x-coddy-*`** hints (for example **`x-coddy-provider-api-key-env-placeholder`** on **`providers[].api_key`** for dynamic placeholders), and **`x-coddy-property-order`** for section order. **`httpserver`** is omitted (listen bind stays on the **`coddy serve`** CLI). **`GET`** / **`PUT`** **`/coddy/config`** still return the full document including **`httpserver`** when present in YAML. |
+| GET | **`/coddy/config/schema`** | JSON Schema (draft 2020-12) for the settings editor. Describes the same logical fields as **`ConfigJSON`** with **`description`**, **`default`**, **`pattern`** on **`providers[].name`**, optional **`x-coddy-*`** hints (for example **`x-coddy-provider-api-key-env-placeholder`** on **`providers[].api_key`** for dynamic placeholders), and **`x-coddy-property-order`** for section order. **`httpserver`** is omitted (listen bind stays on the **`coddy serve`** CLI). **`GET`** / **`PUT`** **`/coddy/config`** still return the full document including **`httpserver`** when present in YAML. A swarm relay serves the same four **`/coddy/config`** routes behind its client token, scoped to **`swarm`** and **`logger`**: its schema describes only those, marked **`x-coddy-relay: true`** at the root, its **`GET /coddy/config`** serves only those and the revision, and a save naming any other section is **`400`** ([The relay's own Settings](../operate/swarm.md#where-the-settings-live)). |
 | GET | **`/coddy/config/reasoning-levels`** | Reasoning levels the **`?model=`** logical id offers when **`models[].reasoning_levels`** is not overridden, for the settings form's **Fetch reasoning levels** button. Detection is model-id based (**`gpt-5*`** and **`gpt-6*`** -> **`minimal,low,medium,high`**; OpenAI **`o`**-series, **`gpt-oss*`**, **`qwen3*`**, Claude extended-thinking -> **`low,medium,high`**). The provider type decides the Codex remap (**`minimal`** becomes **`none`**): optional **`?provider_type=`** carries the type of the provider row as it stands in the (unsaved) form and wins over the saved config, so a provider that is not saved yet, or whose type was just changed, resolves the way it will after Save; without it the provider prefix is looked up in the active config, and an unknown prefix gets the un-remapped list. The id need not exist in **`models[]`**, and a saved override is ignored - the button reports what the id offers, not what is configured. **`200`** **`{"ok":true,"model":...,"levels":[...],"detected":true}`**; a model with no reasoning support is **`{"ok":true,"levels":[],"detected":false}`**, not an error; a malformed id is **`200`** with **`{"ok":false,"error":...}`** so the form can show it inline; a missing **`model`** parameter is **`400`** with the same flat **`{"ok":false,"error":...}`** body the other **`/coddy/config`** routes use. |
-| GET | **`/coddy/config`** | Current process configuration as JSON (same logical fields as **`config.yaml`**, including secrets). Per-session path fields (**`skills.dirs`**, **`subagents.dirs`**, **`hooks.files`**, **`prompts.dir`**, **`mcp_servers[].command`** / **`args`** / **`url`** / **`env`** / **`headers`**) are returned as written in the file, including a **`${CWD}`** placeholder; **`${CODDY_HOME}`** and the process-scoped directories are returned expanded. The document carries **`revision`**, which names the configuration it was read from: send it back unchanged with the **`PUT`**. |
+| GET | **`/coddy/config`** | Current process configuration as JSON (same logical fields as **`config.yaml`**, including secrets: a provider's **`api_key`**, and the **`token`** of an **`httpserver.remotes`** entry that carries one, which the web UI presents to that remote; the credentials that open this server - **`httpserver.auth_token`**, the sign-in hash, the swarm tokens - are write-only and reported as set or not). Per-session path fields (**`skills.dirs`**, **`subagents.dirs`**, **`hooks.files`**, **`prompts.dir`**, **`mcp_servers[].command`** / **`args`** / **`url`** / **`env`** / **`headers`**) are returned as written in the file, including a **`${CWD}`** placeholder; **`${CODDY_HOME}`** and the process-scoped directories are returned expanded. The document carries **`revision`**, which names the configuration it was read from: send it back unchanged with the **`PUT`**. |
 | POST | **`/coddy/config/validate`** | Body is **`ConfigJSON`**. **`200`** with **`{"ok":true}`** when valid, **`400`** with **`{"ok":false,"error":"..."}`** otherwise. |
 | PUT | **`/coddy/config`** | Body is **`ConfigJSON`**. Validates, writes **`config.yaml`** atomically, reloads in-process config for HTTP handlers and new agent turns. **`agent.model`** is optional: an empty value is stored as-is, and calls that need a default model (`coddy -p`, `coddy acp`, **`POST /v1/responses`** without **`metadata.model`**) report a missing model when they resolve one. The file is rewritten **over its current content**: comments (including commented-out keys), the existing key order and the spelling of every value the request did not change survive the save - a **`${VAR}`** reference (so a key kept in the environment is not written into the file), **`${CODDY_HOME}`**, **`~`**, quotes, a list written on one line - and a file that carries no **`# yaml-language-server: $schema=`** header gets the published one (**`https://coddy.dev/config.schema.json`**) so editors keep validating it; a header pointing somewhere else is left as it is. A value sent back as the client read it keeps what the file says now: what the process runs differently from the file (a command-line flag, the relay address **`coddy serve`** fills in, a pairing token from the environment) is not written into it by an unrelated save, and a value another save changed after the client's **`GET`** is not put back. "As the client read it" is measured against the configuration the body's **`revision`** names (the last 32 this process served), else against the one live when the **`PUT`** arrives; a list is one value, and an edited list is written as sent. Keys the file never had appear only when their value differs from the built-in defaults and from what the file loads them as - unset optional fields are omitted rather than written as **`null`**, so commented-out sections stay out of the file, and an entry of a list (a provider, a model, an MCP server) keeps only the fields it named plus the ones the request set. Changed **`mcp_servers`** are reconnected for active sessions, re-running the workspace trust gate so an unapproved project declaration is not started; a session with a turn in flight is reconnected when that turn ends, not mid-turn; ACP client-provided per-session servers remain connected. **`200`** **`{"ok":true}`**; **`400`** on validation failure; **`500`** if the file was written but reload failed (server restores **`config.yaml.bak`** over the primary path when possible). |
 | GET | **`/coddy/providers/{name}/models`** | Fetches the provider model list. OpenAI, Anthropic, and NeuralDeep use their documented model endpoints (NeuralDeep at the deployment its **`api_base`** selects); Codex uses the fixed official Codex backend with the saved ChatGPT OAuth token and lists every model the account is offered, asking as Codex release 0.999.0 so that a model the backend reserves for a recent Codex release is not left out. Credentials and **`proxy`** apply server-side. **`200`** **`{"ok":true,"models":[{"id","name","context_window"}]}`** on success (`context_window` only when the provider's listing reports one - spellings: `limit.context`, `context_length`, `max_model_len`, `max_context_length`, `context_window`); **`200`** **`{"ok":false,"error":"...","models":[]}`** when upstream fails; **`404`** for an unknown saved provider. |
@@ -15459,7 +15567,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tu
 
    The startup banner says what is reachable and how: `httpserver  http://0.0.0.0:12345  (bearer auth)`. Binding a non-loopback address without a token logs a warning at start, and clients warn when they send a token over plain http to an address that is not loopback: put TLS in front of the server, a reverse proxy is enough, when the path crosses a network you do not control.
 
-2. **Drive it from the laptop's console.** `--remote` takes a bare `host:port` (scheme defaults to http), a full URL, or the name of a remote listed under `httpserver.remotes` in the laptop's own `config.yaml`. The token comes from `--remote-token` or `CODDY_REMOTE_TOKEN`, never from the file.
+2. **Drive it from the laptop's console.** `--remote` takes a bare `host:port` (scheme defaults to http), a full URL, or the name of a remote listed under `httpserver.remotes` in the laptop's own `config.yaml`. The token comes from `--remote-token`, then from the `token` of that remote's entry when it has one, then from `CODDY_REMOTE_TOKEN`.
 
    ```bash
    export CODDY_REMOTE_TOKEN="a-long-random-string"
@@ -15483,7 +15591,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tu
    coddy acp --remote box.example:12345
    ```
 
-4. **Drive it from the browser.** The environment chip sits in the composer's workspace row and reads `Local` or the name of the remote in use. Its menu lists the remotes of the `coddy serve` that served the page (`httpserver.remotes`) and `+ Add remote…`, which takes a name, a URL and the bearer token; choosing an entry connects at once and reloads, and the token stays in the browser, never in a config file. The remote server has to allow the page's origin through `httpserver.cors`, which is what step 1 set; the dot on each entry turns green when a cross-origin `GET /v1/models` succeeds with the token ([Cross-origin access and the remote UI](../reference/http-api.md#cross-origin-access-and-the-remote-ui), [Web UI](../surfaces/web-ui.md)). Opening the server's own address instead loads the SPA shell without a token, since the shell is public, and the page asks for the token before it calls the API.
+4. **Drive it from the browser.** The environment chip sits in the composer's workspace row and reads `Local` or the name of the remote in use. Its menu lists the remotes of the `coddy serve` that served the page (`httpserver.remotes`) and `Connect to…`, which takes a name, a URL and the bearer token; choosing an entry connects at once and reloads, and a token typed there stays in the browser. An entry of `httpserver.remotes` may carry the token itself (`token: "${BOX_TOKEN}"`), and then every browser that opens this page gets it from the configuration ([The token](../operate/remote.md#the-token)). The remote server has to allow the page's origin through `httpserver.cors`, which is what step 1 set; the dot on each entry turns green when a cross-origin `GET /v1/models` succeeds with the token, and a red one says on the line under it whether the server does not answer, refuses the token or leaves this origin out of its CORS ([Cross-origin access and the remote UI](../reference/http-api.md#cross-origin-access-and-the-remote-ui), [Web UI](../surfaces/web-ui.md)). Opening the server's own address instead loads the SPA shell without a token, since the shell is public, and the page asks for the token before it calls the API.
 
 5. **Remember what stays on the server.** Sessions, the trust receipts and the child sessions of subagents are the server's, so a project file is approved there: `coddy mcp trust`, `coddy hooks trust` and `coddy agents trust` on the server itself, or `POST /coddy/mcp/{name}/trust`, `POST /coddy/hooks/trust` and `POST /coddy/subagents/{name}/trust` over the API. A dropped connection leaves the server turn running; `/resume` shows the outcome once it ends.
 
@@ -15603,6 +15711,176 @@ A skill is a `SKILL.md` file with a frontmatter and a body of instructions; it b
    ```
 
 6. **Share it.** Publish the directory in a GitHub repository. Others install it with `coddy skills add owner/repo` followed by `coddy skills sync`, or through `coddy plugin install owner/repo`, and a listing on [skills.sh](https://skills.sh) makes it findable with `npx skills find`.
+
+
+# Tutorials / A swarm across your machines
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tutorials/swarm-across-machines.md
+
+# A swarm across your machines
+
+**Goal.** Worker nodes on several machines, one relay they all join, and your laptop driving any of them from its own web UI and its console: the relay in the laptop's environment menu with its agents listed under it, one click to a worker, the map of the whole swarm a click away. Nothing but the relay's port has to be reachable: the workers dial out to it.
+
+**Environment.** Coddy 1.2.36 or later on every machine ([Install](../getting-started/install.md)), with the `swarm` tag the release binaries carry. A model each worker can reach, with its key on that worker: the model calls and the tools run where the worker runs. The background is in [Swarm](../operate/swarm.md) and [Remote mode](../operate/remote.md); the same shape in Docker on one machine is [A relay and its nodes in Docker](swarm-relay-and-nodes.md).
+
+The example uses these machines; put your own names and addresses in their place:
+
+| Role | Machine | Address the others use |
+|---|---|---|
+| relay | `relay` | `relay.lan`, port 12346 |
+| worker | `gpu01` | none needed |
+| worker | `gpu02` | none needed |
+| laptop | yours | none needed |
+
+## 1. Three tokens
+
+A relay is guarded by tokens, not by the network ([Security](../operate/swarm.md#security)). Mint three on any machine and keep them for the steps below:
+
+```bash
+openssl rand -hex 24   # client token: what the laptop presents to use the relay
+openssl rand -hex 24   # pairing token: what a worker presents to join it
+openssl rand -hex 24   # one worker token per worker: its own API's bearer
+```
+
+The client token opens every node behind the relay, so it is handled like a password to the whole fleet.
+
+## 2. The relay
+
+On `relay`, `~/.coddy/.env` holds the tokens (`chmod 600`):
+
+```bash
+SWARM_CLIENT_TOKEN=<client token>
+SWARM_PAIRING_TOKEN=<pairing token>
+```
+
+and `~/.coddy/config.yaml` runs nothing but the relay. `cors` names the address your laptop's web UI is opened at, because that page will talk to the relay from the browser:
+
+```yaml
+httpserver:
+  enable: false
+
+swarm:
+  enable: true
+  host: "0.0.0.0"
+  port: 12346
+  name: "office"
+  auth_token: "${SWARM_CLIENT_TOKEN}"
+  pairing_tokens: ["${SWARM_PAIRING_TOKEN}"]
+  cors:
+    enable: true
+    allowed_origins: ["http://localhost:12345", "http://127.0.0.1:12345"]
+```
+
+```bash
+coddy serve --dry-run   # the address is free, the tokens and the file are right
+coddy serve install     # a systemd user service; or `coddy serve` in a terminal
+curl -s http://relay.lan:12346/swarm/info
+```
+
+`/swarm/info` needs no token and says `"swarm": true` with `node_count: 0`. An origin is compared exactly, so list every address you open the laptop's page at; the relay picks up an edit of this file by itself.
+
+## 3. The workers
+
+On each worker, `~/.coddy/.env`:
+
+```bash
+OPENAI_API_KEY=sk-...
+SWARM_PAIRING_TOKEN=<pairing token>
+NODE_TOKEN=<this worker's token>
+```
+
+and `~/.coddy/config.yaml` - an ordinary `coddy serve` with a model, a bearer token on its own API and one `swarm.join` entry. There is no `advertise_url`, so the worker dials the relay and is driven back down that connection; it needs no open port:
+
+```yaml
+providers:
+  - name: openai
+    type: openai
+    api_key: "${OPENAI_API_KEY}"
+
+models:
+  - model: "openai/gpt-5.6-terra"
+
+agent:
+  model: "openai/gpt-5.6-terra"
+
+httpserver:
+  auth_token: "${NODE_TOKEN}"
+
+swarm:
+  join:
+    - url: "http://relay.lan:12346"
+      name: "gpu01"                     # gpu02 on the second worker
+      pairing_token: "${SWARM_PAIRING_TOKEN}"
+      token: "${NODE_TOKEN}"            # the same value as httpserver.auth_token
+```
+
+```bash
+coddy serve --dry-run   # the relay is reachable from here
+coddy serve install
+```
+
+The relay's log gets a `swarm node registered` and a `swarm tunnel established` line per worker, and from any machine:
+
+```bash
+curl -s -H "Authorization: Bearer <client token>" http://relay.lan:12346/swarm/nodes
+```
+
+lists `gpu01` and `gpu02` with `"transport": "tunnel"` and `"online": true`.
+
+## 4. The laptop
+
+The laptop runs its own `coddy serve` for the web UI ([Quickstart](../getting-started/quickstart.md)), at `http://localhost:12345` by default. The relay goes into its `~/.coddy/config.yaml` as a remote, with the client token kept out of the file:
+
+```yaml
+httpserver:
+  remotes:
+    - name: "office"
+      url: "http://relay.lan:12346"
+      token: "${CODDY_RELAY_TOKEN}"
+```
+
+```bash
+echo 'CODDY_RELAY_TOKEN=<client token>' >> ~/.coddy/.env
+```
+
+The `token` line is optional. With it, the environment menu and `coddy --remote office` use the token without asking, and every browser that opens this laptop's page receives it from the configuration; without it, you type the token once per browser into **Connect to…** ([The token](../operate/remote.md#the-token)). Asking the agent to add the remote works as well: it stages the same entry and commits it, and the menu shows the new remote the next time it opens.
+
+![The laptop's environment menu with the relay and its workers](../assets/swarm/across-machines-env-menu-dark-1280.png)
+
+*The relay in the laptop's environment menu: green, with its workers under it*
+
+Open the environment chip in the composer. `office` has a green dot and says `relay · 2 agents`, with `gpu01` and `gpu02` under it. Click `gpu01`: the page reloads onto that worker - its sessions in History, its folder and its models in the composer, its configuration in Settings - through the relay. A turn you start runs on `gpu01`.
+
+The **Swarm** entry in the rail opens the relay's map over the worker without leaving it. Your laptop sits at the top, named by its host name, the relay under it and the workers under that; the worker you are on is ringed. Click `gpu02` to move there - the map stays open, now ringing `gpu02`, and the page does not reload - the laptop to go back to Local, the relay to connect to the relay itself.
+
+![The swarm map opened over a worker](../assets/swarm/map-over-node-dark-1280.png)
+
+*The map over `gpu01`: the laptop the connection starts from, the relay, both workers*
+
+On the relay itself its Settings edit the relay's own deployment - the CORS origins among them - and a save is applied at once ([The relay's own Settings](../operate/swarm.md#where-the-settings-live)).
+
+## 5. The console
+
+The laptop's console reaches a worker through the relay's mount. The relay's entry in `httpserver.remotes` carries the token, and a node mounted under that relay takes the same one, so no flag is needed:
+
+```bash
+coddy --dry-run --remote http://relay.lan:12346/swarm/nodes/gpu01
+coddy --remote http://relay.lan:12346/swarm/nodes/gpu01
+coddy -p "What is in the workspace?" --remote http://relay.lan:12346/swarm/nodes/gpu02
+```
+
+`coddy --dry-run --remote office` says `office` is a relay and prints the mounts of its agents, because a relay drives nothing itself and the console needs a node. `coddy acp` takes the same `--remote` for an editor ([Working with remote nodes](swarm-remote-nodes.md)).
+
+## What tends to go wrong
+
+- **The relay's dot is red and says the answer was blocked by CORS.** The relay does not list the address the laptop's page is open at. The line under the relay names that exact origin: add it to `swarm.cors.allowed_origins` on the relay, in its file or in its own Settings. `localhost` and `127.0.0.1` are two origins.
+- **The dot is red and says the relay refuses the token.** The token the laptop presents is not the relay's `swarm.auth_token` (or `--swarm-auth-token`). With a `token` in the laptop's entry, fix it there; without one, **Enter token** under the relay opens the form filled in for it.
+- **The dot is red and says the relay does not answer.** Nothing listens at that address from the laptop: check `curl http://relay.lan:12346/swarm/info` from the laptop, the relay's `host`, and a firewall between them.
+- **The relay is green, but no worker is listed.** No worker has joined: the worker's log says whether its registration was refused. A pairing token is compared exactly.
+- **A worker is listed, but a turn there fails with 401.** The `token` in the worker's `swarm.join` entry is not its own `httpserver.auth_token`; the relay presents that value when it proxies.
+- **`coddy --remote office` gets nowhere.** `office` is the relay, which serves no sessions. Point `--remote` at a worker's mount; the dry run lists them.
+- **A remote added to the laptop's config is not in the menu.** It is read when the menu opens, so close the menu and open it again; the laptop's server has to have loaded the file, which it does by itself within a few seconds of an edit.
+- **After a save of the relay's settings the workers are gone for a moment.** A save rebuilds the relay, and the workers register and open their tunnels again within seconds; a new listen address takes a restart of the relay.
 
 
 # Tutorials / A relay and its nodes in Docker
@@ -15983,7 +16261,7 @@ Before typing anything, the dry run tells whether the path is right and the node
 coddy --dry-run --remote http://127.0.0.1:12346/swarm/nodes/node-a --remote-token "$T"
 ```
 
-The token can also come from `CODDY_REMOTE_TOKEN`, and a relay address you use often can be named once in your own `config.yaml` under `httpserver.remotes` and then addressed by name; the token is never stored in that file ([Naming a remote](../operate/remote.md#naming-a-remote)).
+The token can also come from `CODDY_REMOTE_TOKEN`, and a relay address you use often can be named once in your own `config.yaml` under `httpserver.remotes` and then addressed by name. That entry may carry the client token as well, best as a `${ENV}` reference, and then a node mount under that relay takes it without a flag ([Naming a remote](../operate/remote.md#naming-a-remote), [The token](../operate/remote.md#the-token)).
 
 ## 3. An editor
 
@@ -15999,7 +16277,7 @@ Configure the editor to run that command line instead of a bare `coddy acp` ([Ed
 
 Open the relay itself, `http://127.0.0.1:12346/`. A relay built with the `ui` tag (the published image is) serves the web UI at its own address; it asks for the client token and opens on the swarm map. Click a node: the History drawer lists that node's sessions, the composer shows its working directory and models, and a turn started there runs on the node. The **Swarm** entry stays in the rail while you are inside a node, so another node is one click away, and each node on the map says how many sessions it holds, how many turns are running and whether one of them is waiting for you.
 
-From a web UI served by some other `coddy serve`, the relay is one more environment: the chip in the composer, **+ Add remote...**, the relay's address and the client token. The token stays in that browser.
+From a web UI served by some other `coddy serve` - a laptop's, for instance - the relay is one more environment: an entry of that server's `httpserver.remotes`, or the chip in the composer, **Connect to…**, the relay's address and the client token. The relay has to allow that page's origin in `swarm.cors.allowed_origins`. Once it accepts the token the environment menu lists its agents, so a node is one click away; [A swarm across your machines](swarm-across-machines.md) walks through that setup from scratch.
 
 ![A permission prompt relayed through two relays](../assets/swarm/permission-two-relays-dark-1280.png)
 
@@ -16024,7 +16302,7 @@ coddy --remote http://127.0.0.1:12346/swarm/nodes/node-a --remote-token "$T"
 
 ## What tends to go wrong
 
-- **`--remote` is refused before connecting.** The target must be a bare origin plus a path prefix: no query string, no fragment, no credentials in the URL. The token goes into `--remote-token` or `CODDY_REMOTE_TOKEN`.
+- **`--remote` is refused before connecting.** The target must be a bare origin plus a path prefix: no query string, no fragment, no credentials in the URL. The token goes into `--remote-token`, the `token` of the remote's entry or `CODDY_REMOTE_TOKEN`.
 - **`401` on every request.** A node's own token was used where the relay's client token belongs. Through a mount you present the relay's token; the relay presents the node's.
 - **The status dot in a browser stays red with a correct token.** The web UI was opened from another `coddy serve`, and that relay does not list the page's origin in `swarm.cors.allowed_origins`. Open the relay's own address instead, or allow the origin.
 - **A bypass switched on from a laptop is gone the next morning.** `/permissions bypass` changes the node's session for every client of it, but only in the node's memory: a restart of the node returns the session to its `tools.permission_mode`. Put a lasting choice in the node's `config.yaml`.
@@ -16161,7 +16439,7 @@ Android stops the processes of an app it considers idle. The wake lock keeps Ter
 
 ## 5. Drive the phone
 
-**The browser.** Open the relay, `http://192.168.1.10:12346/`. The page says the relay needs a token: open the environment chip in its header, **+ Add remote...**, and give it a name, the relay's address and the client token, then **Connect**. The swarm map shows `pixel` under the relay, marked as a node that dials out.
+**The browser.** Open the relay, `http://192.168.1.10:12346/`. The page says the relay needs a token: open the environment chip in its header, **Connect to…**, and give it a name, the relay's address and the client token, then **Connect**. The swarm map shows `pixel` under the relay, marked as a node that dials out.
 
 ![The swarm map of the relay with the phone as a node that dials out](../assets/swarm/android-node-map-dark-1280.png)
 
@@ -18116,6 +18394,8 @@ The **Settings** drawer (**`#/settings`**, **`Settings.tsx`**) is **tabbed**, no
 - **Saving**: there is **no per-section save button**. The drawer footer keeps only **Reload** (**`data-testid="settings-reload"`**) and **Save all** (**`data-testid="settings-save"`**, PUTs the whole config after `/coddy/config/validate`). **Appearance** is client-side only and never touches the config PUT. **A save that went through says so on the Save button alone**: it turns green (**`.is-saved`**: green border, wash and a 2px halo, a short scale pop) for **`SAVE_SUCCESS_MS`** (2 s, **`Settings.tsx`**) and eases back to its own colour, with no line of text on screen (a screen reader hears **Saved** from an **`.sr-only`** status). The green is a state rather than a frame of the pop, so it holds under **`prefers-reduced-motion`**, where only the pop goes. **A failed save says why in words** in the lead pane (**`.settings-lead-pane`**, **`.settings-error`**), which stands between the head and the tabs only while a failed read or a failed save needs saying; the Save button stays as it was. The success line that used to sit in that pane (**All sections saved**) stayed on screen for as long as the drawer did, and it is gone.
 - **Loading**: the app keeps the schema and the config the drawer reads (**`settingsConfigStore.ts`**), so **only the first open of the page reads them**; every later open draws the tab the address names from that copy in its first frame, with no request and no other tab in between. The copy follows the server: **`config_reloaded`** and every reconnect of the events stream read it again in the background (**`noteSettingsConfigReloaded`** from **`App.tsx`**), and an open form takes the new copy while it holds no edits of its own - unsaved edits stay, and **Reload** is the deliberate way to drop the ones the form held when it was pressed (a field typed into while its read is on its way keeps what was typed). A save turns the button green only when the form was not edited while the request ran; a copy the untouched form took in the meantime is no edit. A save puts what it wrote into the copy at once (**`noteSettingsConfigSaved`**), so a reopen before the read after the save lands, or after that read failed, draws the saved values rather than the ones the save replaced; a read older than the save is dropped, and a copy older than a read that failed is read again by the next open. The first open, and an open after a first read that failed, shows **the requested tab as a skeleton** (**`SettingsSkeleton`**, **`data-testid="settings-skeleton"`**: a frame of grey label and input bars tinted from **`--text`**, shimmering unless **`prefers-reduced-motion`**), with grey rows in the rail (**`.settings-nav-item--placeholder`**) or the tile grid (**`.settings-tile--placeholder`**) for the tabs the schema will bring; the narrow shell's head names the section from the dictionary (**`knownSectionLabel`**). Appearance, which needs no schema, no longer stands in for the tab a deep link asked for. A copy that lands is taken **while rendering**, not in an effect after it: a frame drawn from an empty document showed a list with no rows, and the list read the **`?id=`** of the address as a stale row and rewrote it.
 - **Layout**: on **`min-width: 1200px`** the drawer is **`min(680px, …)`** wide - as wide as the section rail plus a content column that holds **three theme cards a row** on Appearance (**`auto-fill, minmax(130px, 1fr)`**, 10px gap), the cards keeping their size and the drawer giving way; **`appearanceSettingsLayout.test.tsx`** computes the column count from the two rules - with a vertical section rail on the left (**`.settings-nav`**) and the content panel on the right (**`.settings-tabs-layout`** is `display:flex; row`). On **`max-width: 1199px`** (same breakpoint as the rest of the shell, via **`isMobileShell`** / **`shellBreakpoint.ts`**) the nav is a **2-wide tile grid** master–detail (**`SettingsTileGrid`**, **`.settings-tile-grid`**): each tile (**`data-testid="settings-tile-<id>"`**) shows the section **title** on top and a short 3–5 word **description** below (**`SECTION_DESCRIPTIONS`** in **`settingsSections.ts`**) styled after the Scheduler job rows. The description clamps to two lines with an ellipsis (**`-webkit-line-clamp: 2`**) and the full text shows in a native **`title`** tooltip on hover. Tapping a tile opens that section with a **← Back to sections** arrow in the drawer's head (**`.settings-head-back`**); the desktop rail (**`SettingsNav`**) is unchanged. On that shell the drawer has **one inline inset**, **14px**, set by the head and the lead pane: the tile grid, the section content (**`.settings-scroll`**) and the reload / save footer all ride it (**`padding-inline: 14px`** inside the **`max-width: 1199px`** block), and the tile grid keeps the same **14px** off the head's rule above it, so every band of the panel starts and ends on the same edge. The wide layout keeps the content panel's own **8px**, because there its left edge is the seam against the section rail rather than the drawer's edge.
+- **Secrets the server never sends back** (**`writeOnly`** in the schema, **`x-coddy-configured`** on the document): **`httpserver.auth_token`**, the sign-in password hash and the swarm tokens (**`swarm.auth_token`**, **`swarm.pairing_tokens`**, a join entry's **`pairing_token`** and **`token`**) come back from **`GET /coddy/config`** as a **`*_configured`** flag, never as a value. Such a field is a password input that is **empty** while a value is set and says so in its placeholder (**Set. Leave empty to keep it**, else **Not set**); leaving it empty keeps the stored value, typing replaces it. A list of secrets says how many are set and hidden in a state line under its legend (**`settings.secret.listSet`**, counted per locale), and the values entered in it replace them all. The two-way credentials - a provider's **`api_key`**, a remote's **`token`** - stay ordinary text fields, because the page needs their value.
+- **The relay's own Settings.** On a relay's home (the app on a relay, not on a node behind it) the drawer edits the relay's deployment: **`GET /coddy/config/schema`** answers with the relay's form (**`config.RelayUISchemaJSON`**: **`swarm`** and **`logger`** only, **`x-coddy-relay: true`** at the root), and **`deriveSettingsSections(schema, {relay: true})`** draws **Appearance** and those two tabs; the **Sessions** tab, which manages the stored sessions of an agent, is left out, even before the schema has arrived. The document is scoped the same way (**`configapi.Backend.Sections`**): **`GET /coddy/config`** serves only **`swarm`**, **`logger`** and the revision, and a save takes only those and refuses any other section, so a relay client never reads the host's provider keys or writes its other settings. **Save all** PUTs that document, and the relay applies the **`swarm`** section at once (a listen address that moved takes a restart); the **`logger`** section is read when the process starts next, as an agent's is. A node reached through a relay shows that node's own Settings; a node that is itself a relay refuses a write sent through the mount (**403**), so a relay is edited only on its own page.
 - **Section form layout** (**`SchemaForm`** **`groups`**, **`SchemaFormGroup`** **`{id, legend, description?, paths?, collapsible?}`**): a settings form is fieldsets by meaning, not a column of loose fields. A section's own **`enable`** switch opens the form **outside every fieldset**, above everything, wherever the schema puts it (Subagents, Hooks, Memory copilot, Context compaction, Scheduler). A group with **`paths`** takes exactly those keys; the **first** group without **`paths`** is the catch-all and takes every key no group names, except a list or a nested object, which stands as a **block of its own** beside it rather than inside it. Every group stands **where its first field stands** in the schema order, blocks stand in place, and a key no group takes (one added to the schema later) still renders in place, so nothing silently leaves the form. A group's **`description`** is the (i) of its legend. The groups of each tab live in **`objectSectionGroups`** (**`SettingsSection.tsx`**): **ReAct loop** (Model and turns, Retries, Stream timeouts, Loop guard, Usage limits), **Context compaction** (Summarization), **Memory copilot** (Model and storage, Runs, Limits, Instructions), **Tools and permissions** (Permissions), **Hooks** (Hook settings), **Scheduler** (Jobs), **Logger** (Logger settings); the **Logical models** row form (**Model**: provider, id, context window, multimodal; **Generation**: max tokens, temperature, streaming; **Reasoning**: the levels and the default, passed through **`SettingsArraySection`** like the provider form's blocks), **Subagents** (Subagent settings), the **Sessions** tab (Storage) and each part of the **Prompts** tab (**Prompt templates**, and **Instruction files** as a block of its own) pass their own. Inside a nested object a list keeps its frame - the Telegram admins, user groups and per-chat overrides, the web search engines: there it belongs to the block around it. **Lists**: an entry of a list of plain values is a **bare input** beside its trash (**`ArrayItemControl`**, named **&lt;list&gt; N** for assistive technology), with no per-row label such as **`dirs[0]`**, no rule under the row, and **Add** under the rows; an entry of a list of objects is a frame of its own **without a legend** (**`.settings-array-entry`**, named the same way). The trash carries no margin, so a row is exactly as tall as its input (**`settingsDrawerRhythmCss.test.ts`**). **Maps**: a map of plain values - an object with no properties of its own whose every value is a string (**`isStringMapSchema`**), such as **`tools.http_request.default_headers`** - is a block like a list, and an entry is a row of **two bare inputs**, the name and then the value (**`.settings-map-entry`**, the value wider), beside its trash, named **&lt;map&gt; N: name** and **&lt;map&gt; N: value**, with **Add** under the rows. The rows are the form's own (**`StringMapField`**): a row whose name is still empty stays on screen and out of the document, of two rows with one name the later one wins, and a document that stops matching the rows (a reload, a save from elsewhere) replaces them while rendering. An empty value is kept, since for the headers it means "leave this one out". Tests: **`SchemaForm.groups.test.tsx`**, **`SchemaForm.map.test.tsx`**.
 - **List sections** (**LLM Providers**, **Logical Models**) are **master–detail** (**`SettingsArraySection`**): a list of named buttons (labelled by **`name`** / **`model`**) with **Add**/**Remove**; **Add** or selecting a row hides the list and shows the item form. **The way back is the drawer's head, on every width**: while a row form is open the head reads what the form is (**`settings.item.<section>`**: **Provider settings**, **Model settings**; the section's name for a list without one) behind the same round back arrow the narrow shell's section view uses (**`.settings-head-back`**, **`data-testid="settings-head-back"`**, named **Back to &lt;list&gt;**), and the arrow closes the form onto the list (**`closeSignal`**; the list reports **`onEditingChange`**, so a row with no name yet is covered too). With no row open the desktop head reads **Settings** and the narrow shell's head names the section with its arrow back to the tiles. **Escape** takes the step the arrow takes while the head shows one, and closes the drawer when it shows none (**Escape and the screens of the rail**). The form carries no back control of its own inside the drawer (**`hideBackLink`**); outside it, **`SettingsArraySection`** keeps a quiet link, **`.settings-back-link`**, the app's chevron pointing left and the list's name. The open row is in the address, **`#/settings/<section>?id=<name>`** (**`appNavHrefSettingsSection`**, the name URL-encoded, so **`demo/qwen3.8-27b`** travels as **`demo%2Fqwen3.8-27b`**): opening a row writes it, going back takes it out, renaming the open row rewrites it (all with **`replaceState`**, no history entries), and an address naming a row opens it - one that names no row (a typo, a row deleted since) shows the list and drops the dead name from the address. The row form is **keyed by the row**, so switching rows through the address (edit to edit, never through the list) mounts a fresh form and nothing a field remembers - the proxy URL, a filter, a fold - crosses rows; an open form whose index is gone from the document falls back to the list. A row with no name yet keeps the address on the list while its form stays open; the row already open under a name stays open when a rename makes two rows share it. **`SettingsArraySection.test.tsx`** pins both directions; the drawer hands the address row only to the section the address names (**`appearanceSettingsLayout.test.tsx`**), because the tab catches up one render late and another list used to take the name for one of its own, find none and rewrite the address. The component is **keyed by the section** in **`SettingsSection`**: both tabs render the same component at the same place in the tree, and without the key a row form opened under LLM Providers stayed on screen when the operator switched to Logical Models, showing the first model's form instead of the list.
 - **Codex provider authentication**: when a provider row has **`type: codex`**, **`api_base`**, **`api_key`**, and **`api_key_command`** controls are replaced by **Sign In with ChatGPT**. The device-flow card shows the one-time code, a link to the official verification page, waiting/completed/error state, and **Sign Out** for Coddy-managed credentials. The token is server-side only.
@@ -18580,7 +18860,7 @@ Sessions list interactions
 
 ### Repo links
 
-Repo links appear as plain text links (**`GitHub | API docs`**) in a fixed footer at the bottom of the **start screen** (hero / empty state only — not shown once a chat is active). GitHub (**`https://github.com/coddy-project/coddy-agent`**) and **API docs** (**`/docs/`**) both open in a **new tab** (`target="_blank" rel="noopener"`). Implemented via **`.hero-footer`** (inside the `isEmpty` branch of `ChatScreen`) with `position: fixed; bottom: 16px` centered across the viewport.
+Repo links appear as plain text links (**`GitHub | API docs | v1.2.36`**) in a fixed footer at the bottom of the **start screen** (hero / empty state only — not shown once a chat is active). GitHub (**`https://github.com/coddy-project/coddy-agent`**) and **API docs** (**`/docs/`**) both open in a **new tab** (`target="_blank" rel="noopener"`). The version of the server the page is talking to closes the line on the right, after the same **`|`** separator: **`GET /coddy/info`** through the environment, so on a remote or a node it is that server's; a release (**`X.Y.Z`**) reads **`vX.Y.Z`** and links to its release notes in a new tab, a build between releases is plain text, and without an answer the line keeps its two links. Implemented via **`chat/HeroFooter.tsx`** (**`.hero-footer`**, inside the `isEmpty` branch of `ChatScreen`) with `position: fixed; bottom: 16px` centered across the viewport; pinned by **`HeroFooter.test.tsx`**.
 
 ### Tool timeline
 
@@ -18736,6 +19016,20 @@ A chip row renders inside **`.composer-context-row`** — the **first child** of
 - **Pre-session (draft/home)** — chips show the server-default workspace. Choices are kept client-side (**pending**) and previewed via **`GET /coddy/workspace/context?path=`**; the first send applies them to the fresh session id (**`POST .../workspace`**) before **`POST /v1/responses`**. Navigating to another session drops pending choices.
 - Menus follow the **`Mode`**/**`Model`** conventions: anchored **`mode-menu--portal`** (**`opens-down`** on the hero, **`opens-up`** when docked) on desktop, full-width bottom sheet (**`mode-menu--sheet`**) on narrow shells.
 
+### Composer environment chip and menu
+
+The first chip of **`.composer-context-row`** says which Coddy the page drives (**`EnvironmentChip.tsx`**, **`.workspace-chip--env`**): **Local**, or a remote's name, with the active environment's dot on its right (**`.env-status`**, 8px: green **up** and **local**, red **down**, amber **checking**, driven by **`useActiveEnvHealth`**). On a relay's home the composer is not on screen and the swarm header carries the chip (**Swarm screen**, **Header**).
+
+- **The menu** (**`mode-menu--env`**, the **`mode-menu`** family: an anchored portal on the desktop, **`opens-up`** from the composer and **`opens-down`** from the swarm header, a bottom sheet over a scrim on the stacked shell) reads **Environment** with **Local**, then **Remote** with every entry of the page's own **`httpserver.remotes`** (read past the environment shim, **`env/configuredRemotes.ts`**: the list of places to go does not travel with the place you are), then **Connect to…**. The list is read on first use, again every time the menu opens and on every **`config_reloaded`**, so a remote a save or the agent's **`config_commit`** added is in the next menu without a reload.
+- **One remote is a row, a hint and its agents** (**`.mode-env-entry`**, **`data-reach`**). The row: the dot, the name, and on the right the host, or **relay · N agents** once a relay let this browser in. The name is the entry's own, else the one the remote reports (**`reportedName`**: a relay's **`/swarm/info`** name, an agent's **`/coddy/info`** host name), else the address; the host on the right is left out when it is the name already, and choosing the row names the environment the same way. Every remote is probed while the menu is open (**`probeRemote`** in **`env/remoteProbe.ts`**), again whenever the list changes, and an answer from an older opening is dropped. A red remote says why on a line under its name (**`.mode-env-hint`**, 11.5px, a **62%** text tint, indented past the dot to the name's edge): it does not answer, it refuses the token (the key named for an agent or for a relay, or the configuration's own entry when that carries the token), or the browser keeps the answer from the page, naming this page's origin, which is how a CORS list that leaves the origin out looks from here. A remote that refuses its token and has none in the configuration offers **Enter token** (**`.mode-env-hint-action`**, a 999px pill), which opens the form filled in with that remote's name and address and the focus in the token field.
+- **A relay's agents** hang under its row once it accepts the token (**`.mode-env-nodes`**, 16px in, 12.5px rows 7px tall in padding), from **`GET /swarm/topology`** every hop deep: the dot says online, a node behind another relay shows its route, an offline one says so. A click enters that node through the relay (**`connectSwarmNode`**), with the relay's token.
+- **The menu fits the window.** An anchored menu is **300px** wide, hangs from the chip's left edge and is pulled back inside the window with a **12px** margin; it is as tall as the room between the chip and the window's edge less **12px** (at least **160px**, **`roomFor`**) and scrolls past it (**`overflow-y: auto`**, **`overscroll-behavior: contain`**); the sheet stops at **80vh**. A relay with many agents on a phone used to push **Connect to…** off the screen with nothing to scroll.
+- **Connect to…** (**`composer.env.addRemote`**) opens the form in place: a name, the address and a password field for the token, then **Connect** and **Cancel**; **Enter** in the token field connects. A token typed there is kept for that address in this browser (**`coddy_env_tokens`**); a token the configuration carries wins over it and is never copied into the browser, so a rotated one is used from the next read.
+- **Select = connect**: a row switches the environment at once: between two remotes in place (**A switch does not blink**, **Swarm screen**), to or from Local with a reload. The route is remembered per environment (**`coddy_env_routes`**, written by **`switchTo`** in **`env/remoteEnv.ts`**): back on Local the page opens where Local was left, a remote where it was left or at its home, and a relay's map never follows the app to an agent. Choosing the environment the page is on starts it over, which is the way to read everything again after that remote came back; the swarm map, a place rather than a menu, does not (**Swarm screen**).
+- **The alert** (**`EnvHealthBanner`**, **`.env-health-banner`**, **`role="alert"`**): while the active remote is red, a red strip across the top of the page says why in the menu's three cases and names the setting that fixes it as code (the agent's or the relay's token key, the CORS key with this origin; a node reached through a relay is answered by the relay's CORS), with **Switch to Local** as a pill on the right. It is fixed at the top of the window on the desktop. On the stacked shell the rail is a bar fixed at the top (**`--coddy-mobile-bar-h`**), and the alert hangs **under** it at **`z-index: 75`**, over the backdrop and the drawers and under the bar; it publishes its height as **`--coddy-env-banner-h`** on the root (a **`ResizeObserver`** follows a wrap), which **`--coddy-mobile-top-inset`** adds, so the page and every dock placed by the inset start below both. Under the bar it used to be covered by it.
+
+Tests: **`EnvironmentChip.test.tsx`** (the list read again on open, the hints, **Enter token**, the configuration's token, the relay's agents, the room and the scroll, the placement at either end of the window), **`remoteProbe.test.ts`**, **`envRoutes.test.ts`**, **`EnvHealthBanner.test.tsx`**, **`activeHealth.test.ts`**, **`phoneLayoutCss.test.ts`** (the alert under the bar), **`features/web_ui_menus.feature`**.
+
 ### Composer attachments (multimodal ingress)
 
 Attachments row (**`.composer-attachments`**) renders **inside** **`.composer-card`**, below workspace chips and above the field. All ingress paths are gated on the selected model's **`multimodal`** flag (paperclip picker, clipboard paste in **`textarea#composer`**, drag & drop onto **`.composer-card`**). Functional contract and regression table: **`docs/surfaces/web-ui.md`** (**Composer file attachments (multimodal)**).
@@ -18877,7 +19171,7 @@ A long conversation keeps a bounded slice of its rows in the DOM and holds only 
 A turn in flight no longer locks the composer. Enter queues in the saved `agent.queue_mode`, Tab in the other mode; the first use asks for the Enter preference. Each waiting card shows whether it steers the current turn or starts after it, and a click changes the mode. Text and attached images travel together. Behaviour and the wire contract: **`docs/features/message-queue.md`**, functional checklist: **`docs/surfaces/web-ui.md`** (**Composer message queue**).
 
 - **Placement** — the queue is a **`ul.composer-queue`** (**`data-testid="composer-queue"`**) inside **`composer-wrap`**, directly **above** **`.composer-card`** and below the transcript, with **`6px`** between it and the card. It renders only when something is waiting; an empty queue draws nothing at all (no header, no placeholder).
-- **A card** — **`li.composer-queue-item`** (**`data-testid="composer-queue-item"`**) is cut from the **frosted glass panel** the composer card is cut from (**`--coddy-glass-panel-bg`**, **`--coddy-glass-panel-backdrop`**, its border and shadow), **`12px`** radius, **`6px 6px 6px 12px`** padding, **12px** type at **1.45** line height in a **78%** text tint. It used to be a 6% wash of the text colour, nearly transparent over a dark transcript, so the words scrolling under the queue read through it. The rows stack in **reading order** with a **`4px`** gap: the top card is the one the agent reads first.
+- **A card** — **`li.composer-queue-item`** (**`data-testid="composer-queue-item"`**) is cut from the **frosted glass panel** the composer card is cut from (**`--coddy-glass-panel-bg`**, **`--coddy-glass-panel-backdrop`**, its border and shadow), **`12px`** radius, **`6px 12px`** padding, **12px** type at **1.45** line height in a **78%** text tint. The **12px** on the right is the composer context row's own inset, so the card's **×** stands on the vertical line of the improve-prompt button of the card below - the same 24px control at the same inset from the same edge (pinned by **`composerQueueCss.test.ts`**). It used to be a 6% wash of the text colour, nearly transparent over a dark transcript, so the words scrolling under the queue read through it. The rows stack in **reading order** with a **`4px`** gap: the top card is the one the agent reads first.
 - **The text** clamps to **3 lines** (**`-webkit-line-clamp`**) and wraps on anything (**`overflow-wrap: anywhere`**), so a pasted path cannot widen the composer.
 - **The cross** — **`button.sessions-close.composer-queue-remove`** (**`data-testid="composer-queue-remove-<id>"`**, accessible name **`Remove from the queue`**) is **the app's close control** (see **Close control** below) at **24×24px** with an **8px** radius and a **15px** **×**, in the card's **top-right corner** (**`align-self: flex-start`**). The text carries **3px** of top padding, which centres its first line on the 24px control: a one-line message sits level with its **×** at a **38px** card, a longer one hangs from the same line. Besides it the card holds one more control, the mode; the text itself is not clickable.
 - **The mode** — **`button.composer-queue-mode`** (**`data-testid="composer-queue-mode-<id>"`**) names the message's mode, **Steer** or **After turn**, in the frame the first-use buttons share (the glass panel's border and fill, **8px** radius, **3px 8px** padding), and its title says what a click does; a click switches the mode through **`PATCH /coddy/sessions/{id}/queue/{message_id}`**.
@@ -18916,7 +19210,7 @@ Composer YAML **`models[].model`** selector
 - Default for **new chat** follows cookie **`coddy_llm_model`** when valid, else the alphabetically first YAML row (**`Path=/`**, long **`Max-Age`** on the cookie). The **`default: true`** row of **`GET /v1/models`** (the model a session with no selection runs on) is for API clients and the remote console and does not drive the UI's pick.
 - Opening an existing session restores **Model** from the settings snapshot of **`GET /coddy/sessions/{id}/messages`** (**`settings.model`**, the session's own model; the top-level **`model`** names what a running turn holds), never from the cookie: the cookie and the start page's pick are the default of a new chat only, and shown for an existing session they would ride into it with the next message. Changing **Model** updates the cookie (default for the next **New chat**) and **`PATCH`** **`selectedModelId`** on the active session.
 - For ReAct (**`agent`** / **`plan`** / **`ask`**), the UI sends **`metadata.model`** with the selected YAML **`id`**; the context-meter **`max_context_tokens`** for the ring follows that YAML row.
-- **Long model lists** — backend ids are **`vendor/model`**. When more than one vendor is present the menu groups rows under an uppercase **vendor header** (**`mode-menu-group-label`**) and rows show only the model name (the full id stays in the row **`title`**). On desktop the list is capped to roughly **5 rows** and scrolls (**`mode-menu-scroll`**, **`max-height: min(175px, 50vh)`**). When there are **more than 5** backends a **filter input** (**`mode-menu-filter`**, auto-focused) appears pinned above the scroll; it matches the query against the vendor, the model name, or the full id (case-insensitive). **Enter** selects the first match, **Escape** closes the menu, and an empty result shows a “No models match …” notice. The desktop menu width is constrained (**`mode-menu--llm`**). Helper logic lives in **`chat/llmModelMenu.ts`**.
+- **Long model lists** — backend ids are **`vendor/model`**. When more than one vendor is present the menu groups rows under an uppercase **vendor header** (**`mode-menu-group-label`**) and rows show only the model name (the full id stays in the row **`title`**). The vendors keep the order the configuration names them in, and **inside a vendor the models are sorted by name**, case aside and with numbers compared as numbers (**`orderLlmModels`**: **`gpt-5.6-luna`**, **`gpt-5.10`**, **`gpt-6-astra`**), so a model appended to **`models[]`** later lands where its name puts it instead of at the bottom of its group; the rows, the groups and the row **Enter** picks all come from that one order. On desktop the list is capped to roughly **5 rows** and scrolls (**`mode-menu-scroll`**, **`max-height: min(175px, 50vh)`**). When there are **more than 5** backends a **filter input** (**`mode-menu-filter`**, auto-focused) appears pinned above the scroll; it matches the query against the vendor, the model name, or the full id (case-insensitive). **Enter** selects the first match, **Escape** closes the menu, and an empty result shows a “No models match …” notice. The desktop menu width is constrained (**`mode-menu--llm`**). Helper logic lives in **`chat/llmModelMenu.ts`**.
 - **Stays in step with the configuration** — the list behind this menu is read once, at boot, so a model added while the page is open would otherwise be invisible until a reload. **`GET /coddy/events`** carries **`event: config_reloaded`** after every swap of the live configuration (a settings save here or elsewhere, the agent's **`config_commit`** / **`config_rollback`**, a skill install); **`App.tsx`** bumps **`configEpoch`** on it and re-reads **`GET /v1/models`** together with the slash-command list. The menu changes under the operator without any chrome of its own: no toast, no badge, no reopen. The re-read never moves the current selection of an open session - only a chat with no session yet re-picks its default from the new list.
 - **Mobile sheet** — on narrow/mobile shells (**`isMobileShell`**, the **`max-width: 1199px`** shell-stack breakpoint) the **`Mode`** / **`Model`** / **`Reasoning`** menus render as a **full-width bottom sheet** (**`mode-menu--sheet`**), the same family as the slash / **`@`** picker sheet, over a dimmed scrim (**`mode-menu-backdrop--scrim`**) instead of the cramped anchored dropdown. The sheet drops the desktop width cap (full width up to **560px**, centered) and gives the scroll a taller **`46vh`** cap. Desktop keeps the anchored **`mode-menu--portal`** dropdown.
 - **`Reasoning`** sits immediately next to **`Model`**, shown **only** when the active model row exposes a non-empty **`reasoning_levels`** in **`GET /v1/models`** (reasoning models). Same dropdown styling and **`opens-down`** / **`opens-up`** convention as **`Mode`** / **`Model`**; the button label is the current level capitalized (e.g. **`High`**), default label **`Reasoning`**.
@@ -19067,21 +19361,60 @@ Shown at **`#/swarm`** in any environment that answers **`GET /swarm/info`**, an
 screen** when the environment is a relay itself. It is the only screen a relay has, and the map
 is the screen: there is no list of nodes under it, because everything the list did the map does.
 
-- **Relay as home.** A relay serves no **`/coddy/*`** at all: it holds no sessions, no workspace and
-  no model. **`App.tsx`** tracks this as **`atSwarmRoot`** (the swarm probe answered and the
-  environment is not a node reached *through* a relay). While it is true the composer and
-  **`ChatScreen`** are not rendered, and the rail hides **History** and **Scheduler** - a drawer of
-  sessions that cannot exist is furniture for a room nobody can enter.
-- **The map is the way in.** Clicking a node in the graph connects to it: the app repoints at that
-  node through the relay (**`connectSwarmNode`**) and every ordinary screen - chat, History,
-  Scheduler - then works against it. The attached relay and a node with no route are not
-  clickable. Enter and Space do what a click does, and an enterable node takes a visible focus
-  ring.
-- **Where we are, and how we got there.** **`returnToSwarm`** carries the node last entered back to
-  the relay environment as **`swarmFrom`**, so the map can mark it: that node is drawn as *you are
-  here* and every edge on its route from the attached relay is drawn as the live path, with
-  everything off the route receding. Hovering or focusing another node previews its route the
-  same way, weaker.
+- **Relay as home.** A relay serves no sessions, no workspace and no model - of an agent's API it
+  serves only its own settings (**`/coddy/config*`**, see **The relay's own Settings** under **Settings drawer**). **`App.tsx`**
+  tracks this as **`atSwarmRoot`** (the swarm probe answered and the environment is not a node
+  reached *through* a relay). While it is true the composer and **`ChatScreen`** are not rendered,
+  and the rail hides **History** and **Scheduler** - a drawer of sessions that cannot exist is
+  furniture for a room nobody can enter. The map is the home screen: the **Swarm** entry of the
+  rail stays lit while the map is on screen, whichever address shows it, and the brand, which
+  starts a new chat on an agent, leads to the map (a relay has no chat to start). A relay that
+  serves its own page has no documentation either, so there the rail leaves **Docs** out (the
+  reader reads the page's own server, see **Documentation screen**).
+- **The map is the way in.** Clicking a node in the graph switches the app to it: the app repoints
+  at that node through the relay (**`connectSwarmNode`**, landing on **`#/swarm`**) and the map
+  stays open over it, the node now ringed; every ordinary screen - chat, History, Scheduler,
+  Settings - then works against it, and what to do there is the person's next click. The click
+  does nothing more: not even a node that asks a question opens that session by itself. A relay on
+  the map opens as a relay (**`connectSwarmRelay`**), never as a node whose screens it does not
+  have: one chained under this one opens on its own map through this one's mount, and the relay
+  the map is drawn for is enterable only from a map opened over a node, where a click on it
+  connects to the relay. Where the app already is - the node it is on, the relay on its own map -
+  is not a button: a click there would go nowhere. A node with no route is not clickable either.
+  Enter and Space do what a click does, and an enterable node takes a visible focus ring.
+- **A switch does not blink.** Between two remotes (a node and another node, a node and its relay)
+  the page is not reloaded: **`switchTo`** (**`env/remoteEnv.ts`**) sets the environment and the
+  address and runs what the modules that hold something of the old one registered with
+  **`onEnvironmentSwitch`** (the Settings copy, the server's version, the host shell, the active
+  environment's health), and **`EnvScope`** (**`main.tsx`**) starts **`App`** over, keyed by the
+  events stream's scope (**`serverEventsScope`**: the server and a fingerprint of its token) and
+  the count of switches in place, so the same remote chosen again and a token rotated under the
+  one in use start it over as well. What would otherwise start as "not known yet" and pop in a moment later is
+  kept for the life of the page (**`env/pageMemory.ts`**): the page's own server and its host name,
+  which remotes are relays, whether the scheduler answered, and the last picture of each relay's
+  map, which a remounted map draws at once and then reads again. To or from **Local** the page
+  still reloads, since the sign-in of the page's own origin comes and goes with it.
+- **The map over a node.** Inside a node the **Swarm** entry opens the relay's map over the node
+  without leaving it: the environment stays the node's mount, the map reads the relay directly
+  (**`SwarmView`** **`relay`**, **`swarm/api.ts`** **`RelayTarget`**: the relay's address and the
+  client token the mount takes), and History, Scheduler and the chat stay where they are, so
+  nothing reloads and nothing blinks. History and Scheduler lie under the map in the stack of
+  the rail's screens, so opening either from the rail closes the map rather than opening out of
+  sight under it.
+- **Where we are, and how we got there.** Inside a node the map marks it (**`env.swarmNode`**): it
+  carries a ring, and every edge on its route is drawn as the live path, with everything
+  off the route receding. The ring is the mark: no line of words says it again. On the relay
+  itself (**`rootCurrent`**, the app on the relay's home) the relay's card carries the ring, and
+  the wire from this machine, when the map draws it, is the live path. Hovering or focusing another node previews its route the same way,
+  weaker.
+- **The machine the page runs on.** When the page's own server is an agent (not a relay serving its
+  own page) and the app is on a remote environment, the map draws that machine one tier above the
+  relay, wired to it - it is where the connection starts: a disc with a screen glyph, named by its
+  host name (**`GET /coddy/info`** of the page's server; **Local** when the system reports none),
+  on a tier the spine calls *this machine*. The live route to the node the app is on starts there. A click on it
+  goes back to Local (**`connectLocal`**). Layout: **`layoutTopology(topology, {client})`**
+  (**`swarm/layout.ts`**) lifts every tier of the swarm by one and adds the client and its wire,
+  which leaves the disc below its name and address, not through them.
 - **What the swarm is doing.** **`GET /swarm/sessions`** carries **`turnActive`** and
   **`permissionPending`** per session; **`nodeActivity`** (**`swarm/routes.ts`**, pure and tested)
   folds them per node path. Under each node's meta line: nothing when it holds no sessions,
@@ -19092,6 +19425,11 @@ is the screen: there is no list of nodes under it, because everything the list d
   is driven by that live data and by nothing else, and
   **`@media (prefers-reduced-motion: reduce)`** removes all of it, leaving the states carried by
   the copy and a static ring.
+- **Dock.** The map opens in a dock as wide as the documentation reader's and centred the same way:
+  both take **`width: var(--coddy-dock-width)`**, defined once on **`.shell`** as
+  **`min(1350px, …)`**, and the map fills its dock (**`.swarm-view`** has no width cap of its own),
+  so a wide screen shows no bare strips beside it. Pinned by **`SwarmView.test.tsx`** (**opens in a
+  dock as wide as the documentation reader's**) and **`docsReaderCss.test.ts`**.
 - **Dock on a phone.** Below **1200px** the shell's backdrop rises to **`z-index: 60`** and **`#/swarm`** opens it, so **`.swarm-dock-cluster`** takes **70** there, like the settings drawer and the documentation reader, and starts under the top bar the rail becomes (**`top: calc(var(--coddy-mobile-top-inset) + 6px)`**, the side insets clearing the safe area). Under the backdrop every tap on the map, the search box or a node landed on the backdrop and closed the screen. Pinned by **`SwarmView.test.tsx`** (**takes taps on a phone**) and **`features/swarm_web_ui.feature`**.
 - **Header.** Title (relay name) and a subtitle counting relays, agents and offline nodes, then
   **`.swarm-header-actions`** holding the **`headerSlot`** - **`App.tsx`** passes
@@ -19101,12 +19439,8 @@ is the screen: there is no list of nodes under it, because everything the list d
   known from the stylesheet); hung from the chip alone it ran past the window at 1280 px and hid
   the entries a token is added with. Pinned by **`EnvironmentChip.test.tsx`** and
   **`features/web_ui_menus.feature`**.
-- **The click lands on the question.** Spotting on the map that a box is asking is half the job:
-  clicking a node whose sessions include one waiting on a permission prompt opens *that* session,
-  then one with a turn in flight, freshest first; only a node with neither opens its own home
-  (**`sessionToOpen`** in **`swarm/routes.ts`**, pure and tested). The graph box also scrolls
-  itself to the current node, so a narrow shell opens on the branch you are on rather than on an
-  empty gutter.
+- **The graph box scrolls itself to the current node**, so a narrow shell opens on the branch you
+  are on rather than on an empty gutter.
 - **Search, not filter.** The box goes to the relay, which fans out, so a query reaches machines
   this browser cannot dial. With a query, matching sessions appear as rows under the map, each
   naming its node and route, and a row opens that session on that node. With no query there are
@@ -19118,18 +19452,27 @@ is the screen: there is no list of nodes under it, because everything the list d
 - **The topology graph** is a hand-rolled SVG (**`TopologyGraph.tsx`**, layout in
   **`swarm/layout.ts`**). A relay is a card carrying an accent-filled tile with the router mark; an
   agent is a circle with its name on a chip below. Hops are orthogonal elbows that leave the
-  bottom, turn on a rail shared by the children of one parent, and arrive at the top with an
-  arrowhead; a same-tier link between peers is a bow that leaves and arrives at the sides, with
-  its name at the apex; a link that skips a row goes round the outside in a lane clear of every
-  card. Depth is stated in the left gutter - a dashed upright with a tick, a hop caption and a
-  node count per tier. Every state is said twice, never in colour alone: the route in use is solid
-  with a filled head, a way round a ring is dotted with an open chevron, a link into an offline
-  node is coarsely dashed and dimmed, and a node that dials out carries a badge as well as a
-  dotted wire. Because **`role="img"`** collapses the subtree, the SVG is described by a visually
-  hidden paragraph naming each tier, its nodes, where the app is and what is running; marker ids
-  are **`useId()`**-scoped so two graphs on one page cannot collide. The SVG keeps its intrinsic
+  bottom, turn on a rail shared by the children of one parent, and arrive at the top, with no
+  arrowheads: the tiers say which way a hop runs. A same-tier link between peers is a bow that
+  leaves and arrives at the sides; a link that skips a row goes round the outside in a lane clear
+  of every card. A wire is named (a chip on it) only when the relay reaches the node under a mount
+  name other than the node's own, which the chip under the node already shows. Depth is stated in
+  the left gutter - a dashed upright with a tick, a hop caption and a node count per tier. Every
+  state is said twice, never in colour alone: the route in use is solid, heavier and in the
+  accent, a way round a ring is grey and dashed, a link into an offline node is coarsely dashed and
+  dimmed, and a node that dials out carries a badge as well as a dotted wire. Because
+  **`role="img"`** collapses the subtree, the SVG is described by a visually hidden paragraph
+  naming each tier, its nodes, where the app is and what is running. The SVG keeps its intrinsic
   size and scrolls inside **`.swarm-graph-scroll`** rather than scaling its labels below
   legibility on a phone, and the legend below it wraps instead of setting a minimum width.
+- **Words on the map are for what the drawing cannot say.** Under a node there is a line of words
+  only for trouble - *offline*, *no route* - and on a relay's card, how many links it carries
+  (**N links**, the wire from this machine not counted). The rest is drawn: the card or the disc
+  says relay or agent, the ring where the app is, the badge and the dotted wire a node that dials
+  out, the screen glyph and the tier this machine. With no line of words under a node its work
+  (a session count, *running*, *needs an answer*) takes that line. A hover still spells it all
+  out in the node's tooltip (**`<title>`**: name, what it is, the line, the work). Pinned by
+  **`SwarmView.test.tsx`**.
 
 The relay serves this SPA from its own address when built with **`-tags "swarm ui"`**
 (**`external/swarm/spa_ui.go`**), so a relay is something you open in a browser rather than a
@@ -19137,7 +19480,9 @@ service you reach through some other node's UI.
 
 ### Documentation screen (`ui/docs/DocsView.tsx`)
 
-Coddy's own documentation, read out of the binary (**`GET /coddy/docs*`**), at **`#/docs/<page>#<section>`**. It is a reading surface, so it takes the swarm screen's glass dock (**`.docs-dock-cluster`**, the same fixed inset, radius, border, tint and blur as **`.swarm-dock-cluster`**) and reuses the app's controls rather than drawing its own. Unlike the swarm map it is a **sheet**, not a floor: it grows no wider than its three columns (**1350px**: 240 + 780 + 210, two 32px gaps, 28px either side) and stays centred in the space right of the rail (**`width: min(1350px, ...)`** with **`margin-inline: auto`**), so a wide window neither frames the page in empty glass nor pushes the outline away from the text (**`docsReaderCss.test.ts`**). The sheet does not scroll: the header stays put and the page scrolls in the body under it (**`.docs-body`**, **`overflow: auto`**, a size container), so the sheet's scrollbar starts below the search box instead of running up beside it. Reference capture: **`docs/assets/built-in-docs/reader-page-dark-1280.png`**.
+Coddy's own documentation, read out of the binary (**`GET /coddy/docs*`**), at **`#/docs/<page>#<section>`**. It is a reading surface, so it takes the swarm screen's glass dock (**`.docs-dock-cluster`**, the same fixed inset, radius, border, tint and blur as **`.swarm-dock-cluster`**) and reuses the app's controls rather than drawing its own. It is a **sheet**, not a floor: it grows no wider than its three columns (**1350px**: 240 + 780 + 210, two 32px gaps, 28px either side) and stays centred in the space right of the rail (**`width: var(--coddy-dock-width)`**, **`min(1350px, ...)`** defined once on **`.shell`** and shared with the swarm map's dock, with **`margin-inline: auto`**), so a wide window neither frames the page in empty glass nor pushes the outline away from the text (**`docsReaderCss.test.ts`**).
+
+**The pages come from the page's own server**, whatever environment the app is on: **`docs/api.ts`** reads them with **`localFetch`**, past the **`fetch`** shim, because the documentation a person reads is the one of the Coddy they opened, and a relay serves none (it answers only its own routes). A node reached through a relay still serves its pages, for the agent's **`@coddy:`** mentions there. On a relay's own page (the relay serving the SPA from its root) the rail has no **Docs** entry, since there is nothing to read. The sheet does not scroll: the header stays put and the page scrolls in the body under it (**`.docs-body`**, **`overflow: auto`**, a size container), so the sheet's scrollbar starts below the search box instead of running up beside it. Reference capture: **`docs/assets/built-in-docs/reader-page-dark-1280.png`**.
 
 - **Header** (**`.docs-header`**) is laid on the columns of the page (the same **`grid-template-columns`** and **32px** gap as the layout, areas **title search actions**): the title over the contents, the search over the text and as wide as it (at most **780px**), the actions over the outline. The actions take the outline's own column, not one as wide as themselves: with an **`auto`** column (160px in English, 182px in Russian, against the outline's 210px) the search column grew by the difference and the box ran on into **On this page**. Only the body scrolls, so a classic scrollbar (10px on Linux, none with overlay scrollbars) narrows the body's columns and not the header's; **`DocsView`** measures it (**`offsetWidth - clientWidth`** of **`.docs-body`**, on a **`ResizeObserver`** of the body and the layout, since the scrollbar comes and goes with the page's height) into **`--docs-scrollbar`**, and the header adds that much to its right padding, so the search ends exactly where the text does at every width (**`docsReaderCss.test.ts`**, **`DocsView.test.tsx`**). Between **1200px** and **1279px**, where the outline is gone, the actions go back to an **`auto`** column. The title **Documentation** is spelled like the head of every other panel (**`.sessions-head`** of History, Scheduler and Tasks: **12px**, **700**, uppercase, **0.06em** tracking, a **72%** text tint), with the version alone in **11px** at **52%** under it (where the pages come from is not news on this screen). The actions are **Ask the agent** (**`.docs-ask`**, a **999px** pill **30px** tall - the height of the close control beside it, as every row of controls keeps one height - on a **16%** accent plate with a **45%** accent border, the accent's own action because it starts a conversation; the longer explanation is its **`title`**) and the shared close control **`.sessions-close`** - never a bare glyph. The header sits on an **82%** canvas plate with a **6%** hairline under it, outside what scrolls. On the stacked shell it becomes two rows: the title with the actions, then the search under them, across the whole sheet, as the page below it is (**`docsReaderCss.test.ts`**).
 - **Three columns** from **1280px**: the contents (**240px**), the page (a reading measure of at most **780px**), **On this page** (**210px**); below **1280px** the outline goes, below **1200px** (the stacked shell) the contents fold into a **Contents** button with **`<Chevron pointing="down">`** above the page, and the page has the sheet to itself: the **780px** reading measure is the desktop's, and on a tablet it only left an empty strip beside the text and the search, so there the search, the **Contents** button and the page stretch across the sheet (**`.docs-article`** and **`.docs-header-search`** at **`max-width: none`**). **On this page** never leaves: where it has no room beside the page it folds into a second button under **Contents** (**`.docs-outline-toggle`**, the same frame, **`<Chevron pointing="down">`**, the list under it on **`.is-open`**, closed again by a section link and by a page change), the column's areas being **toc** / **outline** / **page**. **From 900px** on the stacked shell (a row of the grid's component table) it stands beside the page instead, sticky as on the desktop: **`minmax(0, 1fr) minmax(190px, 210px)`** with the areas **toc outline** / **page outline**, the page taking the rest of the width and the outline at least **190px**, which the header's actions need in Russian; the contents stay folded above the page. Below **900px** the page would drop under about 600px beside it. Both side columns are sticky at the top of the body (**18px**, as tall as the body less that gap at either end: **`calc(100cqh - 2 * var(--docs-top))`**), scroll on their own with the thin scrollbars of Settings, and pad themselves by **3px** so a focus ring is never clipped.
@@ -19632,7 +19977,8 @@ Short map for automation-friendly contributors.
 | `external/ui` | Embedded SPA (`go:embed`) when built with **`tags=http,ui`**. A long conversation is a sliding window: the newest page first, older pages as the reader scrolls up, a bounded slice of rows in the DOM (**`chat/TranscriptList.tsx`**, **`useTranscriptWindow`**; **`DESIGN.md`**, *Transcript window*); **`npm run check:transcript`** measures it in a real browser against the binary. |
 | `external/memory` | Long-term memory (**`-tags memory`**): the memory subagent's prompt template, task and tool set (**`agent.go`**), the note storage and the six **`coddy_memory_*`** tools. The run itself is launched by **`internal/agent/memory_hooks.go`** as a system child in the task pool (bookkeeping in **`memory_run.go`**, untagged): one run per user turn, a bounded wait for its report, delivery in the turn context block after the history (never the system message, so the provider's prompt cache holds), retention of finished runs. See README there and **`docs/features/memory.md`**. |
 | `external/cli` | Interactive console TUI (**`-tags cli`**): bare **`coddy`** on a terminal, pi-style rendering in **`external/cli/tui`**. Guide: **`docs/surfaces/console.md`**. |
-| `external/swarm` | The relay **`coddy serve`** runs under **`swarm.enable`**, built with **`tags=swarm`** (part of **`FULL_TAGS`**, so the release binaries, image and packages carry it): the stateless relay - lease registry, per-node mount, aggregated sessions, ring-aware topology, and the reverse HTTP/2 tunnel for nodes that can only dial out. Shared vocabulary and the join client live untagged in **`internal/swarm`**, so **`coddy serve`** can join a relay without the tag. Guide: **`docs/operate/swarm.md`**. |
+| `external/swarm` | The relay **`coddy serve`** runs under **`swarm.enable`**, built with **`tags=swarm`** (part of **`FULL_TAGS`**, so the release binaries, image and packages carry it): the stateless relay - lease registry, per-node mount, aggregated sessions, ring-aware topology, and the reverse HTTP/2 tunnel for nodes that can only dial out - plus the relay's own settings (**`settings.go`**: **`/coddy/config*`** over **`internal/configapi`** with the relay's form, **`config.RelayUISchemaJSON`**, the document scoped to **`swarm`** and **`logger`** so a relay client neither reads nor writes the rest of the host's configuration, and a write through a mount refused when the node behind it is itself a relay). It serves nothing else of an agent: no **`/v1`**, no sessions, no documentation. **`Server.Close`** ends the tunnels, so a relay rebuilt on a config reload is dialled again. Shared vocabulary and the join client live untagged in **`internal/swarm`**, so **`coddy serve`** can join a relay without the tag. Guide: **`docs/operate/swarm.md`**. |
+| `internal/configapi` | The settings editor's four routes (**`GET /coddy/config/schema`**, **`GET`** / **`PUT /coddy/config`**, **`POST /coddy/config/validate`**) over a **`Backend`** - the live configuration, how a new one is installed, which schema and document decoration go with it - so the HTTP server and the swarm relay share one PUT transaction under **`config.WithConfigFileLock`**, **`Sections`** to serve and take only some top-level sections (the relay's), and **`Revisions`**, the last 32 configurations a process served, which a **`PUT`** is measured against. Untagged. |
 | `external/gateway` | Messenger gateway (**`-tags gateway.telegram`** or **`-tags gateway`**), started by **`coddy serve`** under **`gateways.telegram.enable`**: Telegram bot adapter, session store, proxy support. Chat turns run through the shared manager and are mirrored into the HTTP relay, so a conversation is live in the web UI; what the messenger needs is said twice and kept out of the transcript both times - a system prompt block for the turn (**`prompt.go`**, carried by **`session.PromptRunOpts.SurfaceSystemPrompt`**) and the outbound rendering of the answer (**`markdown.go`**); the poller stops intake before generation on shutdown, so a restart from a settings change does not truncate an answer. Full guide: **`docs/surfaces/gateway.md`**, rules: **`.cursor/rules/gateway.mdc`**. |
 | `internal/tgfake`, `cmd/tgfake` | The offline stand for the Telegram gateway: a fake Bot API server (every method the adapter calls, long-polled `getUpdates`, the `/sim/*` injection API, a chat page) plus **`llmstub`**, a scripted OpenAI-compatible model behind **`--llm`**. Untagged and free of Telegram library types, so the gateway's tests run it on httptest (**`features/gateway_telegram_polling.feature`**) and **`go run ./cmd/tgfake --llm`** serves it on a port; **`coddy serve`** is pointed at it with **`CODDY_TELEGRAM_API_BASE`** (**`config.TelegramAPIBaseEnv`**, honoured by the bot and the **`--dry-run`** probe alike). Runner: **`examples/gateway/tg_e2e_offline.sh`**. Guide: **`docs/surfaces/gateway.md`** (Debugging against a fake Bot API). |
 | `packaging` | Distribution package sources: the **nfpm** recipe (**`nfpm.yaml`**) for the Linux **`.deb`** and **`.rpm`**, the **systemd user unit** (**`systemd/coddy.service`**, installed and not enabled, rendered by **`serve.PackagedUnitFile()`** and held to it by a test), the Homebrew **cask** template (**`homebrew/coddy.rb.tmpl`**, prebuilt macOS archives) and **formula** template (**`homebrew/coddy-formula.rb.tmpl`**, built from source - the artefact **homebrew/core** takes), the man page (**`man/coddy.1`**), bash and zsh completions, and the maintainer scripts (**`scripts/postinstall.sh`**, **`scripts/preremove.sh`**: what the user has to do next, the unit not enabled included). The package enables nothing and creates **no system service, system account or `/etc` files**; Coddy's state lives in the invoking user's **`~/.coddy`**, and **`coddy serve install`** (**`internal/serve/systemd.go`**) enables the unit for one account, or writes one under **`~/.config/systemd/user`** for a binary the install script put in place. Built by **`scripts/build-packages.sh`**, **`scripts/build-homebrew-cask.sh`** and **`scripts/build-homebrew-formula.sh`** (**`make deb`**, **`make rpm`**, **`make brew`**, **`make brew-formula`**); **`scripts/check-homebrew-submission.sh`** (**`make brew-check`**) is the preflight for the homebrew/core submission. Guides: **`docs/getting-started/install.md`**, **`docs/getting-started/homebrew.md`** (which Homebrew repository takes what, and the submission path), **`docs/contributing/build.md`** (Distribution packages), **`docs/getting-started/update.md`** (installations owned by a package manager). |
