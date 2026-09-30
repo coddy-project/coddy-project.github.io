@@ -8410,6 +8410,8 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/op
 
 Coddy executes what the model decides on the machine it runs on, with the rights of the user who started it. This page gathers in one place what bounds that: the permission gate and the modes, the trust receipts for files that arrive with a checkout, where secrets live and where they are redacted, what the HTTP, Telegram and swarm surfaces expose, hooks as a policy layer, the loop guards, and what is not sandboxed at all. Each section points at the page that carries the detail.
 
+For the repository's own AppSec posture — trivy and semgrep run locally and in CI, the severity gate and triage — see [AppSec scanning](../contributing/security-scanning.md).
+
 ## What is not sandboxed
 
 There is no kernel-level sandbox. `run_command` runs through the host shell as the user who started Coddy, and the file tools read and write with that user's rights; a permission prompt, a mode or a hook decides whether a call runs, not what the process could reach if it did. The isolation Coddy is designed for is the container: the binary is static and distroless-friendly, so it fits a `scratch` or `distroless` image with a read-only root filesystem, a mounted workspace and the orchestrator's limits (the published image runs `coddy serve -H 0.0.0.0` on port 12345; see [Docker](../getting-started/docker.md)). Outside a container, bound to loopback in `ask` mode, the boundary is the person answering the prompts.
@@ -13886,6 +13888,8 @@ None of these is read by a released binary. They exist for contributors and are 
 | `GO_WANT_MCP_HELPER`, `GO_WANT_MCP_MARKER`, `GO_WANT_TRUST_MARKER`, `GO_WANT_CONFIG_RELOAD_MCP`, `CODDY_MCP_MARKER_FILE`, `MCP_HELPER_TOKEN`, `TRUST_MARKER_FILE` | MCP and trust tests in `internal/mcp`, `internal/session` and `external/httpserver` | Make a test binary re-execute itself as a stub MCP server and report where it ran. | the test files |
 | `CODDY_TEST_DOTENV_A`, `CODDY_TEST_DOTENV_B`, `CODDY_TEST_DOTENV_C`, `CODDY_EXPAND_TEST`, `CODDY_CHECK_TEST_PORT` | `internal/config` tests | Fixtures for the `.env` loader, the `${VAR}` expansion and the `-t` check. | the test files |
 | `CODDY_TEST_HOME`, `CODDY_TEST_WORKSPACE`, `CODDY_TEST_SESSIONS_ROOT`, `CODDY_TEST_SKILLS_DIR`, `CODDY_TEST_PREFERRED_SESSION_ID`, `CODDY_TEST_ACP_HELPER`, `CODDY_TEST_MCP_HELPER`, `CODDY_TEST_HTTP_SETTINGS_MCP_HELPER`, `CODDY_TEST_SLOW_MCP_STARTED`, `CODDY_PROJECT_MCP_STARTED` | the BDD harnesses and stub helpers under `cmd/coddy`, `internal/agent`, `internal/mcp` and `external/httpserver` | Point a test binary that re-executes itself at the temporary home, workspace and session root of the scenario, and let a stub MCP server report that it started. | the test files |
+| `SEC_SCANNERS`, `SEC_FAIL_TRIVY`, `SEC_FAIL_SEMGREP`, `SEC_DOCKER`, `SEMGREP_CONFIGS` | `scripts/security-scan.sh` | Which AppSec scanners `make security` runs, where the severity gate stands (`CRITICAL` for trivy vulnerability/secret findings, off for semgrep), whether the pinned docker fallback is allowed, and which registry packs semgrep loads. | [AppSec scanning](../contributing/security-scanning.md) |
+| `SEMGREP_APP_TOKEN` | `scripts/security-scan.sh`, passed to semgrep | Optional Semgrep registry token: lifts anonymous rate limits and enables Pro rules. Fork pull requests never see it. | [AppSec scanning](../contributing/security-scanning.md) |
 
 
 # Reference / Slash commands
@@ -17614,6 +17618,16 @@ Tags match the full feature set: **`http`**, **`ui`**, **`scheduler`**, **`memor
 gh workflow run "Release binaries" --ref X.Y.Z -f tag=X.Y.Z
 ```
 
+## AppSec scan
+
+**`make security`** runs the project's security gate over the checkout — trivy
+(dependency vulnerabilities, secrets; misconfig report-only) and semgrep (SAST)
+— with the same versions and thresholds the
+[**Security scan**](../../.github/workflows/security.yaml) workflow uses on
+pull requests. **`make sec-report`** scans without failing on findings. Reports
+land in **`dist/security/`**. Runner, gate knobs and triage:
+[AppSec scanning](security-scanning.md).
+
 ## **`go install` from upstream**
 
 ```bash
@@ -17621,6 +17635,130 @@ go install github.com/EvilFreelancer/coddy-agent/cmd/coddy@latest
 ```
 
 That compiles whatever the module default is **without** your local **`TAGS`**. For a known set of features (HTTP, UI, scheduler, memory, console, messenger gateway), clone the repo and use **`make build TAGS="http ui scheduler memory cli gateway swarm"`** (or **`go build -tags=...`** as above).
+
+
+# Contributing / AppSec scanning
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/contributing/security-scanning.md
+
+# AppSec scanning
+
+*How the open-source scanners (trivy, semgrep) run locally and in CI, where the
+reports land, how to read them and how the gate is tightened. For the agent's
+own security model — what it may execute, permission modes, project trust —
+see [Security and trust](../operate/security.md).*
+
+Issue [#374](https://github.com/coddy-project/coddy-agent/issues/374) asked
+for open-source AppSec scanners on the repository. One script is the only
+place they are invoked, so a finding that fails the pipeline reproduces on a
+developer machine with one command:
+
+```bash
+make security      # both scanners, the CI gate behaviour
+make sec-trivy     # trivy only
+make sec-semgrep   # semgrep only
+make sec-report    # both, gate off — findings never fail, errors still do
+```
+
+Each target is a thin `SEC_*` wrapper around `scripts/security-scan.sh`; call
+the script directly when you need a combination the targets do not name.
+
+## What runs
+
+- **trivy** — filesystem scan of the checkout: dependency vulnerabilities
+  (`go.mod`, `package-lock.json`, …), secrets, and IaC misconfigurations
+  (the Dockerfile). Misconfig findings are collected but sit **outside the
+  gate** — they are policy questions, not vulnerabilities.
+- **semgrep** — SAST with the registry packs in `SEMGREP_CONFIGS`
+  (default `p/golang p/typescript`). Report-only for now: the backlog is
+  large enough that gating on day one would block every pull request.
+
+## Runner and versions
+
+A scanner binary on `PATH` is used when present; otherwise the pinned docker
+image runs (`aquasec/trivy`, `semgrep/semgrep`, `tag@sha256:` constants at the
+top of `scripts/security-scan.sh`). `SEC_DOCKER=0` forbids the fallback, for
+machines where docker is off-limits.
+
+To bump a scanner: pull the new image, take its digest
+(`docker images --digests`), update the constant, run `make security` and
+compare the summary with the previous one — a rule or DB update can change
+findings without a commit, so bumps are their own small pull requests.
+
+## Reports
+
+Everything lands in `dist/security/` (gitignored):
+
+- `trivy.json`, `semgrep.json` — full findings, all severities
+- `trivy.sarif`, `semgrep.sarif` — for GitHub code scanning; the trivy SARIF
+  excludes secrets because code scanning persists the matched text
+- `summary.md` — severity counts, what the CI job summary shows
+- `.cache/` — scanner caches so repeat runs stay fast
+
+## The gate
+
+Report and gate are separate: the scan always writes the full report, then
+the script counts severities from the JSON and decides the exit code.
+
+| Knob | Values | Default | Meaning |
+|---|---|---|---|
+| `SEC_FAIL_TRIVY` | `UNKNOWN\|LOW\|MEDIUM\|HIGH\|CRITICAL\|off` | `CRITICAL` | Fail on vulnerability/secret findings at or above the level |
+| `SEC_FAIL_SEMGREP` | `ERROR\|WARNING\|INFO\|off` | `off` | Same, in semgrep's own severity vocabulary |
+| `SEC_SCANNERS` | `trivy`, `semgrep`, `trivy,semgrep` | both | Which scanners run |
+| `SEMGREP_CONFIGS` | space-separated `--config` values | `p/golang p/typescript` | Registry packs (floating aliases — findings may shift on rule updates) |
+| `SEMGREP_APP_TOKEN` | token | unset | Optional; lifts registry rate limits and enables Pro rules. Fork pull requests never see it — the job stays report-only there by design |
+| `SEC_DOCKER` | `0\|1` | `1` | Allow the docker fallback |
+
+An unknown knob value, a missing tool, dead docker or a crashed scan is an
+operational error and fails the run — including under `sec-report`, where
+only *findings* are forgiven.
+
+The vuln database itself is not pinned: local and CI agree exactly only when
+they resolve the same DB state, so re-run locally before blaming a CI
+failure on the environment.
+
+## Triage and suppression
+
+- **`.trivyignore.yaml`** — accepted CVE/misconfig findings, each entry with
+  a `statement` and an `expired_at` date so the list rots instead of
+  pardoning new issues forever.
+- **`trivy.yaml`** — `scan.skip-dirs` for paths a fresh checkout does not
+  hold (`node_modules`, `dist`, …). Trivy does not honor `.gitignore`;
+  without this a local scan walks trees CI never sees. Secret-rule suppressions
+  are supported but use the same expiry and written justification as an
+  accepted CVE; prefer a `skip-dirs`/`skip-files` rule or a fix when possible.
+- **`.semgrepignore`** — kept minimal (`.venv`); semgrep honors `.gitignore`
+  on its own. Inline suppression is `// nosemgrep` (Go/TS) or
+  `# nosemgrep` (YAML/shell), always with a justification comment.
+- Test fixtures carry deliberately fake credentials (`sk-test`, PEM blocks
+  in `pictures_test.go`, stub keys in `examples/`). They are expected
+  findings; accept them via the ignore files above rather than "fixing" the
+  fixture.
+
+## CI: `.github/workflows/security.yaml`
+
+Pull requests, pushes to `main`, a weekly Monday cron, and manual dispatch.
+The job calls `make security`, uploads both SARIF files to code scanning
+(distinct `category` values), attaches `dist/security/` as an artifact, and
+prints the severity summary into the job summary even when the gate fails.
+
+Fork pull requests are scanned and gated normally, but their SARIF upload is
+skipped — a fork token cannot write `security-events`, and untrusted code
+must never push findings into this repository's code-scanning history. The
+artifact still carries the findings for maintainers. The workflow's job
+(`AppSec scanners`) should be marked required in branch protection for the
+gate to block merges.
+
+## Ratcheting
+
+The gate is meant to tighten as the backlog burns down, each step its own
+pull request with its own triage:
+
+1. `SEC_FAIL_TRIVY=CRITICAL` ← now
+2. `SEC_FAIL_TRIVY=HIGH`
+3. `SEC_FAIL_SEMGREP=ERROR`, then `WARNING`
+4. bring `misconfig` and wider semgrep packs (`p/bash`, `p/yaml`,
+   `p/dockerfile`, `p/react`) under the gate once their findings are triaged
 
 
 # Contributing / Custom tools
@@ -20268,6 +20406,7 @@ Swagger lives at **`/docs/`**, OpenAPI YAML at **`/openapi.yaml`**.
 A git **`pre-commit`** hook runs the linter before every commit, so nothing lands with lint errors. It is the single enforcement point for humans and coding agents alike. Tests are **opt-in** on commit: **`make test`** (the express run: the SPA's vitest suite, then every optional module compiled in once) belongs before the push, and the per-combination tag matrix (**`make test-matrix`**) runs on GitHub Actions for every pull request, as does **`make test-race`**: the race detector over the whole tree with every tag but `ui`, clean in every package. Run it before the push when a change touches goroutines, locks or a test harness that drives a live loop. Two groups run on their own: **`make test-cache`** (the **`features/prompt_cache_*.feature`** specs and the **`TestPromptCache*`** tests, part of `make test`: what each request sends the provider, byte for byte across a session - run it when a change touches the system prompt, the rules, the history or the send boundary) and **`make test-perf`** (the benchmarks of the **`perf_test.go`** files, never part of `make test`: timings and the context a session costs, as token metrics).
 
 - Enable once per clone: **`make hooks`** (sets **`core.hooksPath=.githooks`**; this is local config and is not committed, so every clone runs it once).
+- AppSec scanning is **opt-in** the same way: **`make security`** (trivy + semgrep over the checkout, docker fallback when the binaries are absent) is what `.github/workflows/security.yaml` runs on pull requests, pushes to main and a weekly cron; **`make sec-report`** scans without failing on findings. Reports and the severity summary land in **`dist/security/`**; the gate knobs (`SEC_FAIL_TRIVY`, `SEC_FAIL_SEMGREP`, `SEC_DOCKER`, `SEMGREP_CONFIGS`) and the triage workflow (`.trivyignore.yaml`, `trivy.yaml` skip-dirs, `nosemgrep`) are in **`docs/contributing/security-scanning.md`**.
 - On commit, **`.githooks/pre-commit`** calls **`scripts/checks.sh`**, which runs **`make lint`** by default: `golangci-lint` over the untagged tree, over every tag but `ui` and over the shipped tag set, so every Go file of the host platform is compiled once, then `tsc --noEmit` over the SPA sources (**`make ui-typecheck`**). Commits touching only non-code files (docs, etc.) skip the gate.
 - Scope knobs: **`CODDY_HOOK_TESTS=fast`** also runs a quick **`go test ./...`**, **`CODDY_HOOK_TESTS=full`** the express **`make test`**, **`CODDY_HOOK_TESTS=matrix`** every tag combination; **`CODDY_HOOK_LINT=0`** skips the linter; **`CODDY_HOOK_SKIP=1`** bypasses everything.
 - Emergency bypass for a single commit: **`git commit --no-verify`**.
