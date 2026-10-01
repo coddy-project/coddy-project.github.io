@@ -8805,6 +8805,8 @@ Set `model` to a configured, inexpensive `models[].model` when one is available.
 
 Every automatic continuation appears as its own row in the transcript and counts toward the saved goal's continuation count. If the limit is exhausted, Coddy stops the turn and reports what remains. `/goal <text>` starts a fresh objective and count; `/goal clear` ends supervision for that goal. The existing per-request retry limits, ReAct loop guard and user Stop control still apply.
 
+If you send a queued message while the supervisor is checking or recovering a turn, Coddy handles that message before starting an automatic continuation. This lets a queued `/goal clear` stop the objective promptly.
+
 
 # Features / Sessions
 
