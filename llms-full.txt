@@ -9229,7 +9229,7 @@ than pointing at a directory that does not exist.
 | Skill | What it does |
 |-------|--------------|
 | **`/configure-coddy`** | Changes Coddy's own configuration when you ask: settings, providers, models, logging, permissions, MCP servers and skills. Verifies the upstream source, stages uci-style edits with the typed `config_get` / `config_set` tools, and commits only after you confirm, so `config_commit` applies and hot-reloads them in one step; `config_rollback` returns to the pre-commit snapshot. Never echoes secrets. |
-| **`/crossreview`** | Fans a code review out to a quorum of reviewers - external console code agents (claude, codex, coddy, opencode, cursor, devin, koda) and internal `explore` children - through the bundled `crossreview` subagent, then merges the findings into one verdict. First run detects the installed CLIs and asks which agents and models to use; the roster is kept in `${CODDY_HOME}/crossreview.json`. |
+| **`/crossreview`** | Sends one review brief to a quorum of reviewers that stay blind to each other - external console code agents (Claude Code, Codex, Coddy, Cursor Agent, Devin, OpenCode, Gemini CLI, Qwen Code, Kimi, Koda) and internal `explore` children - through the bundled `crossreview` coordinator, which collects every answer, verifies each finding against the code and decides alone what to fix. The first run (and `/crossreview:setup` later) detects the installed CLIs, asks which agents and which of their models to use, and keeps the roster either for the project in `.coddy/crossreview.json` or for all projects in `${CODDY_HOME}/crossreview.json`, where earlier versions kept it too. The same skill installs in other agents from [EvilFreelancer/crossreview](https://github.com/EvilFreelancer/crossreview). |
 | **`/rpa-init`** | Warms up context on a repository: reads the code, the documentation and the test code, sets up the dev environment the project documents, runs the tests, and writes a short report. Needs no brief. |
 | **`/rpa-feat`** | Adds a feature strictly by BDD: plan, failing tests, implementation, green tests, the full suite, documentation and examples, the linter at the end. Needs a description of what to build. |
 | **`/rpa-bugfix`** | Fixes a bug reproduction-test first, then the fix, then the full suite, then a short report. Needs the bug: expected against actual, and how to reproduce it. |
@@ -9256,12 +9256,14 @@ every skill you had deleted. Replacing a skill renames the old copy aside and th
 place; a process killed between the two leaves a backup and no skill, and the next run puts it back.
 
 A home Coddy cannot write to - a read-only image, a locked-down account - is not an error: the
-copies inside the binary answer instead, read-only, and only a skill whose `references/` it needs
-notices the difference. A delivered skill you deleted is not among them: the receipt says it was
+copies inside the binary answer instead, read-only, and only a skill that needs the files beside
+its `SKILL.md` (`references/`, or the `scripts/` of `crossreview`) notices the difference. A delivered skill you deleted is not among them: the receipt says it was
 handed over, so the binary does not offer it again as one you cannot delete.
 
-The `rpa-*` skills live in their own repositories and are vendored into `internal/skills/bundled/`
-by **`make skills-vendor`**; `scripts/bundled-skills.json` says where each one comes from.
+`crossreview` and the `rpa-*` skills live in their own repositories, so the same skill works in
+Claude Code, Codex or Cursor, and are vendored into `internal/skills/bundled/` (their `SKILL.md`,
+`references/` and `scripts/`) by **`make skills-vendor`**; `scripts/bundled-skills.json` says where
+each one comes from.
 
 ### The marketplace that comes with it
 
@@ -9681,6 +9683,8 @@ On each `session/prompt` the agent:
 
 A body the model loads itself with the `load_skill` tool (offered while `skills.auto_discovery` is on) comes back as the result of that call and stays in session history like any other tool result.
 
+Either way, a skill that is a folder on disk arrives headed by one line, `Skill directory: <path>`, the folder its `SKILL.md` was read from. A skill names its own files - `scripts/`, `references/` - by relative path, and without the line a model has to search the disk for them. A skill of the standard delivery that is read out of the binary (when `skills.dirs` does not list `${CODDY_HOME}/skills`) is pointed at the copy the delivery wrote there; with no such copy on disk there is no line.
+
 ACP clients receive `available_commands_update` after `session/new` and `session/load`. The HTTP UI queries `GET /coddy/slash-commands` for autocomplete.
 
 ---
@@ -9779,7 +9783,7 @@ Three definitions ship embedded so delegation works before the operator writes a
 
 - **`general`** - a general-purpose worker with the **parent's tool set** (no `tools` restriction of its own), for multi-step tasks, research, or independent units of work that can run in parallel. Its role tells it to read before changing anything, keep edits minimal, verify when the task calls for it, never retry a permission the operator did not grant, and report what it did and what the parent must still decide.
 - **`explore`** - a read-only explorer for locating files, symbols and usages and gathering evidence before changes are proposed. Its tool list is exactly `read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `load_skill`, `coddy_docs_search`, `coddy_docs_read`, `background_list`, `background_output`, `background_wait`: no `run_command`, no writes, no MCP tools. Plan mode alone would not be read-only (it still offers the shell), which is why the list is spelled out. Because nothing in that set is an MCP tool, an `explore` child never dials an MCP server.
-- **`crossreview`** - a `hidden` orchestrator that fans a code review out to external code-agent CLIs (`run_command` background tasks) and internal `explore` children, then merges the findings into one verdict. It is the reason `spawns` exists: its definition declares `spawns: [explore]`, so it keeps `spawn_agent` at the depth cap and delegates to exactly that one reviewer kind. A session reaches it through the bundled `/crossreview` skill, which handles detection, the agent and model questions and the reviewer roster.
+- **`crossreview`** - a `hidden` orchestrator that sends one review brief to external code-agent CLIs (`run_command` background tasks) and internal `explore` children, keeps them blind to each other, waits for every answer, verifies each finding against the code and decides alone what to fix, what is not worth fixing and what to reject; its report is the final word the parent relays. It is the reason `spawns` exists: its definition declares `spawns: [explore]`, so it keeps `spawn_agent` at the depth cap and delegates to exactly that one reviewer kind. A session reaches it through the bundled `/crossreview` skill, which handles detection, the agent and model questions, the reviewer roster and the brief.
 
 ## Scopes and project trust
 
