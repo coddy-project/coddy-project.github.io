@@ -28,6 +28,7 @@ Every page below is the Markdown kept in the repository, read straight from the 
 - [Web UI](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/surfaces/web-ui.md): The embedded single-page app served by coddy serve, with sessions, the composer, modes and models, attachments, settings, themes and languages. (docs/surfaces/web-ui.md)
 - [Editors (ACP)](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/surfaces/editors.md): Zed, VS Code, Obsidian and scripts as ACP clients of coddy acp, and what they share with the other surfaces. (docs/surfaces/editors.md)
 - [Telegram gateway](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/surfaces/gateway.md): The Telegram bot adapter, setup, access levels, session isolation, rich messages, the same chat live in the browser, writing a new adapter. (docs/surfaces/gateway.md)
+- [Pachca gateway](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/surfaces/pachca.md): The Pachca (Пачка) integration bot, setup in the workspace, the events history poll, groups, threads and direct chats, commands, limits. (docs/surfaces/pachca.md)
 
 ## Operate
 

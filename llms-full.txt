@@ -5087,7 +5087,7 @@ Session title
 *The reasoning level dropdown in the composer, levels fetched from the provider*
 
 - A **Reasoning** selector appears in the composer next to **Model** **only** when the active model exposes **`reasoning_levels`** from **`GET /v1/models`** (reasoning models such as gpt-5 / o-series / Claude thinking models). Levels are derived from **`models[].reasoning_levels`** (auto-detected from the model id when unset) and propagated through **`ModelInfo.reasoningLevels`** → **`llmReasoningLevels`** in **`App.tsx`** → **`Composer`**.
-- **New chat** defaults the level from cookie **`coddy_llm_reasoning`**, then the model's **`reasoning_default`**, then **`medium`** (or the first offered level). **Opening a session** restores it from the snapshot's **`settings.reasoning`**, never from the cookie; a session running with thinking off shows **Off** (the snapshot's **`reasoningChoices`** name **`off`** where the provider has the switch), and a session with no level of its own on a model with no **`reasoning_default`** shows **`medium`** or the first level, on entering and after every later snapshot, without sending it until a level is picked. The menu offers **Off** for a session whose snapshot names it. Switching to a model that does not offer the current level clamps it to a valid one (see **`pickReasoningLevel`** in **`chat/reasoningSelection.ts`**).
+- **New chat** defaults the level from cookie **`coddy_llm_reasoning`**, then the model's **`reasoning_default`**, then **`medium`** (or the first offered level). **Opening a session** restores it from the snapshot's **`settings.reasoning`**, never from the cookie; a session running with thinking off shows **Off** when its logical model enabled **`allow_reasoning_off: true`**, and a session with no level of its own on a model with no **`reasoning_default`** shows **`medium`** or the first level, on entering and after every later snapshot, without sending it until a level is picked. The menu offers **Off** for a session whose snapshot names it. Switching to a model that does not offer the current level clamps it to a valid one (see **`pickReasoningLevel`** in **`chat/reasoningSelection.ts`).
 - Changing the level writes the cookie and **`PATCH`** **`selectedReasoning`** on the active session; ReAct turns also send **`metadata.reasoning`** on **`POST /v1/responses`** so a brand-new session applies it on the first turn.
 
 ### Session settings: permission chip, turn overrides, live mirror
@@ -6496,7 +6496,7 @@ Everything an editor renders about Coddy comes out of the protocol, so every cli
 |---|---|
 | Mode selector (`agent`, `plan`, `ask`) | the `mode` config option of `session/new` and `session/load` (plus the legacy `modes` field); changed with `session/set_config_option` or `session/set_mode` |
 | Model selector | the `model` config option, one row per `models[].model` in `config.yaml`, default `agent.model`; absent when the list is empty |
-| Reasoning or thinking control | the `reasoning` config option in the `thought_level` category, with the levels the session's model offers (`off` last where its provider can turn thinking off); absent for a model without levels |
+| Reasoning or thinking control | the `reasoning` config option in the `thought_level` category, with the levels the session's model offers (`off` last only when its logical model sets `allow_reasoning_off: true`); absent for a model without levels |
 | Permission policy (`ask`, `accept_edits`, `bypass`) | the `permission_mode` config option in the `_permission_mode` category, which a client without special handling shows as a plain selector; an override is session-scoped and wins over `tools.permission_mode`, but lives in the agent's memory only, so a restart of the agent returns to the configured mode |
 | Slash commands | `available_commands_update` after `session/new` and `session/load`: the settings commands (`model`, `reasoning`, `think`, `nothink`, `agent`, `plan`, `ask`, `permissions`, with their argument hint in `input.hint`), then `compact`, `export` and `plugin`, then every skill from `skills.dirs`. The settings commands run from the prompt text, with `--once` or `--count=N` for the next turns only ([Session settings](../features/session-settings.md)) |
 | Permission prompts | `session/request_permission` with the options Allow, Allow always and Reject (and the program-wide `allow_always_<program>` for a plain shell command, and under `ask` the session switches `allow_session_bypass` and, for a file write, `allow_session_accept_edits`); sent only under `ask` (commands and writes) or `accept_edits` (commands); `bypass` never asks |
@@ -6542,6 +6542,8 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/su
 
 The messenger gateway lets you drive a Coddy agent directly from a chat application such as Telegram. The agent runs the same ReAct loop, tools, and skills as in the HTTP UI or ACP mode — the gateway is only a transport layer.
 
+This page is about the Telegram bot and the gateway's common parts. The Pachca (Пачка) integration bot has a page of its own: [Pachca gateway](pachca.md).
+
 ## Contents
 
 - [Overview](#overview)
@@ -6556,15 +6558,16 @@ The messenger gateway lets you drive a Coddy agent directly from a chat applicat
 - [Debugging a chat](#debugging-a-chat)
 - [Bot interaction model](#bot-interaction-model)
   - [Private chats](#private-chats)
+  - [Replies](#replies)
   - [Group chats](#group-chats)
   - [Commands](#commands)
 - [What the messenger needs, and where it is said](#what-the-messenger-needs-and-where-it-is-said)
 - [Writing a new adapter](#writing-a-new-adapter)
   - [1. Implement the Adapter interface](#1-implement-the-adapter-interface)
-  - [2. Register in Serve()](#2-register-in-serve)
+  - [2. Add serve_name.go and its stub](#2-add-serve_namego-and-its-stub)
   - [3. Implement acp.UpdateSender](#3-implement-acpupdatesender)
   - [4. Add a build tag](#4-add-a-build-tag)
-  - [5. Wire into hub.Start()](#5-wire-into-hubstart)
+  - [5. Register the subsystem in coddy serve](#5-register-the-subsystem-in-coddy-serve)
 - [The same session in the chat and in the browser](#the-same-session-in-the-chat-and-in-the-browser)
 - [Mini App](#mini-app)
 - [Woken turns land in the chat](#woken-turns-land-in-the-chat)
@@ -6577,10 +6580,10 @@ The messenger gateway lets you drive a Coddy agent directly from a chat applicat
 ## Overview
 
 ```
-Telegram / future messengers
-         │  polling / webhooks
+Telegram / Pachca / future messengers
+         │  polling / events history
          ▼
-  external/gateway/          ← build tag: gateway | gateway.telegram
+  external/gateway/          ← build tag: gateway | gateway.telegram | gateway.pachca
     Hub (goroutine per adapter, auto-restart)
          │
          ▼
@@ -6599,7 +6602,7 @@ Telegram / future messengers
   Sender (per-message)       ← buffers agent output, sends back to chat
 ```
 
-Multiple gateways (Telegram today, Discord/Slack tomorrow) run in the same process and share the same session store.
+Multiple gateways (Telegram and Pachca today) run in the same process, each as a subsystem of its own with its own session map, over the same session manager.
 
 They also share it with everything else `coddy serve` started. One process, one
 `session.Manager`: the chat conversations are ordinary Coddy sessions, listed
@@ -6612,7 +6615,8 @@ and openable in the web UI while they are happening.
 | Tag | Includes |
 |-----|----------|
 | `gateway.telegram` | Telegram adapter only |
-| `gateway` | all adapters (currently Telegram; a superset for future integrations) |
+| `gateway.pachca` | Pachca adapter only |
+| `gateway` | all adapters (Telegram and Pachca) |
 
 `gateway` is part of the recommended full set, so the released binaries, the
 packages and the published image all carry it. Build it on its own only for a
@@ -6622,6 +6626,9 @@ slimmer binary:
 # Telegram only
 make build TAGS="gateway.telegram"
 
+# Pachca only
+make build TAGS="gateway.pachca"
+
 # All gateways
 make build TAGS="gateway"
 
@@ -6629,7 +6636,7 @@ make build TAGS="gateway"
 make build TAGS="http ui scheduler memory cli gateway swarm"
 ```
 
-Without either tag the `coddy serve` subcommand is present in the binary but returns a "not compiled" error when invoked — all other subcommands are unaffected.
+A bot enabled in `config.yaml` but not compiled into the binary is a startup error of `coddy serve` naming the tag; all other subcommands are unaffected.
 
 ---
 
@@ -6955,6 +6962,7 @@ gateways:
   telegram:
     enable: true
     token: "123456:fake"            # any token; the fake accepts all of them
+    admins: [4242]                  # the page's user: /resume, approvals and settings are an admin's
 logger:
   levels:
     - component: gateway.telegram
@@ -7087,15 +7095,43 @@ starts.
 
 ### Private chats
 
-Every user who starts a private conversation with the bot gets their own isolated session. No configuration needed.
+Every user who starts a private conversation with the bot gets their own isolated session. No configuration needed. Every message is for the bot, with or without a mention.
+
+### Replies
+
+A person who replies to a message asks about it. The agent receives the replied-to message quoted in front of what the person wrote, its first line naming the author:
+
+```
+> Anna:
+> the build is red since noon
+
+why?
+```
+
+This works in a private chat and in a group alike, for a reply to the bot's own answer and for a reply to somebody else's message (in a group, together with a mention of the bot). A mention alone under a reply asks the agent to deal with the quoted message. The quote is part of the user message, so the transcript in the web UI reads the way the chat did; a settings command is never quoted. The model is told about the convention for each turn ([What the messenger needs](#what-the-messenger-needs-and-where-it-is-said)).
 
 ### Group chats
 
-In a group the bot **only responds** when explicitly addressed. It will react to:
+A group is where many people talk, so the bot **only responds** when explicitly addressed:
 
 1. A message that **@mentions** the bot (`@coddy_agent_bot hello`)
 2. A **direct reply** to a previous bot message
-3. A bot command (`/clear`, `/resume`, `/model`, `/mcp`, `/context`, `/help`, `/start`) or a settings command (`/agent`, `/plan`, `/ask`, `/reasoning`, `/think`, `/nothink`), with or without the mention
+
+Commands follow the same rule: in a group a bot command or a settings command needs the mention, which Telegram writes as `/clear@coddy_agent_bot` (the command menu of a group inserts that form), or a reply to the bot's message. A bare `/clear` in a group is left to the people in it.
+
+### What somebody who is not an admin may do
+
+The bot sees who wrote every message, and its admins (`gateways.telegram.admins`) can do everything. Anybody else the access rules let in gets the conversation and nothing that changes the agent:
+
+- the turn may call only reading tools (`read`, `grep`, `glob`, `print_tree`) kept inside the session's working directory and out of the agent's home, the built-in documentation, a web search, the session's plan and to-do list and a question back; anything else - the configuration, `switch_model`, subagents, worktrees, the scheduler, background tasks, servers, shell commands, writes, fetching a page, every MCP tool - is refused, and the model is told why;
+- an `@` mention attaches files of the working directory only, and no web page;
+- every call that needs approval asks the bot, whatever the session's permission mode, and the bot refuses it; the "always allow" grants an admin gave in a shared session do not apply;
+- a permission button is answered by an admin only, also in a group whose session is shared;
+- a woken turn and a background subagent's request take the rights of whoever the conversation belongs to: a private chat's or an individual group session's person, never a shared group's.
+
+The tool definitions the model sees stay the same, so the provider's prompt cache holds across admins and everybody else in one shared session. A bot with an empty `admins` list therefore lets everybody only chat; `coddy serve --dry-run` warns about it.
+
+What changes the settings is the admins' in a group: the settings commands (`/agent`, `/plan`, `/ask`, `/think`, `/nothink`, `/reasoning`, `/model <id>`), the `/model` menu and its taps, `/clear` and `/resume`. Anybody else gets *Only the bot's admins can change settings in this chat.* and nothing changes; in a private chat each person still changes their own session. The `/mcp` switches change the whole agent's configuration, so a tap on them is the admins' in every chat, and so is `/resume`, which reaches every session the server keeps, the operator's own included.
 
 When `isolation` is `admin`, the bot additionally ignores everyone who is not in the `admins` list.
 
@@ -7105,14 +7141,14 @@ When `isolation` is `admin`, the bot additionally ignores everyone who is not in
 |---------|-------------|--------|
 | `/start` | all users | Greeting and quick introduction. |
 | `/help` | all users | Lists all available commands. |
-| `/model [id]` | all permitted users | Bare, opens an inline keyboard to switch the active LLM model (from the configured `models` list); with an id, switches to it at once. |
-| `/mcp` | all permitted users | Lists global and project MCP servers with status and tool count; a server that is switched off while its status is a trust verdict reads `off` as well (`checkout · needs_approval · off · 0 tools`). Buttons enable or disable servers already trusted for the workspace; a project server nobody approved gets none, because project trust is granted through the CLI, console or web UI. A tap that fails says why on the first line of the menu message, above the menu drawn afresh, or alone and without buttons when the server list cannot be read. |
-| `/agent`, `/plan`, `/ask` | all permitted users | Switch the session mode. |
-| `/reasoning <level>`, `/think [level]`, `/nothink` | all permitted users | Set the reasoning level, or turn thinking on or off where the model's provider can. Not in the command menu. |
+| `/model [id]` | all permitted users (admins only in a group) | Bare, opens an inline keyboard to switch the active LLM model (from the configured `models` list); with an id, switches to it at once. An admin's pick is also what the next fresh chat of the bot starts on; anybody else's stays in their own session. |
+| `/mcp` | all permitted users (its switches: admins) | Lists global and project MCP servers with status and tool count; a server that is switched off while its status is a trust verdict reads `off` as well (`checkout · needs_approval · off · 0 tools`). Buttons enable or disable servers already trusted for the workspace; a project server nobody approved gets none, because project trust is granted through the CLI, console or web UI. A tap that fails says why on the first line of the menu message, above the menu drawn afresh, or alone and without buttons when the server list cannot be read. |
+| `/agent`, `/plan`, `/ask` | all permitted users (admins only in a group) | Switch the session mode. |
+| `/reasoning <level>`, `/think [level]`, `/nothink` | all permitted users (admins only in a group) | Set the reasoning level, or turn thinking on or off where the model's provider can. Not in the command menu. |
 | `/context` | all permitted users | Displays the current session's context window usage broken down by category (conversation, system prompt, tool definitions, rules, skills, MCP). |
-| `/resume [id or title]` | all permitted users | Continues another session. Alone it opens an inline keyboard over the sessions the server keeps, newest first, eight per page, the chat's own session marked; a tap binds the chat to the one chosen. With words after it, the session whose id they are, or whose id starts with them or whose title contains them (those two case-insensitively), is resumed at once; several matches come back as the keyboard, and no match is answered with a message. The reply names the model and the reasoning level the resumed session runs on, its own. The session left behind stays loaded. |
-| `/app` | all permitted users | Only with `gateways.telegram.mini_app.url` set: answers with **Open in Coddy**, a button that opens the chat's conversation in the web UI - as a Mini App in a private chat, as a link in a group ([Mini App](#mini-app)). |
-| `/clear` | all permitted users | Starts a new session for the current user/chat context. The old session is removed from memory (persisted history remains on disk); `/resume` brings it back. |
+| `/resume [id or title]` | admins (`admins`) | Continues another session. Alone it opens an inline keyboard over the sessions the server keeps, newest first, eight per page, the chat's own session marked; a tap binds the chat to the one chosen. With words after it, the session whose id they are, or whose id starts with them or whose title contains them (those two case-insensitively), is resumed at once; several matches come back as the keyboard, and no match is answered with a message. The reply names the model and the reasoning level the resumed session runs on, its own. The session left behind stays loaded. |
+| `/app` | admins (`admins`) | Only with `gateways.telegram.mini_app.url` set: answers with **Open in Coddy**, a button that opens the chat's conversation in the web UI - as a Mini App in a private chat, as a link in a group ([Mini App](#mini-app)). |
+| `/clear` | all permitted users (admins only in a group) | Starts a new session for the current user/chat context. The old session is removed from memory (persisted history remains on disk); `/resume` brings it back. |
 
 The settings commands take `--once` or `--count=N` to change a setting for the next messages only, and a message may follow them: `/plan --once how would you split this package?` plans one answer and leaves the chat in its mode. A command alone runs no turn and is answered with a line saying what changed. `/permissions` is not a bot command: the bot approves its chat agent's tools itself, so the session's permission mode would only change what other surfaces watching the session ask ([Session settings](../features/session-settings.md)).
 
@@ -7231,18 +7267,28 @@ type SessionRunner interface {
 
 `session.Manager` already satisfies this interface — pass it directly. `HandleSessionSetConfigOption` is what the `/model` inline keyboard calls, and the settings commands (`/agent`, `/model <id> --once`, ...) reach the session as prompt text through `HandleSessionPromptWithSender`, whose manager takes them off the start of the message; `HandleSessionList` is what `/resume` offers to the chat; `Cfg()` returns the loaded config (used by `/model` to list available models).
 
-### 2. Register in Serve()
+### 2. Add serve_name.go and its stub
 
-`Serve` in `external/gateway/serve_gateway.go` builds every enabled adapter and hands them to the hub. Add a block for the new adapter next to the Telegram block:
+Each adapter is started by a function of its own in `external/gateway`, in a file under the adapter's tag, with a stub for builds without it. The Telegram pair is `serve_telegram.go` / `serve_telegram_stub.go`, the Pachca pair `serve_pachca.go` / `serve_pachca_stub.go`:
 
 ```go
-if opts.Cfg.Gateways.Discord.Enabled {
-    bot := discord.New(&opts.Cfg.Gateways.Discord, opts.Mgr, opts.DefaultCWD, opts.Log)
-    adapters = append(adapters, bot)
+//go:build gateway || gateway.discord
+
+package gateway
+
+// DiscordAvailable reports whether this binary carries the Discord adapter.
+const DiscordAvailable = true
+
+// ServeDiscord builds the Discord bot and runs it until ctx is cancelled.
+func ServeDiscord(ctx context.Context, opts Options) error {
+    bot := discord.New(&opts.Cfg.Gateways.Discord, opts.Mgr, opts.DefaultCWD,
+        logger.Component(opts.Log, logger.ComponentGatewayDiscord), storePath, opts.Mirror)
+    NewHub(logger.Component(opts.Log, logger.ComponentGateway), bot).Start(ctx)
+    return nil
 }
 ```
 
-`serve_gateway.go` is built under `//go:build gateway || gateway.telegram`, and `serve_stub.go` under its negation: the stub's `Serve` reports that no adapter was built in, and its `Available` is false, so `coddy serve` refuses a configuration that asks for a bot this binary does not have. A new tag goes into both constraints (`gateway || gateway.telegram || gateway.discord`, and the same inside `!(...)` in the stub). The untagged `serve.go` holds what the caller fills in (`Options`) and stays untagged.
+The stub (`//go:build !(gateway || gateway.discord)`) sets `DiscordAvailable = false` and returns an error naming the tag. Give the adapter a session map file of its own: two `sessionstore.Store` instances rewriting one file would undo each other's writes.
 
 ### 3. Implement acp.UpdateSender
 
@@ -7270,11 +7316,11 @@ Follow the existing pattern:
 - `external/gateway/discord/*_test.go` → same constraint
 - Stub (if needed) → `//go:build !(gateway || gateway.discord)`
 
-Update the constraints of `serve_gateway.go` and `serve_stub.go` to include the new tag.
+Add the tag to the constraint of the shared files - `gateway.go`, `hub.go`, `access`, `sessionstore`, `proxyutil` - and to `TEST_TAG_SETS` in the `Makefile`.
 
-### 5. Wire into hub.Start()
+### 5. Register the subsystem in coddy serve
 
-`hub.Start()` accepts any `[]gateway.Adapter`. No changes to Hub itself are needed — just `append` your adapter before calling `hub.Start(ctx)`.
+Add a `serve.Kind` for the bot in `internal/serve/subsystem.go` and a descriptor in `subsystems()` of `cmd/coddy/serve.go`: its `ConfigKey`, the `BuildTag`, `Available: gateway.DiscordAvailable`, `NeedsSessions: true`, a `Fingerprint` over every setting a rebuilt bot would read differently, and `Run` calling `gateway.ServeDiscord`. A bot that is a subsystem of its own is rebuilt alone when its settings change, and is refused by name when it is enabled in a binary without its tag. Add a line to the banner (`printServeBanner`) and a probe of the token to `internal/dryrun`.
 
 ---
 
@@ -7329,6 +7375,8 @@ gateways:
       url: https://coddy.example.com/
       menu_button: true     # the default
 ```
+
+Only the bot's admins (`gateways.telegram.admins`) open the web UI from the chat. The Mini App signs an admin in by its launch data, with no password: Telegram signs it with the bot's token, the server checks the signature, takes each launch once and at most an hour old, and opens a session of its own (`POST /coddy/auth/telegram`) that also works behind a token-only gate and ends when the token changes or the person stops being an admin. Anybody else who taps the menu button sees *Only the bot's admins can open Coddy from Telegram.* above the ordinary sign-in form (or alone, when the server has no form), and `/app` answers them the same way. The web UI is the whole agent; the chat is what everybody else gets.
 
 On every start the bot then points its menu button at `url`, labelled **Coddy**, and adds `/app` to its command list. `/app` answers with **Open in Coddy**: in a private chat a button that opens the chat's conversation as a Mini App (`url?session=<id>`), in a group an ordinary link to the same address, since Telegram allows Mini App buttons in private chats only. Before the chat has a conversation, the button opens the start screen.
 
@@ -7465,6 +7513,140 @@ one answer per tap.
 - **Network** — the gateway uses Telegram long-polling (not webhooks). No inbound port needs to be open. A Mini App is the exception you choose: its `url` has to be reachable from the people who open it.
 
 
+# Surfaces / Pachca gateway
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/surfaces/pachca.md
+
+# Pachca gateway
+
+Coddy can answer in [Pachca](https://pachca.com/) (Пачка), the corporate messenger, as an integration bot of your workspace. A person writes to the bot in a direct chat, mentions it in a group chat or replies to it in a thread, and the message starts or continues an agent turn; the answer streams into one message of the chat. The bot runs inside `coddy serve` next to the HTTP server and the Telegram bot, and every conversation is an ordinary Coddy session, so the web UI shows it live.
+
+The adapter is deliberately smaller than the [Telegram gateway](gateway.md): it reads the bot's events history instead of receiving a webhook, so the machine running Coddy needs no public address, and it covers chat turns, a few commands, buttons for the model menu and for subagent permission prompts, and woken turns.
+
+## Contents
+
+- [Set up the bot in Pachca](#set-up-the-bot-in-pachca)
+- [Configuration](#configuration)
+- [Running it](#running-it)
+- [How the bot behaves](#how-the-bot-behaves)
+- [Commands](#commands)
+- [Answers, limits and formatting](#answers-limits-and-formatting)
+- [Permissions and woken turns](#permissions-and-woken-turns)
+- [What is not supported](#what-is-not-supported)
+- [Troubleshooting](#troubleshooting)
+
+## Set up the bot in Pachca
+
+1. In the web or desktop Pachca app open **Automations → Integrations → Chat bots and webhooks** (Автоматизации → Интеграции → Чат-боты и Вебхуки), press **+** and pick **For several chats**, so the bot can talk to every person and group (a bot "for one chat" is limited to one conversation or channel, threads and direct chats aside). On the **API** tab copy its `access_token`. This is an ordinary integration bot, not a personal token: the bot acts as itself, with the role of an employee, and its messages carry the bot badge.
+2. On the bot's **API** tab grant the scopes the adapter uses:
+   - `messages:create`, `messages:update`, `messages:read` - posting, streaming edits, recognising replies to the bot;
+   - `chats:read` - telling a direct chat from a group;
+   - `profile:read` - the bot's own nickname, which a mention names;
+   - `users:read` (recommended) - the author's name in a quoted reply;
+   - `webhooks:events:read` - reading the events history;
+   - `webhooks:events:delete` (recommended) - removing handled events, so the history does not grow.
+3. On the **Outgoing webhook** tab:
+   - turn on **Save events history** (`events_history_enabled`). Without it the history stays empty and the bot never hears anything; the webhook URL itself can stay empty;
+   - subscribe to **New messages** in the "any message" mode and to **Button clicks**;
+   - turn on **Ignore own messages**. The adapter filters the bot's own messages anyway, but there is no reason to read them.
+4. Add the bot to the chats it should work in. A bot sees open channels by itself; a private conversation or channel needs the bot as a member, and a thread can take the bot directly. A person can write to the bot in a direct chat when the bot is public, when it wrote to them first, or when they share a chat with it.
+
+## Configuration
+
+```yaml
+gateways:
+  pachca:
+    enable: true
+    token: ""                    # or PACHCA_BOT_TOKEN in the environment or ~/.coddy/.env
+    proxy: ""                    # inherit (default), none, or an http(s)/socks5(h) proxy URL
+    poll_interval_seconds: 2     # 1 to 60
+    admins: [12345]              # Pachca user ids
+    default_access: all          # all | admins | group:<name>
+    default_isolation: individual  # individual | shared | admin
+    user_groups:
+      - name: devs
+        user_ids: [12345, 67890]
+    chats:
+      - chat_id: 334
+        isolation: shared
+        access: group:devs
+```
+
+Access and isolation read exactly like the Telegram ones ([Access levels](gateway.md#access-levels), [Session isolation modes](gateway.md#session-isolation-modes)): `default_access` decides who may talk to the bot, `default_isolation` whether a group chat has one session per person, one for everyone, or one for the admins only, and `chats[]` overrides both per chat. A direct chat always has a session of its own. A thread has a chat id of its own in Pachca, so every thread is a conversation of its own as well.
+
+Leave `token` empty and export `PACHCA_BOT_TOKEN` (for example in `~/.coddy/.env`) to keep the secret out of `config.yaml`. The same keys are on the **Gateways** tab of the web settings, and a token or any other key changed there rebuilds the Pachca bot in place, leaving a Telegram bot in the same process running. The field reference is in [config.md](../reference/config.md).
+
+## Running it
+
+The adapter is behind the `gateway` build tag (or `gateway.pachca` for this adapter alone); the release binaries, the packages and the Docker image carry it.
+
+```bash
+make build TAGS="gateway.pachca"
+```
+
+```bash
+coddy serve --dry-run
+```
+
+`--dry-run` checks the token with `GET /oauth/token/info`: an error for a missing or revoked token or a missing required scope, a warning when only the recommended `webhooks:events:delete` or `users:read` is missing. Then start the server:
+
+```bash
+coddy serve
+```
+
+The banner names the bot (`gateway     pachca`), and the log says `pachca bot connected` with its nickname. `CODDY_PACHCA_API_BASE` points the bot and the dry run at another API base, a test server for example; the default is `https://api.pachca.com/api/shared/v1`.
+
+## How the bot behaves
+
+- **Direct chat**: every message is for the bot, with or without a mention or a reply.
+- **Group chat or channel**: a group is where many people talk, so the bot answers only a message that mentions it (`@nickname`, or `<@id>`) or replies to one of its messages. A command needs the mention too, and so does a message in a thread opened under the bot's message. Everything else is left to the people in the chat.
+- **Replies**: a person who replies to a message asks about it. The agent receives the replied-to message quoted in front of what the person wrote, the first line naming its author (`> Anna:`), in a direct chat and in a group alike, for the bot's own answer and for a colleague's message. A mention alone under a reply asks the agent to deal with the quoted message. The quote stays in the session's transcript; a settings command is never quoted. Naming the author needs the `users:read` scope; without it the quote has no author line.
+- **Order and catch-up**: the bot reads the events history every `poll_interval_seconds`, newest first, down to the last event it handled, and hands the new ones over oldest first. The position is kept in `<sessions>/gateway_pachca_state.json`, so a restart answers what was written while the bot was down. The very first start begins after the newest event in the history and leaves older ones alone.
+- **One turn at a time per session**: messages of one conversation queue up behind the running turn, and a stop or a restart waits up to 20 seconds for the running turn and the queued ones before the bot goes. A message that finds the queue full (32 waiting) is not taken, and the chat is told to send it again.
+- **A passing failure loses nothing**: when Pachca does not answer a lookup the bot needs (whether a chat is a group, who wrote the message a reply answers), the event stays in the history and is read again on the next poll.
+- The chat-to-session map lives in `<sessions>/gateway_pachca_sessions.json`, apart from the Telegram one.
+
+## Commands
+
+| Command | What it does |
+|---------|--------------|
+| `/help`, `/start` | The command list and a greeting. |
+| `/clear` | Starts a new session for the conversation; the old one stays on disk. |
+| `/model` | Posts the configured models as buttons; a click switches the conversation's model, and the next new conversation of the bot starts on it when an admin picked it (anybody else's pick stays in their own session). `/model <id>` sets it directly. |
+| `/context` | The context window usage of the conversation's session. |
+| `/agent`, `/plan`, `/ask`, `/think`, `/nothink`, `/reasoning <level>` | Settings commands, handed to the session like on every surface; `--once` and `--count=N` limit them to the next messages. |
+
+In a group chat a command needs the bot's mention (`@nickname /clear`) or a reply to its message, and what changes the settings - the settings commands, `/model` and its buttons, `/clear` - is the admins' (`admins`): anybody else is answered *Only the bot's admins can change settings in this chat.* In a direct chat each person changes their own session. `/permissions` is not taken from a chat: the bot approves its own agent's requests itself.
+
+## What somebody who is not an admin may do
+
+The bot sees who wrote every message. Its admins (`admins`) can do everything; anybody else gets the conversation and nothing that changes the agent: only reading inside the session's working directory, the documentation, a web search, the plan and a question back; everything else - MCP tools included - is refused, `@` mentions stay inside the working directory, and every call that needs approval is asked about and refused, whatever the session's permission mode and its grants - the same rule as the Telegram bot. With an empty `admins` list everybody only chats, and `--dry-run` warns ([What somebody who is not an admin may do](gateway.md#what-somebody-who-is-not-an-admin-may-do)). A woken turn and a background subagent's request take the rights of the conversation's owner. Pachca has no web UI entry: the chat is the whole surface.
+
+## Answers, limits and formatting
+
+The answer is posted as one message at its first words and edited in place at most every two seconds while it is written, with the running tool's name under it; at the end the message is replaced by the full answer. Edits do not count against Pachca's limit of messages per chat. An answer longer than one message continues in further messages, and a piece Pachca refuses as too long is split again.
+
+Pachca renders bold, italic, strikethrough, links, inline code and fenced code blocks, and shows a `#` heading as a bold line. It does not render lists or tables. The bot tells the model so for each turn, and on the way out turns a Markdown table into a fenced text block and puts a bar in front of a quote, whose `>` Pachca would drop.
+
+A short rate limit (`429` with a pause up to a minute) is waited out. The daily limit of messages per chat is never retried, because every attempt during that pause doubles it; the answer is then not delivered and the log says so.
+
+## Permissions and woken turns
+
+An admin's own agent is allowed what it asks, like in Telegram: the operator configured the bot deliberately; for anybody else nothing is approved (above). A subagent whose definition narrows what it may do asks in the chat with **Allow** and **Reject** buttons, and only one of the bot's admins whose session in that chat is the one that asked can answer: in a group whose isolation is `shared` the session is everybody's, so a member who is not an admin cannot answer it. A background subagent asks the same way after the turn ended. A background task the agent started with `notify_on_finish` wakes the conversation when it ends, and the woken turn runs in the chat it belongs to: a note says what woke the agent, then the answer follows.
+
+## What is not supported
+
+The webhook intake (the bot only reads the events history), `/resume` and `/mcp`, pictures and files in either direction, reactions and forms. A person editing or deleting a message does not start a turn.
+
+## Troubleshooting
+
+- **The bot never answers and the log is quiet.** Check that **Save events history** is on: without it the history is always empty. The bot warns once in the log when the history has stayed empty for five minutes after the start.
+- **The bot answers in a direct chat but not in a group.** Mention it or reply to its message; in a group even a command or a message in a thread under its answer needs one of the two. Check that the bot is a member of the chat and that `default_access` or the chat's override lets the person in.
+- **`--dry-run` reports missing scopes.** Grant them on the bot's API tab in Pachca and copy the token again.
+- **The history keeps growing.** The token lacks `webhooks:events:delete`; the bot still works on its saved position.
+- **Debug output for this bot alone**: `logger.levels` with `component: gateway.pachca` and `level: debug`, or `--log-level "info,gateway.pachca=debug"`. Every ignored event is logged at debug with a reason.
+
+
 # Operate / coddy serve and the daemon
 
 Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/operate/serve.md
@@ -7480,7 +7662,7 @@ the [configuration reference](../reference/config.md) and the per-surface guides
 
 The subsystems share more than the manager. A background task the agent started wakes it
 when it ends (`notify_on_finish`, on by default) whichever subsystems run: the process owns the
-waker, and hands each woken turn to the Telegram chat bound to the session, else to the
+waker, and hands each woken turn to the Telegram or Pachca chat bound to the session, else to the
 HTTP server, else runs it through the manager itself
 ([Background tasks](../features/background-tasks.md#under-coddy-serve)). The MCP servers are
 shared the same way: the servers of the global configuration start with the process and
@@ -7728,7 +7910,7 @@ the subsystems the configuration and the typed flags enable (a surface this bina
 built with is reported, not started), the listen addresses they would bind (a port another
 process holds is named together with the line that set it), every provider's model list,
 the configured models against it, the executables of stdio MCP servers, the Telegram bot
-token against the Bot API, the relays in `swarm.join` and the upstreams a relay mounts, and
+token against the Bot API, the Pachca bot token and its scopes against Pachca, the relays in `swarm.join` and the upstreams a relay mounts, and
 the directories and files the configuration names. Exit status 1 when a probe fails. Alone
 it prints only the problems and one status line; `coddy serve --dry-run --test-config` prints
 the config check report and every probe. The report and its rules are described in
@@ -7750,7 +7932,7 @@ What happens next depends on what moved:
 | Change | Effect |
 |--------|--------|
 | models, providers, skills, permissions, most settings | the live configuration is swapped; `GET /coddy/events` carries `config_reloaded` and open clients re-read (see [the SPA notes](../surfaces/web-ui.md)) |
-| the Telegram token, the scheduler's directory or timeout, a relay's `swarm` settings other than its address | that subsystem alone is rebuilt in place |
+| the Telegram or the Pachca token (each bot is rebuilt alone, the other keeps running), the scheduler's directory or timeout, a relay's `swarm` settings other than its address | that subsystem alone is rebuilt in place |
 | a subsystem's `enable` | it is started, on the address the new configuration gives it, or stopped |
 | `mcp.project_trust` | every live session reconnects its configured MCP servers under the new policy; moved to `deny`, the project servers stop |
 | `mcp.idle_timeout_seconds` | a server that goes unheld from then on waits the new time before it stops |
@@ -8894,7 +9076,7 @@ A session saved by an earlier version keeps a notice of every change in its `ui_
 
 ### Web UI
 
-The composer's **Mode**, **Permissions** and **Model** selectors show the session's settings as the server has them. Entering a session shows its own model, its level (a session running with thinking off shows **Off**) and its permission mode, from the snapshot `GET /coddy/sessions/{id}/messages` answers with. What the start page picked, and the cookies `coddy_llm_model` and `coddy_llm_reasoning` that remember it, are the default of a new chat only: they never replace a session's value on screen, so they never ride into it with the next message. A session with no level of its own, on a model that names no `reasoning_default`, shows the level it runs at, `medium` or else the model's first level, and sends none with the next message, so it is not pinned to a level nobody picked. Where the provider can turn thinking off, the **Reasoning** menu of the session offers **Off** as well. A setting the running turn holds (`--once`, `--count=N`) stays on the line of overrides, and the selectors keep the session's own value. The permission chip reads **Ask first**, **Accept edits** or **Bypass**, the last in red; a line next to the selectors lists what is changed for the next turns. A change made anywhere else - a command, the dialog, a user-requested `switch_model` call, a console on the same session - reaches the tab as `event: session_settings` and moves the selectors. A browser that has not seen the latest change yet does not undo it when it sends: the request carries `metadata.settingsVersion`, and an older version leaves the session's settings alone.
+The composer's **Mode**, **Permissions** and **Model** selectors show the session's settings as the server has them. Entering a session shows its own model, its level (a session running with thinking off shows **Off**) and its permission mode, from the snapshot `GET /coddy/sessions/{id}/messages` answers with. What the start page picked, and the cookies `coddy_llm_model` and `coddy_llm_reasoning` that remember it, are the default of a new chat only: they never replace a session's value on screen, so they never ride into it with the next message. A session with no level of its own, on a model that names no `reasoning_default`, shows the level it runs at, `medium` or else the model's first level, and sends none with the next message, so it is not pinned to a level nobody picked. The **Reasoning** menu offers **Off** only when its logical model sets `allow_reasoning_off: true`. A setting the running turn holds (`--once`, `--count=N`) stays on the line of overrides, and the selectors keep the session's own value. The permission chip reads **Ask first**, **Accept edits** or **Bypass**, the last in red; a line next to the selectors lists what is changed for the next turns. A change made anywhere else - a command, the dialog, a user-requested `switch_model` call, a console on the same session - reaches the tab as `event: session_settings` and moves the selectors. A browser that has not seen the latest change yet does not undo it when it sends: the request carries `metadata.settingsVersion`, and an older version leaves the session's settings alone.
 
 ![The composer after a bypass from the dialog: the selectors end with a red Bypass chip, followed by "stub/qwen3.8-27b, 2 turns left"](../assets/session-settings/session-settings-composer-bypass-dark-1280.png)
 
@@ -10992,8 +11174,8 @@ records trust the console prints the whole declaration above the choice: the
 transport, the command line or the URL, the names of its variables and headers,
 the workspace and the file. These controls also work in `--remote` mode through
 the server's MCP management routes. Telegram `/mcp` lists servers and offers
-enable/disable buttons only for already-trusted entries; in a group it is
-answered without a mention, and a failed tap is reported in the menu message.
+enable/disable buttons only for already-trusted entries; in a group it needs
+the bot's mention (`/mcp@botname`), and a failed tap is reported in the menu message.
 Approve project declarations in the console, CLI or web UI; a chat cannot grant
 workspace trust.
 
@@ -13287,7 +13469,7 @@ Usage of cli (interactive console, also the default for bare coddy on a terminal
   -cwd string
     	session working directory (CODDY_CWD, default process cwd)
   -dry-run
-    	check config.yaml and probe what it points at - paths, model servers and their credentials, listen addresses, MCP commands, the Telegram token - then exit without starting anything; prints only problems and a status line (add --test-config for the full report); exit status 1 when a probe fails
+    	check config.yaml and probe what it points at - paths, model servers and their credentials, listen addresses, MCP commands, the Telegram and Pachca tokens - then exit without starting anything; prints only problems and a status line (add --test-config for the full report); exit status 1 when a probe fails
   -home string
     	agent state directory (CODDY_HOME, default ~/.coddy)
   -i file
@@ -13344,7 +13526,7 @@ Usage of acp:
   -cwd string
     	default session cwd when the client sends an empty cwd (CODDY_CWD, default process cwd)
   -dry-run
-    	check config.yaml and probe what it points at - paths, model servers and their credentials, listen addresses, MCP commands, the Telegram token - then exit without starting anything; prints only problems and a status line (add --test-config for the full report); exit status 1 when a probe fails
+    	check config.yaml and probe what it points at - paths, model servers and their credentials, listen addresses, MCP commands, the Telegram and Pachca tokens - then exit without starting anything; prints only problems and a status line (add --test-config for the full report); exit status 1 when a probe fails
   -home string
     	agent state directory (CODDY_HOME, default ~/.coddy)
   -log-file string
@@ -13392,9 +13574,9 @@ Usage of serve (runs every subsystem enabled in config.yaml):
   -daemon coddy serve status|stop|restart
     	run in the background under a dispatcher that restarts the process if it dies (see coddy serve status|stop|restart)
   -dry-run
-    	check config.yaml and probe what it points at - paths, model servers and their credentials, listen addresses, MCP commands, the Telegram token - then exit without starting anything; prints only problems and a status line (add --test-config for the full report); exit status 1 when a probe fails
+    	check config.yaml and probe what it points at - paths, model servers and their credentials, listen addresses, MCP commands, the Telegram and Pachca tokens - then exit without starting anything; prints only problems and a status line (add --test-config for the full report); exit status 1 when a probe fails
   -gateway
-    	run the messenger gateway; overrides gateways.*.enable
+    	run the Telegram bot; overrides gateways.telegram.enable (the Pachca bot follows gateways.pachca.enable)
   -home string
     	agent state directory (CODDY_HOME, default ~/.coddy)
   -host string
@@ -13920,7 +14102,7 @@ Cron-driven scheduled jobs (used only by binaries built with -tags scheduler). J
 
 ### `gateways`
 
-Messenger bot adapters (used only by binaries built with -tags gateway or -tags gateway.telegram; started by coddy serve alongside every other enabled subsystem). See https://coddy.dev/docs/surfaces/gateway.
+Messenger bot adapters (used only by binaries built with -tags gateway, or -tags gateway.telegram / gateway.pachca for one adapter; started by coddy serve alongside every other enabled subsystem). See https://coddy.dev/docs/surfaces/gateway and https://coddy.dev/docs/surfaces/pachca.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
@@ -13942,6 +14124,21 @@ Messenger bot adapters (used only by binaries built with -tags gateway or -tags 
 | `gateways.telegram.mini_app` | object |  | Makes the web UI of this coddy serve the bot's Telegram Mini App. The web UI adapts to Telegram by itself; these keys tell the bot where it is, so it can set its menu button and answer /app with a button that opens the chat's own conversation. Telegram opens Mini Apps over https only, so the web UI has to be published behind a TLS proxy, with sign-in on (httpserver.login). See https://coddy.dev/docs/surfaces/gateway#mini-app. |
 | `gateways.telegram.mini_app.url` | string | "" | The public https address the web UI is served at, for example https://coddy.example.com/. Plain http is accepted only for a loopback host (the offline stand cmd/tgfake). No fragment: Telegram puts its launch parameters there. Empty: the bot offers no Mini App and leaves a menu button set in @BotFather alone. |
 | `gateways.telegram.mini_app.menu_button` | boolean or null | true | Make the bot's menu button (beside the message field) open the web UI. Turned off, with url emptied or while the web UI asks for no sign-in, the bot puts back the menu button it replaced (a Mini App set in @BotFather, else the commands), as long as the button still opens the address the bot set. |
+| `gateways.pachca` | object |  | Pachca integration bot adapter: reads the bot's events history and answers through the Pachca REST API. Turn on Save events history (events_history_enabled) in the bot's outgoing webhook settings. See https://coddy.dev/docs/surfaces/pachca. |
+| `gateways.pachca.enable` | boolean | false | Run the Pachca bot in this coddy serve process. |
+| `gateways.pachca.token` | string | "" | Access token of the Pachca integration bot. Leave empty to read the PACHCA_BOT_TOKEN environment variable (e.g. via ~/.coddy/.env). |
+| `gateways.pachca.proxy` | string | inherit | inherit (the default, the same as leaving the key out), none, or a proxy URL: http://, https://, socks5:// or socks5h://, read like providers[].proxy. inherit follows HTTPS_PROXY, HTTP_PROXY and NO_PROXY of the Coddy process; none connects directly; a proxy URL sends every Pachca API request through that proxy. |
+| `gateways.pachca.poll_interval_seconds` | integer | 2 | How often the events history is read, in seconds (1 to 60). Pachca answers that method at about five requests per two seconds. |
+| `gateways.pachca.admins` | list of integers |  | Pachca user IDs with elevated rights; admins always pass access checks. |
+| `gateways.pachca.default_access` | string | all | Fallback access level for chats without an override: "all", "admins", or "group:<name>". |
+| `gateways.pachca.default_isolation` | string, one of `individual`, `shared`, `admin` | individual | Fallback session isolation for group chats: "individual" (session per user), "shared" (one session for all), "admin" (admins only, shared session). |
+| `gateways.pachca.user_groups` | list of objects |  | Named sets of user IDs referenced from access fields as group:<name>. |
+| `gateways.pachca.user_groups[].name` | string |  | Group name referenced as group:<name>. |
+| `gateways.pachca.user_groups[].user_ids` | list of integers |  | Pachca user IDs in this group. |
+| `gateways.pachca.chats` | list of objects |  | Per-chat overrides keyed by the Pachca chat id (a thread has a chat id of its own). |
+| `gateways.pachca.chats[].chat_id` | integer |  | Pachca chat id. |
+| `gateways.pachca.chats[].isolation` | string, one of `individual`, `shared`, `admin` |  | Per-chat session isolation override. |
+| `gateways.pachca.chats[].access` | string |  | Per-chat access override: "all", "admins", or "group:<name>". |
 <!-- docsgen:config:end -->
 
 ## Notes
@@ -14196,6 +14393,7 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | `ANTHROPIC_API_KEY` | `internal/config/config.go` | The same bootstrap for an `anthropic` provider with `anthropic/claude-sonnet-4-6`, tried when `OPENAI_API_KEY` is empty. | [Configuration](../getting-started/configuration.md#full-configuration-schema) |
 | `BRAVE_API_KEY` | `internal/config/tools.go` (`ToolSettings`) | The Brave Search API key when `tools.websearch.brave_api_key` is empty; with a key the `brave` engine uses the official API instead of the public result page. Read when a turn builds its tool settings, so nothing has to be written into `config.yaml`. | [Web search](../features/web-search.md#the-brave-search-api-key) |
 | `TELEGRAM_BOT_TOKEN` | `internal/config/gateway.go` (`EffectiveToken`) | The bot token when `gateways.telegram.token` is empty. | [Telegram gateway](../surfaces/gateway.md#quick-start-telegram) |
+| `PACHCA_BOT_TOKEN` | `internal/config/gateway.go` (`PachcaGatewayConfig.EffectiveToken`) | The Pachca bot token when `gateways.pachca.token` is empty. | [Pachca gateway](../surfaces/pachca.md#configuration) |
 | `CODEX_HOME` | `internal/llm/codex_auth.go` | The Codex CLI state directory whose `auth.json` a `type: codex` provider falls back to when no Coddy-managed login exists. Default `~/.codex`. | [Configuration](../getting-started/configuration.md#config-file-location-and-paths) |
 | `CODDY_CODEX_BASE_URL` | `internal/llm/codex_auth.go` | Overrides the Codex backend endpoint for the whole process; `api_base` is ignored for `type: codex` on purpose, so a configuration file can never redirect an OAuth token. The account usage read derives its host from the same endpoint. | [Configuration](../getting-started/configuration.md#config-file-location-and-paths) |
 | `CODDY_NEURALDEEP_HUB_URL` | `internal/llm/neuraldeep_auth.go` | The hub that issues keys during `coddy providers login neuraldeep` and answers the usage panel, overriding the deployment derived from `api_base`. | [Configuration](../getting-started/configuration.md) |
@@ -14217,6 +14415,7 @@ A provider's key is resolved in this order: the literal `api_key`, the stdout of
 | `CODDY_REMOTE_TOKEN` | `internal/remote/resolve.go` | The token the console and `coddy acp` send with `--remote` when neither `--remote-token` nor the `token` of the matching `httpserver.remotes` entry gives one. | [Remote mode](../operate/remote.md#the-token) |
 | `CODDY_SWARM_TOKEN` | `external/swarm/serve.go`, read in `cmd/coddy/serve.go` | The bearer token clients present to the relay when `--swarm-auth-token` is absent; `swarm.auth_token` comes after both. | [Swarm](../operate/swarm.md#security), [config.yaml reference](../reference/config.md#related-environment-variables) |
 | `CODDY_SWARM_PAIRING_TOKEN` | `external/swarm/serve.go`, read in `cmd/coddy/serve.go` | The credential a node presents to register when `--swarm-pairing-token` is absent; appended to `swarm.pairing_tokens` on every reload. | [Swarm](../operate/swarm.md#security), [config.yaml reference](../reference/config.md#related-environment-variables) |
+| `CODDY_PACHCA_API_BASE` | `internal/config/gateway.go`, read in `external/gateway/pachca/bot.go` and `internal/dryrun/network.go` | The API base the Pachca gateway and the `--dry-run` probe talk to instead of `https://api.pachca.com/api/shared/v1`: a test server or a stand on this machine. | [Pachca gateway](../surfaces/pachca.md#running-it) |
 | `CODDY_TELEGRAM_API_BASE` | `internal/config/gateway.go`, read in `external/gateway/telegram/bot.go` and `internal/dryrun/network.go` | The Bot API origin the Telegram gateway and the `--dry-run` probe talk to instead of `https://api.telegram.org`: a self-hosted Bot API server, or the offline stand `cmd/tgfake`. | [Telegram gateway](../surfaces/gateway.md#debugging-against-a-fake-bot-api), [Configuration](../getting-started/configuration.md#dry-run-probing-what-the-file-points-at) |
 | `CODDY_SERVE_ROLE` | `internal/serve/daemon.go` | Set by `coddy serve --daemon` on the processes it re-executes, to `dispatcher` or `worker`, so each half knows which one it is. `service` tells a foreground `coddy serve` that a service manager starts it again, so a configuration change that moves a listen address ends it with status 75 instead of waiting for a manual restart; the systemd unit of `coddy serve install` sets it, and a supervisor of your own may. Do not set `dispatcher` or `worker` by hand. | [Restarting itself](../operate/serve.md#restarting-itself) |
 
@@ -14303,32 +14502,33 @@ The built-in commands on each surface and how skills become commands. A slash co
 
 | Command | Surfaces | What it does | Details |
 |---|---|---|---|
-| `/model <id> [--once\|--count=N]` | console, web UI, ACP editors, `POST /v1/responses`, Telegram | Switches the model for the session, or for the next turn or N turns. Typed bare in the console or picked from the web UI's `/` menu, it opens the model selector; bare in Telegram, an inline keyboard over the configured `models`. | [Session settings](../features/session-settings.md#the-commands) |
-| `/reasoning <level\|off\|default> [--once\|--count=N]`, alias `/effort` | console, web UI, ACP editors, `POST /v1/responses`, Telegram | Sets the reasoning level; `off` turns thinking off where the provider can, `default` returns to the model's own level. Typed bare in the console or picked from the web UI's menu, it opens the reasoning selector. | [Session settings](../features/session-settings.md#thinking-off) |
-| `/think [level] [--once\|--count=N]`, `/nothink [--once\|--count=N]` (alias `/no_think`) | console, web UI, ACP editors, `POST /v1/responses`, Telegram | Turns thinking on (at the model's default level, or the one named) or off. | [Session settings](../features/session-settings.md#thinking-off) |
-| `/agent`, `/plan`, `/ask` `[--once\|--count=N]` | console, web UI, ACP editors, `POST /v1/responses`, Telegram | Switches the operating mode. | [Operating modes](../features/modes.md#switching-on-each-surface) |
+| `/model <id> [--once\|--count=N]` | console, web UI, ACP editors, `POST /v1/responses`, Telegram, Pachca | Switches the model for the session, or for the next turn or N turns. Typed bare in the console or picked from the web UI's `/` menu, it opens the model selector; bare in Telegram, an inline keyboard over the configured `models`. | [Session settings](../features/session-settings.md#the-commands) |
+| `/reasoning <level\|off\|default> [--once\|--count=N]`, alias `/effort` | console, web UI, ACP editors, `POST /v1/responses`, Telegram, Pachca | Sets the reasoning level; `off` turns thinking off where the provider can, `default` returns to the model's own level. Typed bare in the console or picked from the web UI's menu, it opens the reasoning selector. | [Session settings](../features/session-settings.md#thinking-off) |
+| `/think [level] [--once\|--count=N]`, `/nothink [--once\|--count=N]` (alias `/no_think`) | console, web UI, ACP editors, `POST /v1/responses`, Telegram, Pachca | Turns thinking on (at the model's default level, or the one named) or off. | [Session settings](../features/session-settings.md#thinking-off) |
+| `/agent`, `/plan`, `/ask` `[--once\|--count=N]` | console, web UI, ACP editors, `POST /v1/responses`, Telegram, Pachca | Switches the operating mode. | [Operating modes](../features/modes.md#switching-on-each-surface) |
 | `/permissions <ask\|accept_edits\|bypass> [--once\|--count=N]` | console, web UI, ACP editors, `POST /v1/responses` | Sets when tools ask for approval in this session; never persisted, a restart returns to `tools.permission_mode`. Typed bare in the console or picked from the web UI's menu, it opens the permission selector. Not a Telegram command: the bot approves its chat agent itself. | [Session settings](../features/session-settings.md#switching-from-the-permission-dialog) |
-| `/resume [id or title]` | console; Telegram | Console: a picker over the sessions of the current folder; the chosen one replaces the current session. Telegram: an inline keyboard over every session the server keeps, or, with words after it, the session whose id or title they name. | [Sessions](../features/sessions.md#resuming), [Telegram gateway](../surfaces/gateway.md#commands) |
+| `/resume [id or title]` | console; Telegram (the bot's admins) | Console: a picker over the sessions of the current folder; the chosen one replaces the current session. Telegram: an inline keyboard over every session the server keeps, or, with words after it, the session whose id or title they name. | [Sessions](../features/sessions.md#resuming), [Telegram gateway](../surfaces/gateway.md#commands) |
 | `/new` | console | Starts a new session in the same folder. | [Console](../surfaces/console.md#commands-and-keys) |
 | `/theme` | console | Selector between the dark and the light palette. | [Console](../surfaces/console.md#flags) |
 | `/hotkeys` | console | Prints the key list. | [Keyboard](keyboard.md) |
 | `/queue [list\|drop <n>\|mode <n> <steer\|after_turn>\|clear]` | console | Lists waiting messages, changes one mode, takes one back into the input, or clears the queue. Works against a remote server too. | [Message queue](../features/message-queue.md#in-the-console) |
 | `/usage` | console | Forces a fresh read of the active provider's account usage and prints the breakdown; under `--remote` the server's own key is read. | [Console](../surfaces/console.md#commands-and-keys) |
 | `/tasks` | console | Opens the background tasks of the session in the place of the editor: what runs, what finished, a task's output on **enter**, **s** to stop one. Under `--remote` it lists and stops the processes of the server. | [Background tasks](../features/background-tasks.md#in-the-console) |
-| `/mcp` | console, web UI, Telegram | Console: opens a server list with connection status, tool count, server and tool switches, and project trust controls under `mcp.project_trust: ask`. Web UI: opens Settings → MCP servers, whatever follows the command. Telegram: lists servers and offers enable/disable buttons for trusted entries only, in a group without a mention. | [MCP](../features/mcp.md#management-api-and-ui) |
+| `/mcp` | console, web UI, Telegram | Console: opens a server list with connection status, tool count, server and tool switches, and project trust controls under `mcp.project_trust: ask`. Web UI: opens Settings → MCP servers, whatever follows the command. Telegram: lists servers and offers enable/disable buttons for trusted entries only; in a group it needs the mention (`/mcp@botname`). | [MCP](../features/mcp.md#management-api-and-ui) |
 | `/docs [words or page]` | console, web UI | Opens Coddy's built-in documentation, the same screen F1 opens: the contents, a search for the words, or a page (`/docs features/mentions#completion`) opened at its section. A page is named by its address or its exact title; any other words are a search. In the web UI the composer runs it in the browser and nothing reaches the agent. `/help` is the same command in the console. | [Built-in documentation](../features/built-in-docs.md#the-console-help) |
 | `/quit`, `/exit` | console | Exits. | [Console](../surfaces/console.md#commands-and-keys) |
 | `/compact [--model <id>] [instructions]` | console, web UI, ACP editors, `POST /v1/responses` | Summarises the older history and keeps the recent turns verbatim; the words after the command steer the summariser, and `--model` names the model that writes this one summary (a `models[].model`, its name without the provider, or a part of one that matches exactly one). Listed only while `compaction.enable` is true; a manual compaction is always forced. | [Context compaction](../features/compaction.md#the-compact-command) |
 | `/export [md\|html\|json\|jsonl] [path] [--no-tools] [--no-thinking]` | console, web UI, ACP editors, `POST /v1/responses` | Writes the transcript into the session workspace; a directory receives `coddy-export-<timestamp>.<ext>`, a file name sets the format by extension. Under `--remote` the file lands on the server. | [Session export](../features/session-export.md#usage) |
 | `/plugin marketplace add\|list\|update\|remove`, `/plugin install <plugin>@<marketplace>`, `/plugin install\|remove\|enable\|disable` | console, web UI, ACP editors, `POST /v1/responses` | Manages skill plugins and marketplaces, the chat twin of `coddy plugin`: adding a marketplace installs nothing, `install <plugin>@<marketplace>` installs one plugin of it. Approving a project marketplace (`marketplace trust`) is left to the terminal and Settings. | [Skills](../features/skills.md#the-plugin-command-cli-and-plugin-in-chat) |
-| `/start`, `/help` | Telegram | The greeting and the command list of the bot. | [Telegram gateway](../surfaces/gateway.md#commands) |
-| `/context` | Telegram | The context window usage of the chat's session by category. | [Telegram gateway](../surfaces/gateway.md#commands) |
-| `/clear` | Telegram | Starts a new session for the chat; the old one stays on disk, and `/resume` brings it back. | [Telegram gateway](../surfaces/gateway.md#session-lifecycle) |
+| `/start`, `/help` | Telegram, Pachca | The greeting and the command list of the bot. | [Telegram gateway](../surfaces/gateway.md#commands) |
+| `/context` | Telegram, Pachca | The context window usage of the chat's session by category. | [Telegram gateway](../surfaces/gateway.md#commands) |
+| `/clear` | Telegram, Pachca | Starts a new session for the chat (in a group the bots take it from their admins only, like the settings commands); the old one stays on disk. In Telegram `/resume` brings it back; Pachca has no `/resume`, and the web UI or the console continues it. | [Telegram gateway](../surfaces/gateway.md#session-lifecycle), [Pachca gateway](../surfaces/pachca.md#commands) |
 | `/<skill>` | console, web UI, ACP editors, `POST /v1/responses` | Runs a skill: the full `SKILL.md` body is written into the message that invokes it, as an attachment after the typed text, and later turns replay it. | [Skills](../features/skills.md#how-skills-are-applied) |
 
 Three boundaries follow from the code:
 
 - the Telegram adapter answers its own commands, passes the settings commands but `/permissions` to the session (`isSettingsCommand` in `external/gateway/telegram/bot.go`), and drops any other message that starts with `/`, so `/compact`, `/export` and skills are not reachable there;
+- the Pachca adapter does the same with its smaller set (`knownCommand` in `external/gateway/pachca/dispatch.go`): `/compact`, `/export`, `/resume` and `/mcp` sent there are dropped;
 - a subagent never runs a built-in: a child prompt that starts with `/export` is an ordinary task for the child (`internal/agent/react.go`);
 - most console client-side commands exist only in the console; `/mcp` also opens the web settings and a Telegram menu. Settings commands are the same everywhere because one parser and one setter in the session manager serve every surface.
 
@@ -14340,6 +14540,7 @@ Three boundaries follow from the code:
 | Web UI | Two groups in the composer: built-ins from `GET /coddy/commands` plus local `/docs` and `/mcp`, and skills from `GET /coddy/slash-commands`, paged and filtered by `prefix`, scoped to the session workspace through `X-Coddy-Session-ID`. A server built-in row carries its `kind` (`setting` or `action`), the argument `hint`, its `aliases`, and for a settings command the `setting` it changes with its `choices` or fixed `value`. | Both server lists are re-read when the server announces a configuration reload (`event: config_reloaded` on `GET /coddy/events`). Picking `/model`, `/reasoning` or `/permissions` opens that selector; `/agent`, `/plan` or `/ask` switches the mode; `/mcp` opens Settings → MCP servers. Other rows insert the plain `/name` token. Once `/compact` is typed, the composer completes its `--model` option and the option's value from the configured models ([Composer command options](../surfaces/web-ui.md#composer-command-options)). |
 | ACP editors | `available_commands_update` after `session/new` and `session/load`: the settings commands, then the other built-ins, then the skills sorted by name; rows carry `name` (without the slash), `description` and, for a settings command and for `/compact`, `input.hint` with its argument and flags. A skill named like a built-in or one of its aliases is left out. | The same function, `session.BuiltinCommandRows` in `internal/session/commands.go`, feeds the HTTP endpoint and the notification, so the two never disagree: `compact` only while compaction is enabled, `export` and `plugin` always. |
 | Telegram | `start`, `help`, `model`, `mcp`, `agent`, `plan`, `ask`, `context`, `resume` and `clear`, registered with `setMyCommands` at startup. | They appear in the client's command menu; `/reasoning`, `/think` and `/nothink` work when typed but are not in the menu. |
+| Pachca | `start`, `help`, `clear`, `model`, `context` and the settings commands but `/permissions`, recognised when typed (`knownCommand` in `external/gateway/pachca/dispatch.go`). | Pachca has no command menu for a bot of this kind; in a group chat a command needs the bot's mention, like any message there. See [Pachca gateway](../surfaces/pachca.md#commands). |
 
 ## How skills become commands
 
@@ -14766,7 +14967,8 @@ way through the gate:
 |---|---|
 | **`GET /coddy/auth/me`** | `login_required`, `auth_required`, `authenticated`, and `user` / `expires_at` for a signed-in browser. The SPA calls it on boot to choose between the sign-in screen and the app. |
 | **`POST /coddy/auth/login`** | `{user, password}`. On success sets an `HttpOnly`, `SameSite=Strict` `coddy_session_<host digest>` cookie (`Secure` when the request arrived over TLS or through a proxy sending `X-Forwarded-Proto: https`), living for `session_ttl_hours`; with `0` the browser drops it on close and the server expires its own record after 30 days. The name carries a digest of the host the request was addressed to, because cookies are not scoped by port: without it two Coddy servers on one machine - a relay and the node behind it, say - would sign each other out at every login. |
-| **`POST /coddy/auth/logout`** | Drops the session on the server and expires the cookie. Idempotent. |
+| **`POST /coddy/auth/telegram`** | `{init_data}`: the launch data of the web UI opened as the Telegram bot's Mini App. The signature is checked against the bot's token (launch data at most an hour old, each launch once), and only a user in `gateways.telegram.admins` is signed in: an HttpOnly, `SameSite=Strict` `coddy_tg_session_<host digest>` cookie that opens what the form's cookie opens, also behind a token-only gate, and ends when the token changes, the bot is disabled or the person stops being an admin. 403 for anybody else. `GET /coddy/auth/me` says `telegram_login: true` when the route is available. |
+| **`POST /coddy/auth/logout`** | Drops the session on the server and expires the cookie (the Mini App's too). Idempotent. |
 
 Once signed in, the cookie opens every `/v1/*` and `/coddy/*` route, the SSE streams included - a
 same-origin `EventSource` sends cookies, so no `?access_token=` is needed. The cookie is
@@ -19196,6 +19398,7 @@ The **Settings** drawer (**`#/settings`**, **`Settings.tsx`**) is **tabbed**, no
 - **List sections** (**LLM Providers**, **Logical Models**) are **master–detail** (**`SettingsArraySection`**): a list of named buttons (labelled by **`name`** / **`model`**) with **Add**/**Remove**; **Add** or selecting a row hides the list and shows the item form. **The way back is the drawer's head, on every width**: while a row form is open the head reads what the form is (**`settings.item.<section>`**: **Provider settings**, **Model settings**; the section's name for a list without one) behind the same round back arrow the narrow shell's section view uses (**`.settings-head-back`**, **`data-testid="settings-head-back"`**, named **Back to &lt;list&gt;**), and the arrow closes the form onto the list (**`closeSignal`**; the list reports **`onEditingChange`**, so a row with no name yet is covered too). With no row open the desktop head reads **Settings** and the narrow shell's head names the section with its arrow back to the tiles. **Escape** takes the step the arrow takes while the head shows one, and closes the drawer when it shows none (**Escape and the screens of the rail**). The form carries no back control of its own inside the drawer (**`hideBackLink`**); outside it, **`SettingsArraySection`** keeps a quiet link, **`.settings-back-link`**, the app's chevron pointing left and the list's name. The open row is in the address, **`#/settings/<section>?id=<name>`** (**`appNavHrefSettingsSection`**, the name URL-encoded, so **`demo/qwen3.8-27b`** travels as **`demo%2Fqwen3.8-27b`**): opening a row writes it, going back takes it out, renaming the open row rewrites it (all with **`replaceState`**, no history entries), and an address naming a row opens it - one that names no row (a typo, a row deleted since) shows the list and drops the dead name from the address. The row form is **keyed by the row**, so switching rows through the address (edit to edit, never through the list) mounts a fresh form and nothing a field remembers - the proxy URL, a filter, a fold - crosses rows; an open form whose index is gone from the document falls back to the list. A row with no name yet keeps the address on the list while its form stays open; the row already open under a name stays open when a rename makes two rows share it. **`SettingsArraySection.test.tsx`** pins both directions; the drawer hands the address row only to the section the address names (**`appearanceSettingsLayout.test.tsx`**), because the tab catches up one render late and another list used to take the name for one of its own, find none and rewrite the address. The component is **keyed by the section** in **`SettingsSection`**: both tabs render the same component at the same place in the tree, and without the key a row form opened under LLM Providers stayed on screen when the operator switched to Logical Models, showing the first model's form instead of the list.
 - **Codex provider authentication**: when a provider row has **`type: codex`**, **`api_base`**, **`api_key`**, and **`api_key_command`** controls are replaced by **Sign In with ChatGPT**. The device-flow card shows the one-time code, a link to the official verification page, waiting/completed/error state, and **Sign Out** for Coddy-managed credentials. The token is server-side only.
 - **Proxy settings** (**`ProxySettingField`**, rendered through **`SchemaForm`**’s **`fieldOverride`** hook on path **`proxy`** for every provider type, codex included, and on **`telegram.proxy`** in the Gateways tab's Telegram block): an **Ignore system proxy** **`SwitchField`** (**`data-testid="proxy-setting-direct"`**) above the **Proxy URL** input (**`data-testid="proxy-setting-url"`**), both direct children of the form so they keep its spacing. The switch description names whose requests go direct (the provider's, or the bot's). The switch owns the **`none`** value; with it on the input is disabled (the muted look **`.settings-input:disabled`** shares with read-only inputs), empty, and its placeholder reads **Direct connection**. With it off the input holds the proxy URL, and an empty one (no value, or a stored **`inherit`**, any case) reads **Follows the system proxy**. Turning the switch off restores the last value the row held that was not **`none`** (typed, pasted or reloaded); that memory lives in the field for as long as the item form is open - the form mounts afresh for every row - because the document keeps one value, so a saved **`none`** no longer knows the URL it replaced.
+- **Fieldsets shrink to their column**: every **`.settings-fieldset`** sets **`min-inline-size: 0`**. A **`<fieldset>`** defaults to **`min-content`**, so nested frames (a per-chat override inside the Telegram or Pachca block of the Gateways tab) added their padding up past a 390px panel and scrolled it sideways; the rule is pinned by **`settingsFieldsetCss.test.ts`**.
 - **Fieldset legends** start on the line their fields' labels start on: the legend's **6px** of padding, which opens the gap in the frame, is pulled back by **`margin-left: -6px`** (**`.settings-fieldset > legend`**, every settings fieldset); the provider **Models** rows hang their own 6px of padding the same way, so the ids share that line too.
 - **Provider form blocks**: a provider's form is three fieldsets (**`SchemaForm`** **`groups`**, passed through **`SettingsArraySection`**): **Provider settings** (id, type, endpoint, key, the sign-in blocks, the usage switch - every key no other group names), **Advanced settings** (**`api_key_command`**, **`proxy`**, **`timeout_ms`**), folded until opened, and the **Models** list last. A folding fieldset (**`CollapsibleFieldset`**) has the app's chevron **hanging in front of its name** in the legend (**`.settings-fieldset-toggle`**, **`aria-expanded`**), the way a transcript row's hangs in front of its label: the legend reaches **18px** further left than a plain one (**`margin-left: -24px`**: the plain -6px, then the 14px chevron and its 4px gap), so the name starts on the same line as every other legend's, and opened, the frame's gap takes the chevron in too. **Folded, there is no frame at all** - no border, no background, only the chevron and the name (**`.settings-fieldset--collapsible:not(.is-open)`**: the border turns transparent rather than going away, so the name stays where the framed box puts it); opening it shows an ordinary fieldset. The body stays mounted, **`hidden`**, so the proxy switch keeps the URL it remembers across a fold.
 - **Provider models list** (**`ProviderModelList`**, the **`itemFooter`** of the providers **`SettingsArraySection`**): the last block of a provider form lists what the provider advertises, fetched through **`POST /coddy/providers/models`** with the row **as the form holds it** (**`providerModelsRequest`**: name, type, api_base, api_key, api_key_command, proxy), so an unsaved row, a sign-in that exists only on disk and a provider the document does not have yet list their models like a saved one (issue #335). **`useAutoProviderModels`** fetches when the form opens and again when the row becomes **another provider** - its id or its type changed and stayed still for **`AUTO_FETCH_DEBOUNCE_MS`** (600 ms); an edit to the endpoint, the key or the proxy fetches nothing by itself and waits for the refresh icon, so a key typed next to a half-typed endpoint never travels to it. An automatic fetch **never carries `api_key_command`** (the server runs a posted command, and a half-typed one must not run); the refresh icon beside the legend name (**`.provider-models-refresh`**, 20px, the (i)'s metrics) fetches at once and is the only fetch that sends the command. There is **no count line**: a line under the legend (**`.provider-models-status`**) speaks only when there is nothing to list - fetching, the provider's error in **`.settings-error`** colour, an empty answer, a row without a name or a type. Rows are **compact and unframed**, no separators (**`.provider-models-item`**, 3px padding, 1px apart): the **id** in monospace (**`.provider-models-item-id`**, ellipsized), the **context window** the listing reports right of it (**`.provider-models-item-ctx`**, **`131k`**, the exact count, localized and pluralized, in its tooltip), then the **toggle** (**`.provider-models-toggle`**, 24px, **`aria-pressed`**): a plus adds **`provider/id`** to Logical Models, seeded through the same **`seedLogicalModel`** the Add button uses with the reported window written into **`max_context_tokens`**; an accent check says it is there and **takes it out again**. A row is only as wide as its content (**`align-self: flex-start`**, **`max-width: 100%`**), so the hover lights the id and its toggle, not the width of the box. An advertised display name that says more than the id is the row's tooltip (**`modelDisplayName`** drops one that only restyles the id). An id the document files under this provider that the provider no longer advertises stays in the list **amber**, checked, the reason in the row's tooltip and in the toggle's accessible name. Past **`PROVIDER_MODELS_FILTER_THRESHOLD`** (8) rows a filter field narrows the list, and the list scrolls inside the form past about twelve rows. Containment is pinned in **`ProviderModelList.test.tsx`**: the fieldset drops the **`min-content`** inline size every **`<fieldset>`** defaults to (**`min-inline-size: 0`**) and the id may shrink, because the first version of this box widened the form past a phone's panel.
@@ -20805,14 +21008,14 @@ Short map for automation-friendly contributors.
 | `external/cli` | Interactive console TUI (**`-tags cli`**): bare **`coddy`** on a terminal, pi-style rendering in **`external/cli/tui`**. Guide: **`docs/surfaces/console.md`**. |
 | `external/swarm` | The relay **`coddy serve`** runs under **`swarm.enable`**, built with **`tags=swarm`** (part of **`FULL_TAGS`**, so the release binaries, image and packages carry it): the stateless relay - lease registry, per-node mount, aggregated sessions, ring-aware topology, and the reverse HTTP/2 tunnel for nodes that can only dial out - plus the relay's own settings (**`settings.go`**: **`/coddy/config*`** over **`internal/configapi`** with the relay's form, **`config.RelayUISchemaJSON`**, the document scoped to **`swarm`** and **`logger`** so a relay client neither reads nor writes the rest of the host's configuration, and a write through a mount refused when the node behind it is itself a relay). It serves nothing else of an agent: no **`/v1`**, no sessions, no documentation. **`Server.Close`** ends the tunnels, so a relay rebuilt on a config reload is dialled again. Shared vocabulary and the join client live untagged in **`internal/swarm`**, so **`coddy serve`** can join a relay without the tag. Guide: **`docs/operate/swarm.md`**. |
 | `internal/configapi` | The settings editor's four routes (**`GET /coddy/config/schema`**, **`GET`** / **`PUT /coddy/config`**, **`POST /coddy/config/validate`**) over a **`Backend`** - the live configuration, how a new one is installed, which schema and document decoration go with it - so the HTTP server and the swarm relay share one PUT transaction under **`config.WithConfigFileLock`**, **`Sections`** to serve and take only some top-level sections (the relay's), and **`Revisions`**, the last 32 configurations a process served, which a **`PUT`** is measured against. Untagged. |
-| `external/gateway` | Messenger gateway (**`-tags gateway.telegram`** or **`-tags gateway`**), started by **`coddy serve`** under **`gateways.telegram.enable`**: Telegram bot adapter, session store, proxy support, and the web UI as the bot's Mini App (**`telegram/miniapp.go`**: the menu button and **`/app`** under **`gateways.telegram.mini_app`**, advertised only behind a credential through **`gateway.Options.WebUI`**, which **`cmd/coddy/serve.go`** decides; **`gateway.Fingerprint`** in the untagged **`serve.go`** hashes the whole block). Chat turns run through the shared manager and are mirrored into the HTTP relay, so a conversation is live in the web UI; what the messenger needs is said twice and kept out of the transcript both times - a system prompt block for the turn (**`prompt.go`**, carried by **`session.PromptRunOpts.SurfaceSystemPrompt`**) and the outbound rendering of the answer (**`markdown.go`**); the poller stops intake before generation on shutdown, so a restart from a settings change does not truncate an answer. Full guide: **`docs/surfaces/gateway.md`**, rules: **`.cursor/rules/gateway.mdc`**. |
+| `external/gateway` | Messenger gateway (**`-tags gateway.telegram`**, **`-tags gateway.pachca`** or **`-tags gateway`** for both), each bot a subsystem of **`coddy serve`** of its own: the Telegram bot under **`gateways.telegram.enable`**, and the **Pachca** integration bot under **`gateways.pachca.enable`** (**`external/gateway/pachca`**: reads the bot's events history - newest first down to a `(created_at, id)` watermark in `gateway_pachca_state.json`, dispatched oldest first, deleted after handling - answers every message of a direct chat and, in a group, only a mention or a reply to the bot (Telegram follows the same group rule), streams into one edited message; a reply reaches the session with the replied-to message quoted in front (**`external/gateway/replyquote`**, both adapters); its offline fake is the untagged **`internal/pachcafake`**, guide **`docs/surfaces/pachca.md`**); session store, proxy support, the ACL over **`access.Policy`** shared by both, and the web UI as the Telegram bot's Mini App (**`telegram/miniapp.go`**: the menu button and **`/app`** under **`gateways.telegram.mini_app`**, advertised only behind a credential through **`gateway.Options.WebUI`**, which **`cmd/coddy/serve.go`** decides, and opened only by the bot's admins, whom the launch data signs in (**`POST /coddy/auth/telegram`**, **`external/httpserver/auth_telegram.go`**); a sender who is not in a bot's **`admins`** only chats: the turn carries **`access.NonAdminTurn()`** (**`session.TurnRestriction`**: config, model, subagent, worktree and scheduler tools refused, approvals always asked and refused by the bot); **`gateway.Fingerprint`** and **`gateway.PachcaFingerprint`** in the untagged **`serve.go`** hash each bot's whole block). Chat turns run through the shared manager and are mirrored into the HTTP relay, so a conversation is live in the web UI; what the messenger needs is said twice and kept out of the transcript both times - a system prompt block for the turn (**`prompt.go`**, carried by **`session.PromptRunOpts.SurfaceSystemPrompt`**) and the outbound rendering of the answer (**`markdown.go`**); the poller stops intake before generation on shutdown, so a restart from a settings change does not truncate an answer. Full guide: **`docs/surfaces/gateway.md`**, rules: **`.cursor/rules/gateway.mdc`**. |
 | `internal/tgfake`, `cmd/tgfake` | The offline stand for the Telegram gateway: a fake Bot API server (every method the adapter calls, long-polled `getUpdates`, the `/sim/*` injection API, a chat page) plus **`llmstub`**, a scripted OpenAI-compatible model behind **`--llm`**, and the client side of a Mini App (**`web_app`** buttons, the menu button, **`/sim/webapp/launch`** with launch data signed by the bot's token, and a phone frame on the chat page that plays Telegram for the app; **`npm run check:telegram`** drives it against the real binary). Untagged and free of Telegram library types, so the gateway's tests run it on httptest (**`features/gateway_telegram_polling.feature`**) and **`go run ./cmd/tgfake --llm`** serves it on a port; **`coddy serve`** is pointed at it with **`CODDY_TELEGRAM_API_BASE`** (**`config.TelegramAPIBaseEnv`**, honoured by the bot and the **`--dry-run`** probe alike). Runner: **`examples/gateway/tg_e2e_offline.sh`**. Guide: **`docs/surfaces/gateway.md`** (Debugging against a fake Bot API). |
 | `packaging` | Distribution package sources: the **nfpm** recipe (**`nfpm.yaml`**) for the Linux **`.deb`** and **`.rpm`**, the **systemd user unit** (**`systemd/coddy.service`**, installed and not enabled, rendered by **`serve.PackagedUnitFile()`** and held to it by a test), the Homebrew **cask** template (**`homebrew/coddy.rb.tmpl`**, prebuilt macOS archives) and **formula** template (**`homebrew/coddy-formula.rb.tmpl`**, built from source - the artefact **homebrew/core** takes), the man page (**`man/coddy.1`**), bash and zsh completions, and the maintainer scripts (**`scripts/postinstall.sh`**, **`scripts/preremove.sh`**: what the user has to do next, the unit not enabled included). The package enables nothing and creates **no system service, system account or `/etc` files**; Coddy's state lives in the invoking user's **`~/.coddy`**, and **`coddy serve install`** (**`internal/serve/systemd.go`**) enables the unit for one account, or writes one under **`~/.config/systemd/user`** for a binary the install script put in place. Built by **`scripts/build-packages.sh`**, **`scripts/build-homebrew-cask.sh`** and **`scripts/build-homebrew-formula.sh`** (**`make deb`**, **`make rpm`**, **`make brew`**, **`make brew-formula`**); **`scripts/check-homebrew-submission.sh`** (**`make brew-check`**) is the preflight for the homebrew/core submission. Guides: **`docs/getting-started/install.md`**, **`docs/getting-started/homebrew.md`** (which Homebrew repository takes what, and the submission path), **`docs/contributing/build.md`** (Distribution packages), **`docs/getting-started/update.md`** (installations owned by a package manager). |
 | `internal/docsgen`, `cmd/docsgen` | The documentation generator and checker behind **`make docs`** / **`make docs-check`**: the hub and the llms files from **`docs/nav.yaml`**, the config field tables from the schema and **`config.DocDefaults`**, the CLI reference from the `--help` screens, the assets inventory, the relative-link and anchor check. Every tree walk asks git what it excludes and skips it (**`gitignore.go`**), so local scratch under **`docs/`** is never reported as a page missing from the map; without git nothing is filtered. |
 
 ## Builds
 
-**`coddy serve`** is the only long-running command: it starts every subsystem **`config.yaml`** enables (**`httpserver.enable`**, default true; **`gateways.telegram.enable`**; **`swarm.enable`**; **`scheduler.enable`**) over one session manager. A subsystem enabled but not compiled in is a startup error naming the tag. Run **`make build TAGS=http`** for the HTTP surface only (REST and **`/docs`**, no **npm**). Run **`make build TAGS=cli`** for the interactive console (**bare `coddy`** on a terminal; see **`docs/surfaces/console.md`**). Run **`make build TAGS="http ui"`** to link the embedded SPA (**Makefile** runs **ui-build** before **go build**). Recommended full image matches **`Dockerfile`** (**`make build TAGS="http ui scheduler memory cli gateway swarm"`**). Default **`make build`** omits HTTPServer, scheduler, and memory to keep dependency surface lean.
+**`coddy serve`** is the only long-running command: it starts every subsystem **`config.yaml`** enables (**`httpserver.enable`**, default true; **`gateways.telegram.enable`**; **`gateways.pachca.enable`**; **`swarm.enable`**; **`scheduler.enable`**) over one session manager. A subsystem enabled but not compiled in is a startup error naming the tag. Run **`make build TAGS=http`** for the HTTP surface only (REST and **`/docs`**, no **npm**). Run **`make build TAGS=cli`** for the interactive console (**bare `coddy`** on a terminal; see **`docs/surfaces/console.md`**). Run **`make build TAGS="http ui"`** to link the embedded SPA (**Makefile** runs **ui-build** before **go build**). Recommended full image matches **`Dockerfile`** (**`make build TAGS="http ui scheduler memory cli gateway swarm"`**). Default **`make build`** omits HTTPServer, scheduler, and memory to keep dependency surface lean.
 
 Primary conversational surface for bundled UI lives at **`POST /v1/responses`** with **`stream:true`**. Prefer it over **`POST /v1/chat/completions`** when shipping Coddy-hosted experiences.
 
