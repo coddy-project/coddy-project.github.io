@@ -201,6 +201,11 @@ def localize(page: str, source: str) -> str:
     page = page.replace('href="/" lang="en"', 'href="@@EN_HOME@@" lang="en"')
     page = page.replace('href="/"', 'href="/ru/"')
     page = page.replace('href="@@EN_HOME@@"', 'href="/"')
+    # The documentation is translated too: a page of it opens in Russian
+    # (coddy.dev/ru/docs/<slug>, docs/ru/ on GitHub), the hub included.
+    page = page.replace('https://coddy.dev/docs/', 'https://coddy.dev/ru/docs/')
+    page = page.replace('https://github.com/coddy-project/coddy-agent/tree/main/docs"',
+                        'https://github.com/coddy-project/coddy-agent/tree/main/docs/ru"')
     page = page.replace('btn.textContent = "Copied"', 'btn.textContent = "Скопировано"')
     page = page.replace('btn.textContent = "Copy"', 'btn.textContent = "Копировать"')
     page = page.replace('content="Coddy Agent - distroless-friendly coding agent harness"',

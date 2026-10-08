@@ -59,7 +59,7 @@
         <a class="nav-drawer-link" href="#demos">Демо</a>
         <a class="nav-drawer-link" href="#features">Возможности</a>
         <a class="nav-drawer-link" href="/ru/compare/">Сравнение</a>
-        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Документация</a>
+        <a class="nav-drawer-link" href="https://github.com/coddy-project/coddy-agent/tree/main/docs/ru" target="_blank" rel="noopener noreferrer">Документация</a>
         <span class="lang-switch" aria-label="Язык">
           <a href="/" lang="en" hreflang="en">EN</a>
           <span aria-hidden="true">/</span>
@@ -182,7 +182,7 @@
               <button type="button" class="method-tab" data-method="mac-brew" role="tab" aria-selected="false">Homebrew</button>
             </div>
             <a class="install-view method active" data-method="mac-script" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.sh" target="_blank" rel="noopener noreferrer">Посмотреть скрипт установки <span aria-hidden="true">&#8599;</span></a>
-            <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">О Homebrew-пакете <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/ru/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">О Homebrew-пакете <span aria-hidden="true">&#8599;</span></a>
           </div>
           <p class="install-note method active" data-method="mac-script">
             Кладёт бинарник последнего релиза в PATH, ставит справку man и автодополнение команд и создаёт <code>~/.coddy/config.yaml</code> из примера, если его ещё нет.
@@ -250,7 +250,7 @@
               <button type="button" class="method-tab active" data-method="docker-run" role="tab" aria-selected="true">docker run</button>
               <button type="button" class="method-tab" data-method="docker-compose" role="tab" aria-selected="false">Compose</button>
             </div>
-            <a class="install-view method active" data-method="docker-run" href="https://coddy.dev/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">Руководство по Docker <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method active" data-method="docker-run" href="https://coddy.dev/ru/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">Руководство по Docker <span aria-hidden="true">&#8599;</span></a>
             <a class="install-view method" data-method="docker-compose" href="https://github.com/coddy-project/coddy-agent/blob/main/docker-compose.yml" target="_blank" rel="noopener noreferrer">Compose-файл в репозитории <span aria-hidden="true">&#8599;</span></a>
           </div>
           <p class="install-note method active" data-method="docker-run">
@@ -277,10 +277,10 @@
       </div>
       <p class="hint install-alt">
         Другие способы установки и подробности описаны в
-        <a href="https://coddy.dev/docs/getting-started/install" target="_blank" rel="noopener noreferrer">руководстве по установке</a>
-        · <a href="https://coddy.dev/docs/getting-started/android" target="_blank" rel="noopener noreferrer">Android (Termux)</a>
+        <a href="https://coddy.dev/ru/docs/getting-started/install" target="_blank" rel="noopener noreferrer">руководстве по установке</a>
+        · <a href="https://coddy.dev/ru/docs/getting-started/android" target="_blank" rel="noopener noreferrer">Android (Termux)</a>
         · Установка через Homebrew по имени пакета ещё в работе, см.
-        <a href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">страницу про Homebrew</a>
+        <a href="https://coddy.dev/ru/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">страницу про Homebrew</a>
       </p>
     </section>
 
@@ -359,7 +359,7 @@
           </button>
           <p class="showcase-caption">
             <code>coddy serve</code> в Termux подключается к ретранслятору на ноутбуке одной записью <code>swarm.join</code>, и открытый порт на телефоне для этого не нужен. Веб-интерфейс ретранслятора открывает телефон с карты роя и запускает там <code>getprop</code>, а потом пишет файл в домашний каталог телефона, и каждый шаг подтверждается в браузере.
-            <a href="https://coddy.dev/docs/tutorials/swarm-android-nodes" target="_blank" rel="noopener noreferrer">Пошаговая инструкция</a>
+            <a href="https://coddy.dev/ru/docs/tutorials/swarm-android-nodes" target="_blank" rel="noopener noreferrer">Пошаговая инструкция</a>
           </p>
         </div>
       </div>
@@ -382,27 +382,27 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Ядро агента</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/contributing/react-agent" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/contributing/react-agent" target="_blank" rel="noopener noreferrer">
             <h4>ReAct-цикл</h4>
             <p>Рассуждения, вызовы инструментов и наблюдения в цикле. Защита от зацикливания ловит повторяющийся вывод и одинаковые вызовы инструментов.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/subagents" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/subagents" target="_blank" rel="noopener noreferrer">
             <h4>Субагенты</h4>
             <p><code>spawn_agent</code> передаёт ограниченную задачу дочернему агенту с собственным контекстом и сессией. Определения пишутся в Markdown и могут только сужать набор инструментов родителя.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/hooks" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/hooks" target="_blank" rel="noopener noreferrer">
             <h4>Хуки</h4>
             <p>Ваши команды на каждом этапе жизненного цикла в формате <code>hooks.json</code> из Claude Code. Хук может запретить, разрешить или переписать вызов инструмента до его запуска.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/background-tasks" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/background-tasks" target="_blank" rel="noopener noreferrer">
             <h4>Фоновые задачи</h4>
             <p>Долгие команды и запуски субагентов уходят в фон. Панель фоновых задач сверяет их ход с оценкой самой модели, а закончившаяся задача будит агента и отдаёт ему результат.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/compaction" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/compaction" target="_blank" rel="noopener noreferrer">
             <h4>Сжатие контекста</h4>
             <p><code>/compact</code> и автоматическая суммаризация при достижении порога контекста. Последние ходы остаются дословно, а полный транскрипт хранится на диске.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/memory" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/memory" target="_blank" rel="noopener noreferrer">
             <h4>Долговременная память</h4>
             <p>Необязательный субагент памяти работает в фоне на каждом ходе, поднимает из заметок на диске нужные сведения и сохраняет то, что вы просите запомнить.</p>
           </a>
@@ -412,27 +412,27 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Где запускать</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
             <h4>Консоль</h4>
             <p>Команда <code>coddy</code> без аргументов в терминале. Потоковый транскрипт, блоки инструментов, окна разрешений, <code>!!</code> для локальной оболочки, которую модель не видит, <code>coddy -c</code> для продолжения сессии, <code>coddy -p</code> для разового вывода.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
             <h4>Веб-интерфейс</h4>
             <p>Встроенный SPA по адресу <code>/</code> в сборке с тегами <code>http,ui</code>. Чат, история сессий, планы, панель фоновых задач, планировщик, встроенная документация, карта роя и настройки на лету.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/acp-protocol" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/reference/acp-protocol" target="_blank" rel="noopener noreferrer">
             <h4>ACP</h4>
             <p><code>coddy acp</code> по stdio. Сессии, режимы, разрешения и потоковые обновления для Zed, Obsidian, VS Code или вашего скрипта.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/http-api" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/reference/http-api" target="_blank" rel="noopener noreferrer">
             <h4>HTTP API</h4>
             <p>Шлюз, совместимый с OpenAI, в <code>coddy serve</code>. <code>POST /v1/responses</code>, модели, Swagger по адресу <code>/docs/</code>.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/gateway" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/surfaces/gateway" target="_blank" rel="noopener noreferrer">
             <h4>Шлюз Telegram</h4>
             <p>Адаптер бота с отдельными сессиями для каждого пользователя, режимами изоляции групп, ACL администраторов и нативным форматированием сообщений. Расширяется на другие мессенджеры.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/sessions" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/sessions" target="_blank" rel="noopener noreferrer">
             <h4>Сессии</h4>
             <p>Каталоги сессий лежат на диске в <code>$CODDY_HOME</code> и открываются из любого интерфейса. Правка отправленного сообщения откатывает диалог к нему, а <code>/export</code> выгружает сессию в Markdown, HTML или JSON.</p>
           </a>
@@ -442,27 +442,27 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Эксплуатация</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/serve" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/operate/serve" target="_blank" rel="noopener noreferrer">
             <h4>coddy serve</h4>
             <p>Один процесс для всех подсистем, включённых в <code>config.yaml</code>. В Linux <code>coddy serve install</code> запускает его пользовательской службой systemd, в других системах <code>--daemon</code> уводит его в фон, а изменённый конфиг подхватывается без перезапуска.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/swarm" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/operate/swarm" target="_blank" rel="noopener noreferrer">
             <h4>Рой узлов</h4>
             <p>Ретранслятор видит множество узлов и связывается с ними, собирает их сессии в один список и маршрутизирует запросы между кольцами. Узлы, у которых есть только исходящий доступ, в том числе телефоны на Android с Termux, подключаются через обратный туннель.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/remote" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/operate/remote" target="_blank" rel="noopener noreferrer">
             <h4>Удалённое управление</h4>
             <p>Подключите консоль или <code>coddy acp</code> к работающему серверу через <code>--remote</code> или переключайте веб-интерфейс между локальным и удалённым сервером из поля ввода.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/scheduler" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/operate/scheduler" target="_blank" rel="noopener noreferrer">
             <h4>Планировщик</h4>
             <p>Задачи cron с панелью в интерфейсе и инструментами для агента, поэтому повторяющаяся работа идёт без открытой сессии.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
             <h4>Проверка конфигурации и пробный запуск</h4>
             <p><code>coddy -t</code> проверяет <code>config.yaml</code> по встроенной схеме, указывает <code>file:line:col</code> и предлагает исправление. <code>--dry-run</code> ещё до старта опрашивает пути, провайдеров, модели, порты, MCP-серверы и удалённые узлы.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/getting-started/docker" target="_blank" rel="noopener noreferrer">
             <h4>Docker и distroless</h4>
             <p>Готовые образы лежат в <code>ghcr.io</code> для amd64 и arm64, а можно положить статический бинарник в образ scratch с rootfs только для чтения.</p>
           </a>
@@ -472,27 +472,27 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Контекст проекта и контроль</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/rules" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/rules" target="_blank" rel="noopener noreferrer">
             <h4>Правила</h4>
             <p>Читает одну папку проекта, первую из <code>.coddy/rules</code>, <code>.agents/rules</code>, <code>.cursor/rules</code>, <code>.claude/rules</code> и <code>.codex/rules</code>, где есть правила, а также вашу папку <code>~/.coddy/rules</code>. Вложенный <code>AGENTS.md</code> подключается, когда агент заходит в его папку.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/skills" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/skills" target="_blank" rel="noopener noreferrer">
             <h4>Навыки</h4>
             <p>Слеш-команды из наборов <code>SKILL.md</code>. Пять из них встроены в бинарник, остальные ставятся из реестров через <code>npx skills</code> или из раздела Настройки → Навыки.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/mcp" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/mcp" target="_blank" rel="noopener noreferrer">
             <h4>MCP-серверы</h4>
             <p>Подключайте MCP-серверы по stdio, streamable HTTP и SSE из конфига, файлов <code>mcp.json</code> или из редактора. Их инструменты попадают в циклы режимов agent и plan.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/features/modes" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/modes" target="_blank" rel="noopener noreferrer">
             <h4>Три режима</h4>
             <p><code>agent</code> работает со всеми инструментами, <code>plan</code> пишет только планы, <code>ask</code> только читает и ищет, включая веб-поиск.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/operate/security" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/operate/security" target="_blank" rel="noopener noreferrer">
             <h4>Разрешения и доверие</h4>
             <p>Перед правкой или командой агент спрашивает разрешение, и его можно выдать сразу на всю программу. MCP-серверы, хуки и файлы субагентов из самого проекта сначала нужно явно одобрить.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/reference/config#agent-self-configuration" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/reference/config#agent-self-configuration" target="_blank" rel="noopener noreferrer">
             <h4>Самонастройка</h4>
             <p>Агент правит собственный YAML поэтапными командами <code>config_set</code>. Изменения применяются только после одобренного вами коммита, который проверяет конфиг и перезагружает его на лету.</p>
           </a>
@@ -502,27 +502,27 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Модели, инструменты и оформление</h3>
         <div class="features">
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/getting-started/configuration" target="_blank" rel="noopener noreferrer">
             <h4>Любой провайдер</h4>
             <p>OpenAI, Anthropic, Ollama, NeuralDeep, любой API, совместимый с OpenAI, вход через ChatGPT на бэкенде Codex и аккаунт Devin. Ключи, аккаунты и адреса серверов ваши.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#per-session-reasoning-level" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/surfaces/web-ui#per-session-reasoning-level" target="_blank" rel="noopener noreferrer">
             <h4>Уровни рассуждения</h4>
             <p>Выпадающий список в поле ввода задаёт уровень рассуждения для reasoning-моделей, который переводится в параметр OpenAI <code>reasoning_effort</code> или в бюджет thinking у Anthropic.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/surfaces/web-ui#composer-file-attachments-multimodal" target="_blank" rel="noopener noreferrer">
             <h4>Мультимодальность</h4>
             <p>Прикрепляйте изображения и файлы в поле ввода, если модель это поддерживает. Вложения сохраняются в каталог сессии и попадают в контекст агента.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
             <h4>Расход и лимиты</h4>
             <p>Квота текущей модели видна в нижней строке консоли и в веб-интерфейсе, если провайдер её публикует. Ход, упёршийся в лимит, может дождаться сброса и продолжиться сам.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/getting-started/configuration#ssh-remote-execution" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/getting-started/configuration#ssh-remote-execution" target="_blank" rel="noopener noreferrer">
             <h4>Команды SSH</h4>
             <p><code>ssh_run_command</code> ходит на удалённые хосты по SSH на чистом Go и авторизуется через ваш SSH-агент или ключи из <code>~/.ssh</code>.</p>
           </a>
-          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
+          <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/surfaces/web-ui" target="_blank" rel="noopener noreferrer">
             <h4>Темы и язык</h4>
             <p>Семь тем веб-интерфейса и английский или русский язык. Всё переключается в разделе Настройки → Оформление без правки конфига.</p>
           </a>
@@ -586,7 +586,7 @@
     <div class="shell-width">
       <p class="footer-links">
         <a href="https://github.com/coddy-project/coddy-agent" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://github.com/coddy-project/coddy-agent/tree/main/docs" target="_blank" rel="noopener noreferrer">Документация</a>
+        <a href="https://github.com/coddy-project/coddy-agent/tree/main/docs/ru" target="_blank" rel="noopener noreferrer">Документация</a>
         <a href="https://github.com/coddy-project/coddy-agent/releases" target="_blank" rel="noopener noreferrer">Релизы</a>
         <a href="https://github.com/coddy-project/coddy-agent/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Лицензия MIT</a>
         <a href="/llms.txt">llms.txt</a>

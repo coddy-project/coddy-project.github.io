@@ -9,6 +9,7 @@ Every page below is the Markdown kept in the repository, read straight from the 
 - [Install](https://coddy.dev/#install): one command per platform, the packages and the Docker image.
 - [Compare](https://coddy.dev/compare/): Coddy against other agent harnesses, including where it loses.
 - [config.yaml JSON Schema](https://coddy.dev/config.schema.json): the schema Coddy writes as a modeline into every config it saves.
+- [Russian documentation](https://coddy.dev/ru/llms.txt): the same pages translated into Russian, under docs/ru/ in the repository.
 
 ## Getting started
 

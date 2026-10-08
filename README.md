@@ -43,7 +43,9 @@ python scripts/build_ru.py
 ```
 
 The builder copies the HTML structure, links, install commands, and demos from the English pages,
-then translates visible text and writes both Russian pages. It fails if a new text fragment has no
+then translates visible text and writes both Russian pages. Links to the documentation point at its
+Russian translation: `https://coddy.dev/docs/<page>` becomes `https://coddy.dev/ru/docs/<page>`, and
+the Docs link opens `docs/ru/` on GitHub. It fails if a new text fragment has no
 translation. Only product names, code, paths and numbers listed in `scripts/ru_preserve.txt` stay as
 written. Commit the regenerated HTML alongside the source and translations; GitHub Pages does not
 run a build step. Then run the checks:
