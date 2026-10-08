@@ -1351,7 +1351,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ge
 
 # Docker
 
-Run Coddy as **`coddy serve`** inside a minimal **`scratch`** image. The default image ships the embedded web UI (**`ui`** build tag), OpenAI-compatible REST (**`http`**), scheduler (**`scheduler`**), and long-term memory (**`memory`**).
+Run Coddy as **`coddy serve`** inside a minimal **`scratch`** image. The default image ships the embedded web UI (**`ui`** build tag), OpenAI-compatible REST (**`http`**), scheduler (**`scheduler`**), long-term memory (**`memory`**), the console (**`cli`**), the messenger gateways (**`gateway`**) and the swarm relay (**`swarm`**).
 
 Related files:
 
@@ -1363,7 +1363,7 @@ Related files:
 
 Published images: **[coddy-agent on GHCR](https://github.com/coddy-project/coddy-agent/pkgs/container/coddy-agent)** (`ghcr.io/coddy-project/coddy-agent`). CI builds **multi-arch** manifests (**`linux/amd64`**, **`linux/arm64`**) on SemVer tags and pushes floating aliases (**`latest`**, **`MAJOR.MINOR`**, **`MAJOR`**) when appropriate - see [`.github/workflows/docker-build-push.yaml`](../../.github/workflows/docker-build-push.yaml).
 
-On Apple Silicon or arm64 Linux hosts, pull the image as usual; Docker selects **`arm64`** automatically. To pin a platform explicitly:
+On Apple Silicon or arm64 Linux hosts, pull the image as usual; Docker selects **`arm64`** automatically, and that variant carries an **`aarch64`** binary, which CI reads out of the image before it pushes (see [Checking the platforms of the image](#checking-the-platforms-of-the-image)). To pin a platform explicitly:
 
 ```bash
 docker pull --platform linux/arm64 ghcr.io/coddy-project/coddy-agent:latest
@@ -1377,6 +1377,7 @@ General build instructions without Docker - **[docs/contributing/build.md](../co
 - **Docker** with **Compose V2** (**`docker compose`**, not only legacy **`docker-compose`**)
 - A **`config.yaml`** you mount read-only into the container (start from **`config.example.yaml`**). Do not commit secrets.
 - For the web UI, a browser on the machine that can reach the published host port (default **12345**)
+- To build the image from the [`Dockerfile`](../../Dockerfile) (**`docker-compose.dev.yml`**, **`make check-image`**), **BuildKit**: Docker Engine **23** or newer with the **`buildx`** plugin (**`docker buildx version`** answers), which Docker's own packages and Docker Desktop carry; Debian's and Ubuntu's **`docker.io`** needs **`docker-buildx`** installed next to it. The build stages run on **`$BUILDPLATFORM`**, which only BuildKit sets, so the legacy builder stops at the first **`FROM`** with **`failed to parse platform`**
 
 ## Docker Compose
 
@@ -1489,7 +1490,7 @@ export CODDY_BUILD_TAGS="http,scheduler,ui,memory,gateway"
 docker compose -f docker-compose.dev.yml build coddy
 ```
 
-**`CODDY_BUILD_TAGS`** must stay comma-separated with **no spaces**, matching **`go build -tags=`**. The dev file defaults to **`http,scheduler,ui,memory,gateway`** (matching the [`Dockerfile`](../../Dockerfile) **`BUILD_TAGS`** default) so the built image can run the messenger gateway; drop **`gateway`** to trim it.
+**`CODDY_BUILD_TAGS`** must stay comma-separated with **no spaces**, matching **`go build -tags=`**. The dev file defaults to **`http,scheduler,ui,memory,gateway`** so the built image can run the messenger gateway; drop **`gateway`** to trim it. The [`Dockerfile`](../../Dockerfile) on its own builds the full set (see [What the image contains by default](#what-the-image-contains-by-default)).
 
 ### Add the messenger gateway
 
@@ -1605,12 +1606,15 @@ For a local **`Dockerfile`** build, use **`docker-compose.dev.yml`** - see [Dock
 
 ## What the image contains by default
 
-**`Dockerfile`** **`ARG BUILD_TAGS`** defaults to **`http,scheduler,ui,memory`** (comma-separated, same meaning as **`go build -tags=`**).
+**`Dockerfile`** **`ARG BUILD_TAGS`** defaults to **`http,scheduler,ui,memory,gateway,cli,swarm`** (comma-separated, same meaning as **`go build -tags=`**), the set the release binaries carry.
 
 - **`http`** - **`coddy serve`** and REST gateway (see **[docs/reference/http-api.md](../reference/http-api.md)**).
 - **`ui`** - embedded SPA on **`/`** (needs **`http`**).
 - **`scheduler`** - scheduler subsystem (**[docs/operate/scheduler.md](../operate/scheduler.md)**).
 - **`memory`** - the long-term memory subagent and the session memory REST (**[external/memory/README.md](../../external/memory/README.md)**); toggle runtime behavior via **`memory.enable`**.
+- **`gateway`** - the Telegram and Pachca bots (**[docs/surfaces/gateway.md](../surfaces/gateway.md)**), each under its own **`enable`** key.
+- **`cli`** - the interactive console (**[docs/surfaces/console.md](../surfaces/console.md)**), for **`docker run -it ... coddy`**.
+- **`swarm`** - the relay that aggregates nodes (**[docs/operate/swarm.md](../operate/swarm.md)**), under **`swarm.enable`**.
 
 To build an image **without** memory or the embedded UI, override **`BUILD_TAGS`** (for example **`http,scheduler,ui`** or **`http,scheduler`**) via **`docker compose` `args`** or **`docker build --build-arg`**.
 
@@ -1618,9 +1622,22 @@ Volume and environment details for Compose are in [Docker Compose](#docker-compo
 
 ## How the Dockerfile stages work
 
-1. **`ui-builder` (Node)** - runs **`npm ci`** and **`npm run build:go`** under **`external/ui`**, producing the static bundle copied into the Go tree for **`go:embed`** when **`ui`** is in **`BUILD_TAGS`**.
-2. **`build` (Go)** - **`CGO_ENABLED=0`**, **`GOOS`/`GOARCH`** from BuildKit **`TARGETOS`/`TARGETARCH`** (CI builds **`linux/amd64`** and **`linux/arm64`**), **`go build -tags="$BUILD_TAGS"`** with **`-trimpath`** and **`-ldflags "-s -w -X ...Version=..."`**, writes **`/out/coddy`**, copies **`ca-certificates.crt`** for HTTPS clients.
+1. **`ui-builder` (Node)** - runs **`npm ci`** and **`npm run build:go`** under **`external/ui`**, producing the static bundle copied into the Go tree for **`go:embed`** when **`ui`** is in **`BUILD_TAGS`**. It runs on the build platform (**`FROM --platform=$BUILDPLATFORM`**): the bundle is the same for every platform, so a multi-arch build makes it once and natively.
+2. **`build` (Go)** - runs on the build platform too and cross-compiles: **`CGO_ENABLED=0`**, **`GOOS`/`GOARCH`** from BuildKit **`TARGETOS`/`TARGETARCH`** (CI builds **`linux/amd64`** and **`linux/arm64`**), **`go build -tags="$BUILD_TAGS"`** with **`-trimpath`** and **`-ldflags "-s -w -X ...Version=..."`**, writes **`/out/coddy`**, copies **`ca-certificates.crt`** for HTTPS clients. **`TARGETOS`** and **`TARGETARCH`** are declared without a default on purpose: a default replaces the value BuildKit passes, and the **`linux/arm64`** image shipped an **x86-64** binary that way ([issue #482](https://github.com/coddy-project/coddy-agent/issues/482)).
 3. **`scratch`** - only the binary, the CA bundle and the folders the user writes (**`/home/user`**, **`/workspace`**, **`/tmp`**, owned by **1000:1000**); **`USER 1000:1000`**, **`HEALTHCHECK`** **`/bin/coddy --version`**, **`ENTRYPOINT`** **`/bin/coddy`**, default **`CMD`** **`serve -H 0.0.0.0 -P 12345`** ([The container user](#the-container-user)). Marketplace sync and plugin installation do not need `/tmp` or a Git executable: remote staging is kept under the writable `${CODDY_HOME}/tmp` directory, and Git sources fall back to go-git. HTTPS and `file://` sources work in that path; SSH sources need an authentication mechanism go-git can use in the container.
+
+## Checking the platforms of the image
+
+Docker labels each variant of a multi-arch image with the platform it was asked for, whatever the binary inside is, and a host with **`qemu-user-static`** even runs a binary of the wrong architecture. Only the binary's own ELF header tells which platform it is for, and that is what the check reads:
+
+```bash
+make check-image
+make check-image IMAGE_PLATFORMS=linux/arm64
+```
+
+**`make check-image`** ([`scripts/check-image.sh`](../../scripts/check-image.sh)) builds the image for every platform in **`IMAGE_PLATFORMS`** (default **`linux/amd64,linux/arm64`**, what the release pushes), one platform at a time, exports each filesystem to **`dist/image/<os>_<arch>/`**, and fails unless **`/bin/coddy`** there is a binary of that platform. The binary of the host's own platform is also run and must print the version it was built with. It needs Docker with **`buildx`** and nothing else: the build stages run natively and cross-compile, so an **amd64** host builds the **arm64** variant without emulation, and the plain **`docker`** driver will do. The **Docker image** job of every pull request runs the same script, and the release workflow runs it before it pushes.
+
+Without Docker, **`make test`** holds the same thing on the Dockerfile itself: [`features/docker_image_platforms.feature`](../../features/docker_image_platforms.feature) reads it the way BuildKit resolves its platform arguments and fails when the Go stage would compile for another platform than the one being built, or would run under emulation.
 
 ## Automated smoke test
 
@@ -2234,6 +2251,23 @@ coddy -v
 ```
 
 In a Termux session that was open during the install, `coddy` is found only after `source ~/.bashrc` or in a new session. See [Android (Termux)](android.md).
+
+## The Docker image stops with `exec format error` on an arm64 host
+
+**Symptom.** On a Raspberry Pi, an arm64 server or any other `aarch64` host, `docker run ghcr.io/coddy-project/coddy-agent` exits at once with `exec /bin/coddy: exec format error`, although `docker image inspect` reports `Architecture: arm64`. A host with `qemu-user-static` registered runs the image anyway, slowly, under emulation.
+
+**Cause.** The `linux/arm64` variant of the images published from 0.8.3 to 1.2.85 carries an x86-64 `/bin/coddy`: a default value on `ARG TARGETARCH` in the Dockerfile replaced the platform BuildKit was building for ([issue #482](https://github.com/coddy-project/coddy-agent/issues/482)). Docker labels a variant with the platform it was asked for, whatever binary is inside.
+
+**Fix.** Pull an image published after 1.2.85, or build one on the host from the repository with BuildKit (see [Docker](docker.md#prerequisites)). To see what a variant carries, copy the binary out, since the image has no shell:
+
+```bash
+docker pull ghcr.io/coddy-project/coddy-agent:latest
+c=$(docker create ghcr.io/coddy-project/coddy-agent:latest)
+docker cp "$c:/bin/coddy" ./coddy-from-image && docker rm "$c"
+file ./coddy-from-image   # ARM aarch64 on an arm64 host
+```
+
+A build from source that stops at the first `FROM` with `failed to parse platform` ran on the legacy builder: install the `buildx` plugin, or build with `docker buildx build`. See [Checking the platforms of the image](docker.md#checking-the-platforms-of-the-image).
 
 ## Windows notes
 
@@ -18908,7 +18942,7 @@ Order does not matter for these tags.
 | **`gateway`** | All messenger adapters (superset of **`gateway.telegram`**; includes future Discord, Slack adapters) | [`docs/surfaces/gateway.md`](../surfaces/gateway.md) |
 | **`swarm`** | Stateless relay that aggregates nodes, started by **`coddy serve`** under **`swarm.enable`** | [`docs/operate/swarm.md`](../operate/swarm.md) · [`external/swarm/`](../../external/swarm) |
 
-**`make test`** is the express run: the whole tree once with every optional module compiled in (**`http,ui,scheduler,memory,cli,gateway,swarm`**). **`make test-matrix`** walks every combination (the **`TEST_TAG_SETS`** list in [`Makefile`](../../Makefile)); CI runs that matrix on every pull request, one job per combination. The `cli` job also starts the built binary and drives the console through a real pty (`examples/cli/cli_e2e_startup.py`), and the **Telegram stand (tgfake)** job runs the Telegram bot against the release binary of [tgfake](tgfake.md) (`examples/gateway/tg_e2e_offline.sh`). **`make test-race`** runs the whole tree under the Go race detector with every tag but `ui`; CI runs it on every pull request in the **Race detector** job, and `GOFLAGS=-count=3 make test-race` repeats every test locally for a race that shows up rarely. Two groups can be run on their own: **`make test-cache`** is the prompt-cache group (the `features/prompt_cache_*.feature` specs and the `TestPromptCache*` tests, part of `make test`: what every request sends the provider, held byte for byte across a session), and **`make test-perf`** is the performance group (the benchmarks of the `perf_test.go` files, never part of `make test`: timings of the work a turn repeats and the context a session over this repository's own rules costs, as `system-tokens`, `request-tokens` and `duplicate-rules`).
+**`make test`** is the express run: the whole tree once with every optional module compiled in (**`http,ui,scheduler,memory,cli,gateway,swarm`**). **`make test-matrix`** walks every combination (the **`TEST_TAG_SETS`** list in [`Makefile`](../../Makefile)); CI runs that matrix on every pull request, one job per combination. The `cli` job also starts the built binary and drives the console through a real pty (`examples/cli/cli_e2e_startup.py`), and the **Telegram stand (tgfake)** job runs the Telegram bot against the release binary of [tgfake](tgfake.md) (`examples/gateway/tg_e2e_offline.sh`). The **Docker image** job builds the runtime image for **`linux/amd64`** and **`linux/arm64`**, the platforms a release pushes, and checks that each variant carries a binary of its own platform (**`make check-image`**, see [Checking the platforms of the image](../getting-started/docker.md#checking-the-platforms-of-the-image)). **`make test-race`** runs the whole tree under the Go race detector with every tag but `ui`; CI runs it on every pull request in the **Race detector** job, and `GOFLAGS=-count=3 make test-race` repeats every test locally for a race that shows up rarely. Two groups can be run on their own: **`make test-cache`** is the prompt-cache group (the `features/prompt_cache_*.feature` specs and the `TestPromptCache*` tests, part of `make test`: what every request sends the provider, held byte for byte across a session), and **`make test-perf`** is the performance group (the benchmarks of the `perf_test.go` files, never part of `make test`: timings of the work a turn repeats and the context a session over this repository's own rules costs, as `system-tokens`, `request-tokens` and `duplicate-rules`).
 
 On Windows, run Make through Git Bash. The build and install targets use Go's
 executable suffix (`coddy.exe`), including the binary that `make docs` runs.
@@ -22108,6 +22142,8 @@ Run **`make android`** for the Android (Termux) binaries, **`build/coddy-android
 
 Run **`make deb`** / **`make rpm`** for the Linux packages (**`PKG_ARCHS`**, **`PKG_TAGS`**, **`DIST_DIR`** knobs; nfpm is fetched on demand, nothing to install) and **`make brew VERSION=X.Y.Z`** to render the Homebrew cask for a release. CI builds the Linux packages on every pull request.
 
+Run **`make check-image`** to build the runtime image for **`linux/amd64`** and **`linux/arm64`** and check that each variant carries a **`/bin/coddy`** of its own platform (**`scripts/check-image.sh`** reads the ELF header; Docker with buildx is all it needs, the build stages cross-compile and nothing runs under emulation). The **Docker image** job runs it on every pull request and the release workflow runs it before it pushes. Guide: **`docs/getting-started/docker.md`** (Checking the platforms of the image).
+
 Swagger lives at **`/docs/`**, OpenAPI YAML at **`/openapi.yaml`**.
 
 ## Pre-commit gate
@@ -22191,6 +22227,10 @@ Every reviewer applies this section to changed files. Keep entries behavioral an
 - Do not add a file to the release **`.tar.gz`** layout without checking the Homebrew cask: **`packaging/homebrew/coddy.rb.tmpl`** links artefacts out of that archive by name.
 - Do not move the man page or the completions inside the repository without updating **`packaging/homebrew/coddy-formula.rb.tmpl`**. The formula installs them from their source paths, and a from-source build is the only packaging route that reads the tree rather than a staged archive. Its **`test do`** block is coupled the same way: it asserts on the output of **`coddy -v`**, **`coddy sessions list`** (the **`SESSION_ID`** header) and **`coddy skills list`** (the **`Search roots:`** line), and once the formula is in homebrew/core those strings are checked by Homebrew's CI, not ours.
 - Do not conflate the two Homebrew artefacts. The **cask** installs prebuilt macOS archives and is upgraded with **`brew upgrade --cask coddy`** out of a **`Caskroom`**; the **formula** builds from source and is upgraded with **`brew upgrade coddy`** out of a **`Cellar`**. **`internal/update`** reads which of the two owns the running executable off its path, so a change to that detection has to keep both hints correct - the wrong flag fails on the user's machine.
+
+### Docker image
+
+- Do not give an automatic platform argument (**`TARGETOS`**, **`TARGETARCH`**, **`TARGETPLATFORM`**, **`BUILDPLATFORM`** and the rest) a default value in the **`Dockerfile`**. A default wins over the value BuildKit passes, and the **`linux/arm64`** image shipped an x86-64 binary that way for months (issue #482): Docker still labels the variant arm64, and a host with **`qemu-user-static`** even runs it. Keep the build stages on **`--platform=$BUILDPLATFORM`** with **`GOOS`** / **`GOARCH`** taken from **`TARGETOS`** / **`TARGETARCH`**, so the Go stage cross-compiles and no step runs under emulation. Safe path: **`features/docker_image_platforms.feature`** (part of **`make test`**, it reads the Dockerfile the way BuildKit resolves those arguments) and **`make check-image`**, which builds the image and reads each binary.
 
 ### Documentation
 
