@@ -9945,7 +9945,7 @@ A sent edit can be taken back. The rewind keeps the tail it cut in the bundle (`
 
 ## The todo checklist
 
-The `coddy_todo_*` tools (`plan_read`, `plan_replace`, `plan_archive`, `item_add`, `item_update`, `item_remove`, `item_move`, with the statuses `pending`, `in_progress`, `completed`, `failed` and `cancelled`) keep the session's checklist. Every change is mirrored to `todos/active.md` and published to the client as a `plan` update, and while the list is non-empty the system prompt carries a `### Current todo checklist` block that is refreshed before every model call of the turn, so an item ticked mid-turn is visible at once. Ask mode offers no todo tools.
+The `coddy_todo_*` tools (`plan_read`, `plan_replace`, `plan_archive`, `item_add`, `item_update`, `item_remove`, `item_move`, with the statuses `pending`, `in_progress`, `completed`, `failed` and `cancelled`) keep the session's checklist. Every change is mirrored to `todos/active.md` and published to the client as a `plan` update, and while the list is non-empty the system prompt carries a `### Current todo checklist` block that is refreshed before every model call of the turn, so an item ticked mid-turn is visible at once. With an empty list there is no such block, and instead of an empty result `coddy_todo_plan_read` answers with a note that no plan is active, naming `coddy_todo_plan_replace`. Some models that get nothing back repeat the same call until the [loop guard](../operate/security.md#loop-guards-and-caps) stops the turn. `item_update`, `item_remove` and `item_move` answer an empty list with a `plan is empty` error. Ask mode offers no todo tools.
 
 Two rules govern replacement. `coddy_todo_plan_replace` is refused while any item is not `completed` - finish the rows or archive first - and when every row is completed the previous `active.md` moves to `todos/archive/todo-<nanos>.md` before the new list is written. `coddy_todo_plan_archive` marks the open rows completed, writes `todos/archive/plan_<unix_seconds>.md` and clears the active list. Over HTTP the same list is `GET` and `PUT /coddy/sessions/{id}/plan`, and `POST /coddy/sessions/{id}/plan/archive`.
 
@@ -15574,7 +15574,7 @@ The session's plan document as a checklist, persisted in the bundle and shown as
 
 | Tool | Purpose | Arguments (short) | Permission | Modes |
 |---|---|---|---|---|
-| `coddy_todo_plan_read` | Read the checklist without changing it | none | none | agent |
+| `coddy_todo_plan_read` | Read the checklist without changing it; with no checklist it answers with a note that none is active and names `coddy_todo_plan_replace`, never an empty result | none | none | agent |
 | `coddy_todo_plan_replace` | Replace the whole checklist from Markdown | `markdown` | none | agent |
 | `coddy_todo_plan_archive` | Finalise the checklist: incomplete items are marked completed and the plan is archived | none | none | agent |
 | `coddy_todo_item_add` | Add one item, at the end or after an index | `content`, `status`, `after_index` | none | agent |
@@ -19861,7 +19861,7 @@ Seven **`coddy_`** tools (`internal/tools/todo`) drive the checklist. Plan mutat
 
 | Tool name | Purpose |
 |-----------|---------|
-| **`coddy_todo_plan_read`** | Return the markdown checklist rendering of the active plan (`{}`). |
+| **`coddy_todo_plan_read`** | Return the markdown checklist rendering of the active plan (`{}`); when no plan is active, a one-line note naming **`coddy_todo_plan_replace`**, not an empty string. |
 | **`coddy_todo_plan_replace`** | Swap the entire plan (`markdown`). Rejected while any row is unfinished unless you **`coddy_todo_plan_archive`** first. Completed lists archive **`todos/active.md`** before swapping. |
 | **`coddy_todo_plan_archive`** | Mark every unfinished row **`completed`**, write **`todos/archive/plan_<unix_seconds>.md`** when **`SessionDir`**, clear in-memory plan, emit empty **`plan`**. |
 | **`coddy_todo_item_add`** | Append or insert (`content`, optional `status`, optional `after_index`; `-1` prepends). |
