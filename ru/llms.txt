@@ -55,6 +55,7 @@
 - [Сервер предпросмотра](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/features/preview-server.md): Раздача папки проекта на свободном порту localhost, чтобы открыть работу на HTML, JS и CSS в браузере; сервер как фоновая задача, что он отказывается отдавать, адрес привязки. (docs/ru/features/preview-server.md)
 - [Сжатие контекста](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/features/compaction.md): /compact и автоматическое резюмирование по порогу, сохраняемые последние ходы, вытеснение результатов и keep_result. (docs/ru/features/compaction.md)
 - [Долговременная память](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/features/memory.md): Субагент памяти, который запускается на каждом ходе в пуле задач, что он вспоминает и сохраняет, как его отчёт попадает в ход, устройство хранилища, настройка и стоимость. (docs/ru/features/memory.md)
+- [Безопасность команд (decisions)](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/features/decisions.md): Проверка NeuralDeep decisions, которая спрашивает, безопасна ли shell-команда, до шлюза разрешений: безопасная выполняется без запроса, о небезопасной спрашивают, а в режиме bypass её отклоняют. (docs/ru/features/decisions.md)
 - [Экспорт сессии](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/features/session-export.md): /export и coddy sessions export, форматы, правила путей, параметры обрезки, JSON-документ. (docs/ru/features/session-export.md)
 
 ## Справочник
