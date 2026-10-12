@@ -9420,7 +9420,7 @@ Frontmatter fields:
 
 Body - markdown used as the one-shot user instruction for that scheduler run.
 
-The run's system prompt says it is a scheduled job started unattended (with the job id and the cron slot or "by hand"), that nobody answers questions, and that its final message is kept as the run's record; the definition's role follows when the job names one. Skills, rules and the environment block are present as in any session, and configured MCP servers are dialed for the job's cwd through the workspace trust gate, unless the job's definition admits no tool of any of them.
+The run's system prompt says it is a scheduled job started unattended (with the job id and the cron slot or "by hand"), that nobody answers questions, and that its final message is kept as the run's record; the definition's role follows when the job names one. Skills, rules and the environment block are present as in any session, and configured MCP servers are dialed for the job's cwd through the workspace trust gate, unless the job runs in ask mode, which offers no MCP tools, or its definition admits no tool of any of them. A definition that names one tool of a server (`srv__lookup`) or a pattern reaching into it admits that server.
 
 ## Runs
 
@@ -9650,7 +9650,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/fe
 
 # Operating modes
 
-A session runs in one of three modes, `agent`, `plan` or `ask`. The mode decides which tools the model is offered on a turn and, for `ask`, which calls may run at all. This page lists what each mode allows, how plan mode hands its document over to implementation, how ask mode is enforced when a call executes, and how to switch on every surface. The mode is separate from the permission mode (`ask`, `accept_edits`, `bypass`), which decides when the agent prompts before a command or a file write; the two combine.
+A session runs in one of three modes, `agent`, `plan` or `ask`. The mode decides which tools the model is offered on a turn and, for `plan` and `ask`, which calls may run at all. This page lists what each mode allows, how plan mode hands its document over to implementation, how plan and ask mode are enforced when a call executes, and how to switch on every surface. The mode is separate from the permission mode (`ask`, `accept_edits`, `bypass`), which decides when the agent prompts before a command or a file write; the two combine.
 
 ## The three modes
 
@@ -9671,11 +9671,11 @@ Made for design documents, specs and the investigation that precedes a change. T
 - `coddy_docs_search` and `coddy_docs_read` for Coddy's own documentation ([Built-in documentation](built-in-docs.md));
 - the tools of connected MCP servers.
 
-No built-in file writes and no todo tools: once the plan is ready, implementation happens in agent mode.
+No built-in file writes and no todo tools: once the plan is ready, implementation happens in agent mode. The same list is enforced again when a call runs (see [Plan and ask mode at execution time](#plan-and-ask-mode-at-execution-time)).
 
 ### `ask`
 
-Made for questions about the codebase, review, diagnosis and web research. The model is offered `read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `question`, `load_skill`, `coddy_docs_search` and `coddy_docs_read`, and nothing else: no shell, no plan, todo or config tools, no `spawn_agent`, no MCP tools. The same list is enforced again when a call runs, which is what separates ask from plan (see [Ask mode at execution time](#ask-mode-at-execution-time)).
+Made for questions about the codebase, review, diagnosis and web research. The model is offered `read`, `keep_result`, `glob`, `grep`, `print_tree`, `websearch`, `webfetch`, `question`, `load_skill`, `coddy_docs_search` and `coddy_docs_read`, and nothing else: no shell, no plan, todo or config tools, no `spawn_agent`, no MCP tools. The same list is enforced again when a call runs, and an MCP tool name is refused there (see [Plan and ask mode at execution time](#plan-and-ask-mode-at-execution-time)).
 
 ### What they share
 
@@ -9694,7 +9694,7 @@ The web UI renders that row as the plan document card in the chat column:
 - **Collapsed**: the title (`name`, else the slug, with the file path as tooltip), a one-line description, and **Discard** and **Run plan** in the footer.
 - **Expanded**: the rendered markdown by default; the eye toggle switches to the markdown line editor, which holds the body without the frontmatter and autosaves through `PUT /coddy/sessions/{id}/plans/{slug}` about 600 ms after the last keystroke. The pane grows with the document instead of scrolling inside itself.
 - **Discard** (`DELETE` on the same route) marks the plan discarded: the card stays in the transcript, muted, with its controls disabled, and the plan leaves the plan-mode system prompt.
-- **Run plan** sends the next prompt with `metadata.runPlanSlug` (`_meta` `coddy.dev/runPlanSlug` over ACP): Coddy switches the session to agent mode, injects the plan body into the system prompt and runs the turn. The session todo list is not filled from the plan. The plan body stays with that turn for as long as it can still be continued - a turn stopped on a permission prompt renders its system prompt again when the answer arrives, so the text is held in the bundle (`pending_plan_context.json`) and released once the turn is over.
+- **Run plan** sends the next prompt with `metadata.runPlanSlug` (`_meta` `coddy.dev/runPlanSlug` over ACP): Coddy switches the session to agent mode, injects the plan body into the system prompt and runs the turn. The switch is the session's like `/agent`: a mode override armed with `--once` or `--count=N`, `/plan` or `/ask`, ends with it, so the plan is carried out in agent mode and never under the plan or ask tool set ([Session settings](session-settings.md)). A session in ask mode refuses to run a plan (below). The session todo list is not filled from the plan. The plan body stays with that turn for as long as it can still be continued - a turn stopped on a permission prompt renders its system prompt again when the answer arrives, so the text is held in the bundle (`pending_plan_context.json`) and released once the turn is over.
 - In the read-only transcript of a subagent child the card has no footer and its editor is read-only.
 
 The portable route, for a client without that hook, is to switch to agent mode and mention `@plans/<slug>.plan.md` in the prompt. Details: [Web UI](../surfaces/web-ui.md#plan-document-card-plan-mode-transcript), [ACP protocol](../reference/acp-protocol.md#design-plans-plan-mode).
@@ -9703,16 +9703,17 @@ The portable route, for a client without that hook, is to switch to agent mode a
 
 *The card `plan_write` leaves in a plan-mode chat: the plan's name and summary with Discard and Run plan; the model's answer below repeats the plan.*
 
-## Ask mode at execution time
+## Plan and ask mode at execution time
 
-Plan mode restricts what the model is offered; ask mode also restricts what may run. Every tool call is checked against the ask allowlist again when it is about to execute, because a model can replay a call from earlier history recorded in another mode, or name a tool it was never shown. A call outside the set is not executed:
+Both restricted modes limit what the model is offered, and both check every tool call against their list again when it is about to execute. A model can replay a call from earlier history recorded in another mode, or name a tool it was never shown, and a provider can ignore the list it was given. A call outside the set is not executed:
 
-- the tool result is `error: tool "write" is not available in Ask mode because it is not read-only`, and the model is re-prompted with that refusal;
+- the tool result is `error: tool "write" is not available in Ask mode because it is not read-only` in ask mode, and `error: tool "write" is not available in Plan mode because it is outside the plan tool set; the user can switch to Agent mode to use it` in plan mode. The model is re-prompted with that refusal;
 - over HTTP the stream carries the call as cancelled with the same text;
-- MCP tool names are refused the same way, since they are never in the list;
-- approving such a pending call with *allow always* records no grant.
+- approving such a pending call with *allow always* records no grant, and the same check runs when a permission answer resumes the call, so a write approved after the session moved to plan or ask mode is refused too.
 
-The rest of the boundary follows from it. A `metadata.runPlanSlug` on `POST /v1/responses` with `model` `ask` is answered with `409` before the turn starts, the same hook over ACP is refused with an error, and a `@plans/<slug>.plan.md` mention is inlined as reading material rather than run. The memory subagent recalls but never saves. `spawn_agent` is not offered, so an ask turn cannot delegate. The deterministic operator commands typed as the prompt (`/compact`, `/plugin`) are outside this boundary. The happy paths are `features/ask_mode.feature` and `features/ask_mode_http.feature`.
+The two modes differ in MCP tools. Ask offers none, so it refuses every `server__tool` name. Plan offers the tools of the connected servers, so an MCP name passes the mode check and the MCP layer decides as in agent mode: a call to a server that is not connected, or to a tool that its disable switches turned off, is rejected there ([MCP servers](mcp.md#permission-model)).
+
+The rest of the ask boundary follows from its read-only tool set. A `metadata.runPlanSlug` on `POST /v1/responses` with `model` `ask` is answered with `409` before the turn starts, and the same hook over ACP is refused with an error. A `@plans/<slug>.plan.md` mention is inlined as reading material rather than run, also in a turn that `/ask --once` or `--count=N` puts in ask mode and in a turn that `/agent --once` lends an ask session. The memory subagent recalls but never saves. `spawn_agent` is not offered, so an ask turn cannot delegate. The deterministic operator commands typed as the prompt (`/compact`, `/plugin`) are outside this boundary. The happy paths are `features/plan_mode.feature`, `features/ask_mode.feature` and `features/ask_mode_http.feature`.
 
 ![The composer in ask mode](../assets/modes-pill-hero-dark-1280.png)
 
@@ -9767,7 +9768,7 @@ Commands are read only at the start of what you type, and several may follow one
 
 ## Session or the next turns
 
-A change without a flag is the session's and lasts until the next change. A change with `--once` or `--count=N` is counted in turns you start: each prompt you send takes one turn from every override, and that turn keeps the values for its whole length, including the steps after a queued follow-up and after a permission prompt. A background wake and a subagent's turn take nothing. A change for the session clears that setting's turn override, the running turn's included, so the last command you typed is the one that holds.
+A change without a flag is the session's and lasts until the next change. A change with `--once` or `--count=N` is counted in turns you start: each prompt you send takes one turn from every override, and that turn keeps the values for its whole length, including the steps after a queued follow-up and after a permission prompt. A background wake and a subagent's turn take nothing. A change for the session clears that setting's turn override, the running turn's included, so the last command you typed is the one that holds. Running a saved plan (**Run plan**, `runPlanSlug`) is such a change of the mode: it switches the session to agent mode and ends a mode override, `/plan` or `/ask`, so a plan is carried out in agent mode even while `/plan --count=N` has turns left. A session in ask mode refuses to run a plan, and a plan that an `/ask` turn only mentions stays reading material ([Operating modes](modes.md#plan-mode-and-the-plan-document)).
 
 The model, the reasoning level (thinking switched off included) and the mode of a session are kept in its `session.json`. Its permission mode is kept there too (`sessionPermissionMode`), so a session switched to `bypass` for an unattended run is still in `bypass` after a restart of the console or of `coddy serve`. The permission mode is not in `config.yaml`: a new session starts in the mode chosen last on any surface - a session switched with `/permissions`, a selector, the permission dialog or `PATCH /coddy/sessions/{id}` - and in `ask` until anything was chosen. Coddy keeps that choice in `${CODDY_HOME}/permission-mode.json` ([Security and trust](../operate/security.md#permission-modes-and-prompts)). A session keeps its own mode until it is switched itself, so a choice made later in another session does not move it, and a change with `--once` or `--count=N` is not a choice: it leaves the mode new sessions start in alone, and so does the console's `--permission-mode` launch flag, which sets only the session its run opens. Its turn overrides live in the process's memory: a restart forgets them. Until then they stay with the session, also while no surface holds it: the console lets go of a session on `/new` and `/resume`, and coming back to it brings its permission mode and its overrides back.
 
@@ -11233,7 +11234,7 @@ Everything a child may do is derived from the parent at spawn time and can only 
 
 - **Mode.** A read-only parent (`plan`, `ask`) always produces a child in its own mode. Otherwise the definition's `mode` applies, or the parent's mode when it is empty. The parent mode is the mode the spawning turn was admitted in: a `session/set_mode` that lands while the turn runs changes neither the child's mode nor the parent tool set the child is intersected with.
 - **Permission mode never widens.** The child runs with the stricter of the parent's effective mode and the definition's request, on the scale `ask` < `accept_edits` < `bypass`. A definition asking for `bypass` under an `ask` parent gets `ask`; an empty request inherits.
-- **Tool set intersection.** The child's effective set is computed once at spawn: the parent's own callable set (its mode set, and its own effective set when the parent is itself a child), intersected with the child mode's set, intersected with the definition's allowlist, minus the definition's denylist, minus the mandatory exclusions. MCP tool names are part of the set and matched by exact name or `prefix*`, so a child sees an MCP server only when the parent had it and the definition admits it.
+- **Tool set intersection.** The child's effective set is computed once at spawn: the parent's own callable set (its mode set, and its own effective set when the parent is itself a child), intersected with the child mode's set, intersected with the definition's allowlist, minus the definition's denylist, minus the mandatory exclusions. MCP tool names are part of the set and matched by exact name or `prefix*`, so a child sees an MCP server only when the parent had it and the definition admits it. A mode's set holds the MCP tools the mode offers: a child in plan mode keeps those of the parent's MCP tools its definition admits, a child in ask mode has none ([Operating modes](modes.md#plan)).
 - **Mandatory exclusions.** `question` (a child cannot ask the user; `RequestQuestion` always refuses), `config_set`, `config_changes`, `config_commit`, `config_revert`, `config_rollback` (a child cannot rewrite the agent's own configuration), `plan_exit` (a child cannot leave plan mode on the operator's behalf), and `spawn_agent` for a child at the depth limit.
 - **Enforced twice.** The definitions advertised to the child's model are filtered to the set, and every call is checked again before the permission gate runs, MCP calls included: a hallucinated or replayed `run_command` is answered with `tool run_command is not available to this subagent` and never executed.
 - **Depth.** `subagents.max_depth` bounds nesting. The default `1` lets a session spawn children that cannot spawn further; the tool is withheld from a child at the limit and a spawn past it is refused. An explicit `0` forbids spawning everywhere. One bound exception exists: a definition that declares `spawns` keeps `spawn_agent` at the cap and may delegate exactly one level past it, to exactly the names on the list - a `spawns` allowlist restricts the names at every depth, and a child deeper than the cap never gets the tool, so the exception buys exactly one extra generation (the bundled `crossreview` orchestrator is why this exists).
@@ -15756,7 +15757,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/re
 
 # Tools
 
-The built-in tools the model can call, their arguments, permissions and the modes that expose them. Names, argument names and permission flags are taken from the constructors under `internal/tools` and the optional packages; `internal/tools.NewRegistryFor` builds the registry from them, and `internal/agent.ToolSetForMode` in `internal/agent/toolsets.go` decides which definitions each mode sends to the model. Agent mode is unrestricted; plan and ask carry fixed allowlists, and ask re-checks its list at execution time so a call replayed from history cannot cross it. The reasoning behind the modes is in [Operating modes](../features/modes.md#the-three-modes); how to add a tool is in [Custom tools](../contributing/custom-tools.md).
+The built-in tools the model can call, their arguments, permissions and the modes that expose them. Names, argument names and permission flags are taken from the constructors under `internal/tools` and the optional packages; `internal/tools.NewRegistryFor` builds the registry from them, and `internal/agent.ToolSetForMode` in `internal/agent/toolsets.go` decides which definitions each mode sends to the model. Agent mode is unrestricted; plan and ask carry fixed allowlists, and both re-check their list at execution time so a call replayed from history cannot cross it. The reasoning behind the modes is in [Operating modes](../features/modes.md#the-three-modes); how to add a tool is in [Custom tools](../contributing/custom-tools.md).
 
 ## Permissions
 
@@ -15911,7 +15912,7 @@ With the `memory` tag, every user turn starts a memory subagent, a child agent r
 
 ## MCP tools
 
-Every enabled tool of every connected MCP server joins the same function-calling list under the name `server__tool`, with the server's own input schema and a description prefixed with `[server]` (`internal/mcp/client.go`; [MCP servers](../features/mcp.md#tool-namespacing)). Because `__` is the separator, a server name may not contain it. The definitions are appended in agent and plan mode and never in ask mode, where a call to such a name is refused at execution time. A call whose name contains `__` bypasses the registry: the agent routes it to the owning server and applies the `default` output limit to the result. There is no built-in permission prompt for MCP calls; whether a server may start is the workspace trust decision, and the per-server and per-tool disable switches bound what a running server may do ([MCP servers](../features/mcp.md#permission-model)).
+Every enabled tool of every connected MCP server joins the same function-calling list under the name `server__tool`, with the server's own input schema and a description prefixed with `[server]` (`internal/mcp/client.go`; [MCP servers](../features/mcp.md#tool-namespacing)). Because `__` is the separator, a server name may not contain it. The definitions are appended in agent and plan mode and never in ask mode, where a call to such a name is refused at execution time; in plan mode the name passes that check and the MCP layer decides about the call as in agent mode. A call whose name contains `__` bypasses the registry: the agent routes it to the owning server and applies the `default` output limit to the result. There is no built-in permission prompt for MCP calls; whether a server may start is the workspace trust decision, and the per-server and per-tool disable switches bound what a running server may do ([MCP servers](../features/mcp.md#permission-model)).
 
 Such a call reads as an action like every built-in one rather than as its registry id: the transcript row and the console box say *calling `browser_navigate` on the MCP server `playwright`* (Russian: *запускаю browser_navigate на MCP-сервере playwright*), and the live status line spends its target on `playwright/browser_navigate`, since the generic verb cannot say what the call does. The `mcp__server__tool` spelling other agents use is read the same way. Beside the label the row names what the call acts on, from its `path`, `url` or `name` argument as for a built-in tool; a server that names its arguments otherwise falls back to the first one that reads as a label - single-line, not a body ([Web UI](../surfaces/web-ui.md#tool-call-card-bundled-spa-current)).
 
@@ -18824,7 +18825,7 @@ Maintains the state for each conversation session:
 
 The core reasoning engine (**`react.go`**):
 
-1. Loads tool definitions from **`internal/tooling.Registry.AllToolDefinitions`**, applies the session **`ToolSet`** from **`internal/agent/toolsets.go`** (empty set means no filter), then appends MCP tool definitions from connected servers when the mode is **`agent`** or **`plan`** (never in **`ask`** mode). In **`ask`** mode a call that names a filtered-out tool (for example one replayed from history) is also refused at execution time.
+1. Loads tool definitions from **`internal/tooling.Registry.AllToolDefinitions`**, applies the session **`ToolSet`** from **`internal/agent/toolsets.go`** (empty set means no filter), then appends MCP tool definitions from connected servers when the mode is **`agent`** or **`plan`** (never in **`ask`** mode). In **`ask`** and **`plan`** mode a call that names a filtered-out tool (for example one replayed from history) is also refused at execution time; **`plan`** lets every MCP tool name (**`server__tool`**) through to **`callMCPTool`**, which applies the connected-server check and the per-tool disable switches.
 2. Builds the system prompt from **`internal/prompts.Render`**: embedded defaults or files under **`prompts.dir`** named by **`prompts.agent_prompt`**, **`prompts.plan_prompt`**, and **`prompts.ask_prompt`** (defaults **`agent.md`**, **`plan.md`**, and **`ask.md`**). Template data includes **`CWD`**, tools markdown, skills markdown, rules markdown (**`{{.Rules}}`** via **`internal/rules`**), optional **`TodoList`** and **`Memory`**, **`ModelSwitch`** (whether the turn is offered **`switch_model`**; the built-in templates describe the tool only then, so a subagent or a configuration with nothing to switch is not told about it), **`BackgroundWake`** (whether a finished background task can wake the session; where it cannot - a subagent, a scheduled run, `coddy -p` - the templates tell the model to collect results before the turn ends instead of promising a wake), plus **`UTCNow`** (RFC3339 UTC refreshed on every render). Coddy then appends an **`<environment_context>`** block containing **`<os>`**, **`<arch>`**, and the detected **`<shell>`**, even when a custom prompt template is used. The message is rendered **once per turn** and then frozen, so the provider's prompt cache keeps the conversation behind it; the built-in templates render neither **`UTCNow`** nor **`TodoList`**, and what moves during a turn is sent after the history in a **`<turn_context>`** block (**`internal/agent/turn_context.go`**, and *The turn context block* in **`docs/contributing/react-agent.md`**).
 3. Prepends that system message to the session message list and appends the newest user turn.
 4. **Before every LLM invocation** inside one **`session/prompt`**, appends the **`<turn_context>`** block after the history (**`internal/agent/turn_context.go`**): the wall clock, the todo checklist after a **`coddy_todo_*`** call, the rules a filesystem tool call activated since the prompt was frozen, the memory subagent's report, and the background tasks of the session that are still running. The **`system` message itself is not touched** - rewriting it would throw away the provider's cached copy of the conversation behind it. The exception is a template under **`prompts.dir`** that prints **`{{.UTCNow}}`** or **`{{.TodoList}}`** itself: it is re-rendered per call as before, and gets no block.
@@ -18992,14 +18993,15 @@ YAML-based configuration. Resolution uses **`CODDY_HOME`** (default **`~/.coddy`
 
 ### `plan` mode
 - Narrow **registry** tool surface enforced by **`internal/agent.ToolSetForMode("plan")`**
-- **`read`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`run_command`**, **`question`**, **`spawn_agent`** (a child of a plan-mode parent stays in plan mode), plus any **MCP** tools from configured servers
+- **`read`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`run_command`**, **`question`**, **`spawn_agent`** (a child of a plan-mode parent stays in plan mode), the **`plan_*`** document tools and the rest of the allowlist ([Operating modes](../features/modes.md#plan) has the whole list), plus any **MCP** tools from configured servers
 - No built-in workspace writes or **coddy** todo tools in the advertised set (switch to **agent** for those)
+- Like **ask**, the allowlist is also enforced at execution time (**`toolCallRefusedByMode`**, on the permission-resume path as well): a tool call outside the set, for example one replayed from history, is refused with a notice instead of being executed, and approving a pending call with **allow always** records no grant. MCP tool names pass the check and are left to **`callMCPTool`**
 - Suitable for: design docs, specs, architecture planning, external research, and light shell or MCP inspection without offering full mutating builtins
 
 ### `ask` mode
 - Read-only research surface enforced by **`internal/agent.ToolSetForMode("ask")`**
 - **`read`**, **`keep_result`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`question`**, **`load_skill`**, **`coddy_docs_search`**, **`coddy_docs_read`** — no shell, no plan or todo tools, no config tools, and no MCP tools
-- Unlike **plan**, the allowlist is also enforced at execution time: a tool call outside the set (for example replayed from history) is refused with a read-only notice instead of being executed; approving such a pending call with **allow always** records no grant either
+- The allowlist is also enforced at execution time, MCP tool names included: a tool call outside the set (for example replayed from history) is refused with a read-only notice instead of being executed; approving such a pending call with **allow always** records no grant either
 - A **`@plans/<slug>.plan.md`** mention or **`runPlanSlug`** metadata never starts a plan run in ask mode (the mention is inlined as reading material, the metadata shortcut is refused), and the memory subagent runs recall-only (no memory writes)
 - Suitable for: questions about the codebase, code review and diagnosis, and web research without any mutation surface
 
@@ -20231,7 +20233,10 @@ The environment block is appended outside the configurable template so OS and sh
 
 The system message is rendered **once per turn**, by **`buildSystemPromptParts`**
 (**`internal/agent/system_prompt.go`**), and every step of the ReAct loop then sends that same
-message back byte for byte. Nothing rewrites **`messages[0]`** between the steps.
+message back byte for byte. Nothing rewrites **`messages[0]`** between the steps, except a template under
+**`prompts.dir`** that prints the clock or the checklist itself (see the end of the next section). A
+turn that stopped on a permission prompt renders it again when the answer resumes the turn
+(**`ResumeAfterPermission`**).
 
 The reason is the provider's prompt cache. A provider caches a request by its **prefix** - the tool
 definitions, then the messages from the start - and the first byte that differs from the previous
@@ -20376,9 +20381,9 @@ This approach is more reliable than text parsing and supported by all major prov
 messages: [
   { role: "system",    content: <system_prompt> },
   { role: "user",      content: <user_prompt> },
-  { role: "assistant", content: "", tool_calls: [{ id: "call_1", name: "read_file", args: {...} }] },
+  { role: "assistant", content: "", tool_calls: [{ id: "call_1", name: "read", args: {...} }] },
   { role: "tool",      tool_call_id: "call_1", content: <file_contents> },
-  { role: "assistant", content: "", tool_calls: [{ id: "call_2", name: "write_file", args: {...} }] },
+  { role: "assistant", content: "", tool_calls: [{ id: "call_2", name: "write", args: {...} }] },
   { role: "tool",      tool_call_id: "call_2", content: "OK" },
   { role: "assistant", content: <final_answer> }
 ]
@@ -20389,7 +20394,7 @@ messages: [
 ```
 1. BUILD_MESSAGES
    - Load applicable skills and project rules for current context (separate prompt sections)
-   - Build system prompt (template + TemplateData incl. TodoList snapshot)
+   - Build system prompt once for the turn (`buildSystemPromptParts`: template + TemplateData; the built-in templates print neither the clock nor the todo checklist, the turn context block carries them)
    - Skill bodies are already in the history: on Run entry, before the user turn is persisted, Run appends the body of each skill the typed text invokes as `/name` to that message as a `<coddy_attachment kind="skill">` element (`invokedSkillBlocks`), so later requests replay the same bytes and the prefix cache holds. Surfaces leave the element out of the transcript (`mention.ForDisplay`, `stripCoddyAttachments.ts`); queued follow-ups get their skill bodies the same way.
    - Prepend system to session history (user turn already persisted on Run entry)
 
@@ -20409,8 +20414,11 @@ messages: [
      d. Send session/update(tool_call_update, status=completed|failed, content=result)
      e. Append tool result to conversation history
 
-5. REFRESH_SYSTEM
-   - Next loop iteration repeats from step 2 after rewriting messages[0] with a fresh **`Render`** (same session state, potentially new Plan rows)
+5. REFRESH_TURN_CONTEXT
+   - messages[0] is not rewritten: the system message stays as the turn rendered it, and what moved since (wall clock, todo checklist, memory report, running background tasks) is rebuilt by `buildTurnContext` and appended after the history at the send boundary
+   - A template under `prompts.dir` that prints `{{.UTCNow}}` or `{{.TodoList}}` is the exception: it is re-rendered before every call, and its block carries no clock or checklist
+   - An automatic compaction or a workspace switch re-renders the system message for the new history or workspace, and a turn resumed after a permission prompt renders it again on entry; no other step of the turn does
+   - Next loop iteration repeats from step 2
 
 6. CHECK_COMPLETION
    - If no tool calls in last response -> DONE (stopReason: end_turn)
@@ -20506,9 +20514,9 @@ Embedded **`agent.md`** describes agent behavior (quality, shells, todos, git wo
 
 Representative builtins (excluding MCP-namespaced tools):
 
-- `read_file`, `write_file`, `write_text_file`, `list_dir`, `search_files`
+- `read`, `keep_result`, `write`, `edit`, `apply_patch`, `glob`, `grep`, `print_tree`
 - `websearch`, `webfetch`, `http_request`
-- `run_command`, `apply_diff`
+- `run_command` and the background tools (`background_list`, `background_output`, `background_wait`, `background_stop`, `background_reap`)
 - Filesystem mutations: **`mkdir`**, **`rm`**, **`rmdir`**, **`touch`**, **`mv`** (subset may require permission paths)
 - Session checklist: **`coddy_todo_plan_read`**, **`coddy_todo_plan_replace`**, **`coddy_todo_plan_archive`**, **`coddy_todo_item_add`**, **`coddy_todo_item_remove`**, **`coddy_todo_item_update`**, **`coddy_todo_item_move`**
 - All MCP server tools (names **`serverName__toolName`**)
@@ -20519,98 +20527,22 @@ Embedded **`plan.md`** keeps the default **registry** surface read-oriented (no 
 
 Representative builtins exposed to the LLM (registry allowlist):
 
-- `read_file`, `list_dir`, `search_files`
+- `read`, `keep_result`, `glob`, `grep`, `print_tree`
 - `websearch`, `webfetch`
-- `run_command`
+- `run_command` with `background_list`, `background_output`, `background_wait`, `background_stop`
+- `plan_write`, `plan_list`, `plan_read`
 
-Plus MCP tools (**`serverName__toolName`**). When ready to ship implementation work, prompts instruct switching the client to **`agent`** mode.
+The whole list is **`internal/agent.ToolSetForMode("plan")`** ([Operating modes](../features/modes.md#plan)).
+
+Plus MCP tools (**`serverName__toolName`**). The allowlist is also enforced at execution time, so a call replayed from history that names a tool outside it is refused with a plan-mode notice instead of being executed. When ready to ship implementation work, prompts instruct switching the client to **`agent`** mode.
 
 ### Ask Mode
 
-Embedded **`ask.md`** describes a read-only assistant: it answers from the repository and the web and never mutates anything. The registry allowlist (**`internal/agent.ToolSetForMode("ask")`**) is **`read`**, **`keep_result`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`question`**, **`load_skill`**, **`coddy_docs_search`** and **`coddy_docs_read`**; there is no shell, no plan, todo or config tool, no **`spawn_agent`**, and **MCP** tools are never appended. Unlike plan mode the allowlist is also enforced at execution time, so a call replayed from history is refused with a read-only notice. A plan mention or **`runPlanSlug`** metadata never starts a plan run in ask mode, and the memory subagent runs recall-only. A subagent child never runs in ask mode unless its parent's turn was already in ask mode, which cannot spawn.
+Embedded **`ask.md`** describes a read-only assistant: it answers from the repository and the web and never mutates anything. The registry allowlist (**`internal/agent.ToolSetForMode("ask")`**) is **`read`**, **`keep_result`**, **`glob`**, **`grep`**, **`print_tree`**, **`websearch`**, **`webfetch`**, **`question`**, **`load_skill`**, **`coddy_docs_search`** and **`coddy_docs_read`**; there is no shell, no plan, todo or config tool, no **`spawn_agent`**, and **MCP** tools are never appended. As in plan mode the allowlist is also enforced at execution time, so a call replayed from history is refused with a read-only notice; ask refuses MCP tool names there, while plan lets them through to the MCP layer. A plan mention or **`runPlanSlug`** metadata never starts a plan run in ask mode, and the memory subagent runs recall-only. A subagent child never runs in ask mode unless its parent's turn was already in ask mode, which cannot spawn.
 
 ## Built-in Tools Specification
 
-### `read_file`
-```json
-{
-  "name": "read_file",
-  "description": "Read the contents of a file",
-  "parameters": {
-    "path": { "type": "string", "description": "Absolute or relative (to cwd) path" },
-    "start_line": { "type": "integer", "description": "First line to read (1-based, optional)" },
-    "end_line": { "type": "integer", "description": "Last line to read (1-based, optional)" }
-  },
-  "required": ["path"]
-}
-```
-
-### `write_file`
-```json
-{
-  "name": "write_file",
-  "description": "Write or create a file with the given content",
-  "parameters": {
-    "path": { "type": "string", "description": "Absolute or relative (to cwd) path" },
-    "content": { "type": "string", "description": "Full file content to write" }
-  },
-  "required": ["path", "content"]
-}
-```
-
-### `list_dir`
-```json
-{
-  "name": "list_dir",
-  "description": "List files and directories at the given path",
-  "parameters": {
-    "path": { "type": "string", "description": "Directory path (default: cwd)" },
-    "recursive": { "type": "boolean", "description": "Include subdirectories" }
-  }
-}
-```
-
-### `grep`
-```json
-{
-  "name": "grep",
-  "description": "Search file contents recursively (system ripgrep with a built-in fallback)",
-  "parameters": {
-    "pattern": { "type": "string", "description": "Regex or literal search pattern" },
-    "path": { "type": "string", "description": "Directory to search in (default: cwd)" },
-    "glob": { "type": "string", "description": "File glob filter (e.g. '**/*.go')" },
-    "case_sensitive": { "type": "boolean", "default": false },
-    "max_results": { "type": "integer", "default": 100 }
-  },
-  "required": ["pattern"]
-}
-```
-
-### `run_command`
-```json
-{
-  "name": "run_command",
-  "description": "Execute a shell command in the working directory",
-  "parameters": {
-    "command": { "type": "string", "description": "Shell command to execute" },
-    "timeout_seconds": { "type": "integer", "default": 30 }
-  },
-  "required": ["command"]
-}
-```
-
-### `apply_diff`
-```json
-{
-  "name": "apply_diff",
-  "description": "Apply a unified diff to a file",
-  "parameters": {
-    "path": { "type": "string", "description": "File to patch" },
-    "diff": { "type": "string", "description": "Unified diff content" }
-  },
-  "required": ["path", "diff"]
-}
-```
+The built-in tools, their arguments, the permission each one needs and the modes that offer it are listed in [Tools](../reference/tools.md). The schema the model is given is the **`InputSchema`** of each tool's constructor under **`internal/tools`** and the optional packages; **`internal/tools.NewRegistryFor`** builds the registry from them.
 
 ## Plan Update Format
 
