@@ -7,7 +7,7 @@
 /on-prem-llms
 /subagents
 /swarm
-2:57
+2:17
 :
 Aider
 All Hands AI
@@ -85,7 +85,7 @@ xAI
 v1.2.31
 Android (Termux)
 ·
-1:47
-2:58
-3:21
+2:00
+1:50
+2:11
 Android

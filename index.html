@@ -450,17 +450,17 @@
           <button
             type="button"
             class="demo-player"
-            data-video="assets/demo/coddy-webui-demo.mp4"
-            aria-label="Play demo: Coddy web UI, 2:58"
+            data-video="assets/demo/coddy-webui-demo.mp4?v=13"
+            aria-label="Play demo: Coddy web UI, 1:50"
           >
-            <img src="assets/demo/poster-webui.jpg" width="1280" height="720" alt="Coddy web UI start screen with the model menu open" loading="eager" fetchpriority="high" />
+            <img src="assets/demo/poster-webui.jpg?v=13" width="1280" height="720" alt="Coddy web UI edits window with the patch of each changed file" loading="eager" fetchpriority="high" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">2:58</span>
+            <span class="demo-duration" aria-hidden="true">1:50</span>
           </button>
           <p class="showcase-caption">
-            The same agent served by <code>coddy serve</code>: the model picked in the composer, tool calls as rows
-            that name their action, a permission card with the diff of an edit, a <code>/commit</code> skill from the
-            slash menu, and History, where the session is picked up again.
+            The same agent served by <code>coddy serve</code>: a picture read by the model, a <code>/goal</code> that
+            moves the work into a git worktree and that a supervisor model confirms, the edits window with the patch
+            of each file, the Files window, and a <code>/commit</code> skill from the slash menu.
           </p>
         </div>
 
@@ -468,17 +468,17 @@
           <button
             type="button"
             class="demo-player"
-            data-video="assets/demo/coddy-tui-demo.mp4"
-            aria-label="Play demo: Coddy console TUI, 3:21"
+            data-video="assets/demo/coddy-tui-demo.mp4?v=13"
+            aria-label="Play demo: Coddy console TUI, 2:11"
           >
-            <img src="assets/demo/poster-tui.jpg" width="1280" height="720" alt="Coddy console TUI with the model selector open" loading="lazy" />
+            <img src="assets/demo/poster-tui.jpg?v=13" width="1280" height="720" alt="Coddy console after a session goal is complete, the goal status in the footer" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">3:21</span>
+            <span class="demo-duration" aria-hidden="true">2:11</span>
           </button>
           <p class="showcase-caption">
-            Bare <code>coddy</code> in a terminal: pick a model with <code>Ctrl+L</code>, approve edits and commands
-            as the agent works, ship them with a <code>/commit</code> skill, look things up on <code>F1</code> and
-            resume with <code>coddy -c</code>.
+            Bare <code>coddy</code> in a terminal: pick a model with <code>Ctrl+L</code>, hand the agent a
+            <code>/goal</code> that a second model checks, queue a follow-up while the turn runs, ship the change with
+            a <code>/commit</code> skill, look things up on <code>F1</code> and resume with <code>coddy -c</code>.
           </p>
         </div>
 
@@ -486,16 +486,17 @@
           <button
             type="button"
             class="demo-player"
-            data-video="assets/demo/coddy-zed-acp-demo.mp4"
-            aria-label="Play demo: Coddy inside Zed over ACP, 2:57"
+            data-video="assets/demo/coddy-zed-acp-demo.mp4?v=13"
+            aria-label="Play demo: Coddy inside Zed over ACP, 2:17"
           >
-            <img src="assets/demo/poster-zed.jpg" width="1280" height="720" alt="Zed with the Coddy thread open in the agent panel" loading="lazy" />
+            <img src="assets/demo/poster-zed.jpg?v=13" width="1280" height="720" alt="Zed with the Coddy thread showing the verdict of a session goal" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">2:57</span>
+            <span class="demo-duration" aria-hidden="true">2:17</span>
           </button>
           <p class="showcase-caption">
             Zed launches <code>coddy acp</code> for the workspace, and coddy's own modes, models and permission
-            policy show up in the editor's agent panel; its skills arrive as slash commands. One entry in Zed's
+            policy show up in the editor's agent panel. A <code>/goal</code> runs in a fresh worktree, and a shell
+            command the safety check calls safe runs without a prompt. One entry in Zed's
             <code>settings.json</code>:
           </p>
           <pre class="showcase-code"><code>"agent_servers": {
@@ -507,17 +508,17 @@
           <button
             type="button"
             class="demo-player"
-            data-video="assets/demo/coddy-android-demo.mp4"
-            aria-label="Play demo: Coddy on an Android phone in a swarm, 1:47"
+            data-video="assets/demo/coddy-android-demo.mp4?v=13"
+            aria-label="Play demo: Coddy on an Android phone in a swarm, 2:00"
           >
-            <img src="assets/demo/poster-android.jpg" width="1280" height="720" alt="Termux on an Android phone next to the relay's web UI asking to approve a file write on the phone" loading="lazy" />
+            <img src="assets/demo/poster-android.jpg?v=13" width="1280" height="720" alt="Termux on an Android phone next to the relay's web UI with the phone's workspace open in the Files window" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">1:47</span>
+            <span class="demo-duration" aria-hidden="true">2:00</span>
           </button>
           <p class="showcase-caption">
             <code>coddy serve</code> in Termux joins a relay on the laptop with one <code>swarm.join</code> entry and
-            no open port on the phone. The relay's web UI opens the phone from its map, runs <code>getprop</code> there
-            and writes a file into the phone's home, each step approved in the browser.
+            no open port on the phone. The laptop connects to the relay from its environment menu, opens the phone from the
+            map canvas, runs <code>getprop</code> there and reads the note the agent wrote in the Files window.
             <a href="https://coddy.dev/docs/tutorials/swarm-android-nodes" target="_blank" rel="noopener noreferrer">The tutorial</a>
           </p>
         </div>

@@ -298,15 +298,15 @@
           <button
             type="button"
             class="demo-player"
-            data-video="/assets/demo/coddy-webui-demo.mp4"
-            aria-label="Воспроизвести демо веб-интерфейса Coddy, 2:58"
+            data-video="/assets/demo/coddy-webui-demo.mp4?v=13"
+            aria-label="Воспроизвести демо веб-интерфейса Coddy, 1:50"
           >
-            <img src="/assets/demo/poster-webui.jpg" width="1280" height="720" alt="Стартовый экран веб-интерфейса Coddy с открытым меню моделей" loading="eager" fetchpriority="high" />
+            <img src="/assets/demo/poster-webui.jpg?v=13" width="1280" height="720" alt="Окно правок веб-интерфейса Coddy с патчем каждого изменённого файла" loading="eager" fetchpriority="high" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">2:58</span>
+            <span class="demo-duration" aria-hidden="true">1:50</span>
           </button>
           <p class="showcase-caption">
-            Тот же агент, запущенный через <code>coddy serve</code>: модель выбирается в поле ввода, вызовы инструментов идут строками с названием действия, карточка разрешения показывает diff правки, навык <code>/commit</code> запускается из меню слеш-команд, а из истории сессию можно открыть снова.
+            Тот же агент, запущенный через <code>coddy serve</code>: картинка, которую читает модель, команда <code>/goal</code>, которая переносит работу в git worktree и результат которой подтверждает модель-супервизор, окно правок с патчем каждого файла, окно "Файлы" и навык <code>/commit</code> из меню слеш-команд.
           </p>
         </div>
 
@@ -314,15 +314,16 @@
           <button
             type="button"
             class="demo-player"
-            data-video="/assets/demo/coddy-tui-demo.mp4"
-            aria-label="Воспроизвести демо терминальной консоли Coddy, 3:21"
+            data-video="/assets/demo/coddy-tui-demo.mp4?v=13"
+            aria-label="Воспроизвести демо терминальной консоли Coddy, 2:11"
           >
-            <img src="/assets/demo/poster-tui.jpg" width="1280" height="720" alt="Терминальная консоль Coddy с открытым выбором модели" loading="lazy" />
+            <img src="/assets/demo/poster-tui.jpg?v=13" width="1280" height="720" alt="Терминальная консоль Coddy после выполненной цели сессии, статус цели в футере" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">3:21</span>
+            <span class="demo-duration" aria-hidden="true">2:11</span>
           </button>
           <p class="showcase-caption">
-            Команда <code>coddy</code> без аргументов в терминале. Выберите модель через <code>Ctrl+L</code>, подтверждайте правки и команды по ходу работы агента, коммитьте их навыком <code>/commit</code>, открывайте документацию по <code>F1</code> и продолжайте сессию через <code>coddy -c</code>.
+            Команда <code>coddy</code> без аргументов в терминале. Выберите модель через <code>Ctrl+L</code>, ставьте агенту цель командой
+            <code>/goal</code>, а вторая модель её проверяет, добавляйте уточнение в очередь, пока идёт ход, коммитьте изменение навыком <code>/commit</code>, открывайте документацию по <code>F1</code> и продолжайте сессию через <code>coddy -c</code>.
           </p>
         </div>
 
@@ -330,15 +331,15 @@
           <button
             type="button"
             class="demo-player"
-            data-video="/assets/demo/coddy-zed-acp-demo.mp4"
-            aria-label="Воспроизвести демо Coddy в Zed через ACP, 2:57"
+            data-video="/assets/demo/coddy-zed-acp-demo.mp4?v=13"
+            aria-label="Воспроизвести демо Coddy в Zed через ACP, 2:17"
           >
-            <img src="/assets/demo/poster-zed.jpg" width="1280" height="720" alt="Zed с сессией Coddy в панели агента" loading="lazy" />
+            <img src="/assets/demo/poster-zed.jpg?v=13" width="1280" height="720" alt="Zed с сессией Coddy, в которой показан вердикт цели сессии" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">2:57</span>
+            <span class="demo-duration" aria-hidden="true">2:17</span>
           </button>
           <p class="showcase-caption">
-            Zed запускает <code>coddy acp</code> для рабочего каталога. Режимы, модели и политика разрешений Coddy появляются в панели агента, а навыки становятся слеш-командами. Хватит одной записи в
+            Zed запускает <code>coddy acp</code> для рабочего каталога. Режимы, модели и политика разрешений Coddy появляются в панели агента. Команда <code>/goal</code> работает в свежем worktree, а команда оболочки, которую пропустила проверка безопасности, выполняется без запроса. Хватит одной записи в
             <code>settings.json</code>:
           </p>
           <pre class="showcase-code"><code>"agent_servers": {
@@ -350,15 +351,15 @@
           <button
             type="button"
             class="demo-player"
-            data-video="/assets/demo/coddy-android-demo.mp4"
-            aria-label="Воспроизвести демо Coddy на телефоне с Android в рое узлов, 1:47"
+            data-video="/assets/demo/coddy-android-demo.mp4?v=13"
+            aria-label="Воспроизвести демо Coddy на телефоне с Android в рое узлов, 2:00"
           >
-            <img src="/assets/demo/poster-android.jpg" width="1280" height="720" alt="Termux на телефоне с Android рядом с веб-интерфейсом ретранслятора, который просит разрешить запись файла на телефоне" loading="lazy" />
+            <img src="/assets/demo/poster-android.jpg?v=13" width="1280" height="720" alt="Termux на телефоне с Android рядом с веб-интерфейсом ретранслятора, в котором окно &quot;Файлы&quot; открывает рабочую папку телефона" loading="lazy" />
             <span class="demo-play" aria-hidden="true"></span>
-            <span class="demo-duration" aria-hidden="true">1:47</span>
+            <span class="demo-duration" aria-hidden="true">2:00</span>
           </button>
           <p class="showcase-caption">
-            <code>coddy serve</code> в Termux подключается к ретранслятору на ноутбуке одной записью <code>swarm.join</code>, и открытый порт на телефоне для этого не нужен. Веб-интерфейс ретранслятора открывает телефон с карты роя и запускает там <code>getprop</code>, а потом пишет файл в домашний каталог телефона, и каждый шаг подтверждается в браузере.
+            <code>coddy serve</code> в Termux подключается к ретранслятору на ноутбуке одной записью <code>swarm.join</code>, и открытый порт на телефоне для этого не нужен. Ноутбук подключается к ретранслятору из меню окружения, открывает телефон с холста карты и запускает там <code>getprop</code>, а затем в окне "Файлы" читает заметку, которую записал агент.
             <a href="https://coddy.dev/ru/docs/tutorials/swarm-android-nodes" target="_blank" rel="noopener noreferrer">Пошаговая инструкция</a>
           </p>
         </div>

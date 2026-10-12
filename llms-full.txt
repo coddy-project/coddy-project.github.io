@@ -3817,9 +3817,9 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/su
 
 # Interactive console TUI (`coddy` / `coddy cli`)
 
-https://github.com/user-attachments/assets/0fc63d52-94ca-4927-9c88-29dec02a8767
+https://github.com/user-attachments/assets/446b3966-1d45-4e5d-99cf-b5b02db3e860
 
-*A three-minute recording of a console session on 1.2.31: the header with the project's `AGENTS.md` and the skills, the footer with the account usage, the model picker, file work with permission prompts, a `/commit` skill, the built-in documentation on F1 and `coddy -c`. The file is in the repository as [console.mp4](../assets/video/console.mp4).*
+*A two-minute recording of a console session on 1.3.0: the header with the project's `AGENTS.md` and the skills, the footer with the account usage, the model picker, a picture read by the model, a git worktree for the feature, a `/goal` that a supervisor checks and the goal menu, a follow-up queued as a steer while the turn runs, a `/commit` skill, the built-in documentation on F1 and `coddy -c`. The file is in the repository as [console.mp4](../assets/video/console.mp4).*
 
 The console surface is a terminal UI over the same machinery every other
 surface uses: `session.Manager`, the agent runner, and ACP session updates.
@@ -4864,9 +4864,9 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/su
 
 This page captures the original UI requirements and the intended end state. It is a functional spec and a design contract, with a screenshot of each surface next to the section that specifies it. The visual tokens and component contracts are in [DESIGN.md](../../DESIGN.md).
 
-https://github.com/user-attachments/assets/34752734-2715-4aa3-936b-acfb5c7233bf
+https://github.com/user-attachments/assets/604d01bb-b730-4ca5-9955-a7a593891054
 
-*A three-minute recording of the web UI on 1.2.31: the model picker, tool calls as rows that name their action, the permission card with the diff of an edit, a `/commit` skill from the slash menu, and History grouped by folder, from which the session is continued. The file is in the repository as [web-ui.mp4](../assets/video/web-ui.mp4).*
+*A two-minute recording of the web UI on 1.3.0: the model picker, a picture read by the model, a `/goal` that moves the work into a git worktree and that a supervisor confirms, the edits window with the patch of each file, the Files window, and a `/commit` skill from the slash menu. The file is in the repository as [web-ui.mp4](../assets/video/web-ui.mp4).*
 
 ## Constraints
 
@@ -4973,7 +4973,7 @@ Clear the field to use the session model for summarization.
 
 ## Settings: tabs and form layout
 
-- The tabs read in groups: **Appearance** and **Sessions**; where the models come from (**LLM providers**, **Logical models**); the loop that runs them (**ReAct loop**, **Context compaction**, **Memory**); what the agent can do (**Tools and permissions**, **MCP servers**, **Skills**, **Subagents**, **Hooks**); what runs it without a person at the composer (**Scheduler**, **Gateways**); and the operation of the process (**Logger**, **Prompts**). **Prompts** holds the prompt templates and the instruction files and is always last.
+- The tabs read in groups: **Appearance** and **Sessions**; where the models come from (**LLM providers**, **Logical models**); the loop that runs them (**ReAct loop**, **Session goal**, **Context compaction**, **Memory**); what the agent can do (**Command safety (decisions)**, **Tools and permissions**, **MCP servers**, **Skills**, **Subagents**, **Hooks**); what runs it without a person at the composer (**Scheduler**, **Gateways**); and the operation of the process (**Logger**, **Prompts**). **Prompts** holds the prompt templates and the instruction files and is always last.
 - **Sessions** edits where the session bundles are stored (**Storage**, `sessions.dir`) above the table of stored sessions; the table itself acts at once, the storage path saves with **Save all**.
 - A tab's own **Enabled** switch opens the form, above every block (Subagents, Hooks, Memory, Context compaction, Scheduler). The other fields sit in fieldsets by meaning, for example **Model and turns**, **Retries**, **Stream timeouts**, **Loop guard** and **Usage limits** on **ReAct loop**; a list (definition directories, fallback models, component levels) is a block of its own beside them. Inside a nested block a list keeps its frame (the Telegram admins, user groups and per-chat overrides).
 - A list of values is its inputs, each with a trash button, and **Add** under them: no per-row label and no rule between rows. An entry of a list of objects is a frame of its own, without a numbered title.
@@ -5264,7 +5264,7 @@ Session title
 
 ### Session settings: permission chip, turn overrides, live mirror
 
-![The composer after a bypass from the dialog: the selectors end with a red Bypass chip, followed by "stub/qwen3.8-27b, 2 turns left"](../assets/session-settings/session-settings-composer-bypass-dark-1280.png)
+![The composer after a bypass from the dialog: the selectors end with a red Bypass chip, followed by "neuraldeep/qwen3.6-35b-a3b, 2 turns left"](../assets/session-settings/session-settings-composer-bypass-dark-1280.png)
 
 *The composer after the session was switched to bypass from a permission prompt and the model changed for two turns.*
 
@@ -5341,7 +5341,7 @@ Functional checklist for **Settings -> Logical models -> Reasoning levels**
 
 ![History grouped by folder, with a plus on the heading](../assets/sessions-history-grouping-dark-1280.png)
 
-*Grouped by folder: the heading is the folder name with its row count, and hovering it offers a new chat in that workspace. The first row is pinned*
+*Grouped by folder: the heading is the folder name, and the plus beside it starts a new chat in that workspace. The pinned row sits on top under Pinned*
 
 ![The pinned group, mid-drag by the row itself](../assets/sessions-history-pinned-dark-1280.png)
 
@@ -5777,7 +5777,7 @@ The chat transcript renders a flat list of UI message blocks. Each block has a `
 
 For the whole of a running turn, streaming text included, the typing dots carry a live status line (`TypingDotsMessage.tsx`, pure derivation in `chat/liveStatus.ts`, visual contract in `DESIGN.md`):
 
-![A running turn: 1m 54s, 2.6k tokens, 1 running task, Writing the answer](../assets/turn-progress-live-line-dark-1280.png)
+![A running turn: 18s, 99 tokens, 1 running task, Writing the answer](../assets/turn-progress-live-line-dark-1280.png)
 
 *The live line of a running turn: the turn clock, the generated tokens, the running background task and what the agent is doing*
 
@@ -5972,7 +5972,7 @@ Multiple requests keep the transcript's 10px spacing. A new request scrolls into
 
 ![Two background permission cards with the standard transcript spacing](../assets/subagents/chat-permissions-spaced-dark-1280.png)
 
-*The real ChatScreen rendered with two deterministic pending task rows, Dark theme, 1280px wide.*
+*Two background subagents of one turn asking for permission at the end of the parent chat, Dark theme, 1280px wide.*
 
 ![A background subagent asking for permission in its parent chat](../assets/subagents/chat-subagent-permission-dark-1280.png)
 
@@ -6592,7 +6592,7 @@ Automated checks:
 
 ![The swarm screen with relays, nodes and rings](../assets/swarm/map-dark-1280.png)
 
-*The swarm screen with relays, nodes and rings*
+*The swarm screen: this machine, the attached relay and the nodes one and two hops away*
 
 Guide: `docs/operate/swarm.md`. Visual contract: `DESIGN.md` (**Swarm screen**).
 
@@ -7064,13 +7064,13 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/su
 
 Two recordings show an editor driving Coddy over ACP.
 
-https://github.com/user-attachments/assets/753944db-3b53-4889-8972-1f2dde2480cb
+https://github.com/user-attachments/assets/4fb167a1-ddd8-4a82-8f63-4ea0d156998f
 
-*Zed, three minutes. The file is in the repository as [zed-acp.mp4](../assets/video/zed-acp.mp4).*
+*Zed on 1.3.0, two minutes: the selectors Coddy publishes, a picture read by the model, a `/goal` worked on in a fresh worktree, a shell command the safety check lets through without a prompt, and `/commit`. The file is in the repository as [zed-acp.mp4](../assets/video/zed-acp.mp4).*
 
-https://github.com/user-attachments/assets/7bdba217-2adb-4863-8a8a-d697a157cea1
+https://github.com/user-attachments/assets/6335b103-d6fb-40c3-975f-9db24b89fa94
 
-*VS Code with an ACP client extension, four minutes. The file is in the repository as [vscode-acp.mp4](../assets/video/vscode-acp.mp4).*
+*VS Code with an ACP client extension on 1.3.0, two minutes: the selectors, the command safety check in accept-edits mode, a `/goal` with its edit and shell cards, `/commit`, a session restored from the tree and a worktree. The file is in the repository as [vscode-acp.mp4](../assets/video/vscode-acp.mp4).*
 
 Coddy is an ACP server. `coddy acp` speaks the [Agent Client Protocol](https://agentclientprotocol.com/) over its own stdin and stdout, so an editor, a plugin or a script that implements the client side of ACP starts the binary and gets the same agent as the console and the web UI: the same modes and models, the same permission policy, the same skills, and the same session bundles under `$CODDY_HOME`. Nothing in Coddy is editor-specific - Zed, VS Code and a Python harness connect the same way.
 
@@ -8851,9 +8851,9 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/op
 
 # Swarm: relays, nodes, and one list of everything
 
-https://github.com/user-attachments/assets/fd4837ae-23d0-400e-8e60-52706755bb4b
+https://github.com/user-attachments/assets/2a26f40a-97dd-46ef-b554-80e53602ed44
 
-*A four-minute recording of a relay, two nodes and the aggregated session list, in the console and in the browser. The file is in the repository as [swarm.mp4](../assets/video/swarm.mp4).*
+*A three-minute recording on 1.3.0: two relays and three nodes in the console, then the relay as a remote of a laptop's web UI, the map canvas in Graph layout, a permission answered across two relays, and the Files and edits windows of a node behind both relays. The file is in the repository as [swarm.mp4](../assets/video/swarm.mp4).*
 
 A **swarm** is a set of coddy nodes reached through one or more **relays**. A relay is a
 stateless meeting point: nodes register into it, it carries requests to them, and it merges
@@ -9068,9 +9068,9 @@ like "this machine has no work".
 
 *The topology graph with a live relay*
 
-![A mounted node and its sessions](../assets/swarm/node-dark-1280.png)
+![A node driven through the relay](../assets/swarm/node-dark-1280.png)
 
-*A mounted node and its sessions*
+*A node driven through the relay: its folder and models in the composer, its name on the environment button*
 
 ![A permission prompt relayed through two relays](../assets/swarm/permission-two-relays-dark-1280.png)
 
@@ -9097,8 +9097,8 @@ wide as the documentation reader's, and the map fills it.
 **Choose a layout, then explore the canvas.** The map starts in **Tree layout**, the rooted view
 that shows hop tiers. The **Graph layout** is a deterministic rooted graph for inspecting rings and
 cross-links: the relay is its root, or the local computer is the root when the map shows the machine
-that started the connection. It trends down by shortest-route depth without putting every hop on a
-rigid horizontal row, and its links are smooth curves. The choice belongs only to this browser,
+that started the connection. It trends down by shortest-route depth: each relay's nodes fan out on an
+arc beneath it, chained relays hang deeper, and its links are straight lines. The choice belongs only to this browser,
 under localStorage key `coddy_swarm_layout`; it does not change the relay configuration or another
 browser. A saved legacy `star` value migrates to Graph; if the key is absent, unavailable or invalid,
 Tree remains the default.
@@ -9113,7 +9113,7 @@ camera inside changed graph bounds.
 
 ![The Graph layout with the canvas controls](../assets/swarm/map-graph-canvas-dark-1280.png)
 
-*The Graph layout: soft top-down placement, smooth links, and camera controls over the canvas.*
+*The Graph layout: the relay's nodes fanned out beneath it, with the camera controls over the canvas.*
 
 The route in use is an accent path. Every relay it crosses is outlined, with the relay the app is
 currently driving outlined more strongly; alternate routes remain visibly secondary. This makes a
@@ -9828,7 +9828,7 @@ A session saved by an earlier version keeps a notice of every change in its `ui_
 
 The composer's **Mode**, **Permissions** and **Model** selectors show the session's settings as the server has them. Entering a session shows its own mode, its model, its level (a session running with thinking off shows **Off**) and its permission mode, from the snapshot `GET /coddy/sessions/{id}/messages` answers with. What the start page picked, and the cookies `coddy_llm_model` and `coddy_llm_reasoning` that remember it, are the default of a new chat only: they never replace a session's value on screen, so they never ride into it with the next message. The reverse holds as well: a new chat starts in **Agent** with the default model and level, whichever mode, model and level the chat just left had, and also when the start page is reached with the Back button; a mode picked there creates the chat in it. A prompt carries the mode (the top-level `model` of `POST /v1/responses`), `metadata.model` and `metadata.reasoning`, and the server keeps what it is given, so while the opened session is loading and the selectors still show the session just left, **Send** and Enter wait for the session's own snapshot; a message for a running turn still joins the queue. A read that fails is tried again, and only a 404 from the server opens the address as a new chat. A session with no level of its own, on a model that names no `reasoning_default`, shows the level it runs at, `medium` or else the model's first level, and sends none with the next message, so it is not pinned to a level nobody picked. The **Reasoning** menu offers **Off** only when its logical model sets `allow_reasoning_off: true`. A setting the running turn holds (`--once`, `--count=N`) stays on the line of overrides, and the selectors keep the session's own value. The permission chip reads **Ask first**, **Accept edits** or **Bypass**, the last in red; a line next to the selectors lists what is changed for the next turns. The chip's tooltip names the mode new sessions start in. On the start screen, before the chat has a session, the chip reads that mode, the one chosen last on any surface: `GET /coddy/info` names it, and every settings snapshot carries it as `configuredPermissionMode`, so a session switched in another tab or in a console moves the chip as well. A mode picked there is sent with the first message as `/permissions <mode>` unless it is that mode, so an explicit **Ask first** while new sessions start in `bypass` is kept. While the page does not know that mode (a server that does not name it, a read that failed), the mode the chip shows is sent with the first message, so the first turn runs under what the operator saw. A change made anywhere else - a command, the dialog, a user-requested `switch_model` call, a console on the same session - reaches the tab as `event: session_settings` and moves the selectors. A browser that has not seen the latest change yet does not undo it when it sends: the request carries `metadata.settingsVersion`, and an older version leaves the session's settings alone.
 
-![The composer after a bypass from the dialog: the selectors end with a red Bypass chip, followed by "stub/qwen3.8-27b, 2 turns left"](../assets/session-settings/session-settings-composer-bypass-dark-1280.png)
+![The composer after a bypass from the dialog: the selectors end with a red Bypass chip, followed by "neuraldeep/qwen3.6-35b-a3b, 2 turns left"](../assets/session-settings/session-settings-composer-bypass-dark-1280.png)
 
 *The composer after the session was switched to bypass and the model changed for two turns: the selectors and the line of overrides show both changes, and the transcript has no line for them.*
 
@@ -11432,9 +11432,9 @@ The Subagents tab is shown under [Scopes and project trust](#scopes-and-project-
 
 *The Tasks panel with a subagent run in progress*
 
-![The card of a finished run opened in place: Show transcript, the log and the report](../assets/subagents/tasks-detail-agent-finished-dark.png)
+![The card of a finished run opened in place: the log, the report and Show transcript](../assets/subagents/tasks-detail-agent-finished-dark.png)
 
-*The card of a finished run opened in place: Show transcript, the progress log and the report*
+*The card of a finished run opened in place: the progress log and the report, with Show transcript under them*
 
 ![The child session opened read-only from the task row](../assets/subagents/child-transcript-readonly-dark.png)
 
@@ -11659,7 +11659,7 @@ The keys are ordinary `config.yaml` keys, so the Settings page and the bundled `
 
 A hooks file inside the workspace arrived with the checkout. Under the default policy `ask` it is parsed and listed, but none of its hooks runs until you approve that exact file for that workspace on the machine running Coddy. The receipt is bound to a digest of the file, so editing an approved file withdraws the approval and asks again. Your own file (user scope) never needs approval.
 
-The first turn that finds a held file records a notice in the session (the SPA shows it as a system row after the turn, once per session and file, without a retry control; the agent log carries the same line), so you learn that hooks exist and are held:
+The first turn that finds a held file records a notice in the session (the SPA shows it as a system row inside the turn, where the held file was found, once per session and file, without a retry control; the agent log carries the same line), so you learn that hooks exist and are held:
 
 | Dark | Light |
 |---|---|
@@ -12749,7 +12749,7 @@ Date: Wed, 16 Sep 2026 12:00:00 GMT
 
 ![A finished http_request call in the web UI transcript](../assets/http-requests/http-request-answer-dark-1280.png)
 
-*The call and its answer in the transcript: the arguments, then the status line, the headers and the body.*
+*The call and its answer in the transcript: the reason, the headers and the body that went out, then the response status, its headers and its body.*
 
 A 4xx or 5xx status is an answer like any other, not a failed call: the model reads the status line and decides what to do. The call fails only when no answer arrived - the address did not resolve, the connection was refused, the certificate did not verify, the timeout ran out - when the body could not be saved to `output_file`, or when the arguments were refused before anything was sent.
 
@@ -13063,9 +13063,9 @@ The workspace index comes from `git ls-files` inside a git checkout (so `.gitign
 
 Typing `@` opens the list under the editor. It narrows as you type, **tab** or **enter** takes the highlighted row, **escape** closes it. A folder or a scheme row keeps the list open on what it holds; a file ends the mention with a space. A path with a space is inserted quoted; for a folder the closing quote goes in ahead of the cursor, so the text names the folder even if no file follows. When the search matched more than the list holds, the scroll line says so: `(3/50 of 1204, type to narrow)`. **tab** on a word without `@` completes it as a path.
 
-![The console mention list for "@ment": a folder and four files from across the tree, each with its kind, and the scroll line counting 221 matches](../assets/cli-tui/18-mention-list.png)
+![The console mention list for "@ment": a folder and four files from across the tree, each with its kind, and the scroll line counting 311 matches](../assets/cli-tui/18-mention-list.png)
 
-*`@ment` in this repository: the folder whose name matches first, then the files, each row naming its kind; the scroll line says the list holds 50 of 221 matches*
+*`@ment` in this repository: the folder whose name matches first, then the files, each row naming its kind; the scroll line says the list holds 50 of 311 matches*
 
 In remote mode (`coddy --remote`) the list comes from the server, where the session runs and where its mentions will be read, not from the folder the console was started in.
 
@@ -13073,7 +13073,7 @@ In remote mode (`coddy --remote`) the list comes from the server, where the sess
 
 The composer's picker shows each candidate with its kind - file, folder, session, rule, subagent, plan; an empty `@` shows the session's recent picks first. The arrow keys move the highlight, **enter** or **tab** takes it, and it works while a turn runs, so a follow-up can mention a file too. A cut list says how many matched, on the title row. Typing `:` after a file opens the [line-range picker](../surfaces/web-ui.md#line-ranges-pathn-m).
 
-![The web composer's mention picker for "@ment": a folder and files from across the tree, each with its kind, and "50 of 221, type to narrow" on the title row](../assets/mentions/mentions-picker-dark-1280.png)
+![The web composer's mention picker for "@ment": folders and files from across the tree, each with its kind, and "50 of 311, type to narrow" on the title row](../assets/mentions/mentions-picker-dark-1280.png)
 
 *`@ment`: the workspace ranked against the fragment, the kind on every row, the cut on the title row*
 
@@ -13658,7 +13658,7 @@ The SPA **polls** these endpoints rather than listening on SSE: a background tas
 The panel is **docked inside the session**, to the right of the transcript, at `#/s/<sessionId>/tasks` (and `#/s/<sessionId>/tasks/<task_id>` for one task). The route carries the chat, so a reload restores both the conversation and the panel. That placement is the answer to "which session spawned this process": the panel is part of the conversation that started the tasks, so there is nothing to label.
 
 - **Every task is the same card**, whatever it is and whether it runs or has finished: a status dot, a **tag** that says what stands behind it (`shell` for a command, the agent's name for a subagent run, `memory` for the memory run of a turn, `server` for a preview server), the title - the command, or what the agent was asked to do - and a line under it: when it started and how long it has run against the estimate (`12:49 · 1m 28s`), then, once finished, when it ended too (`12:49 · 20s · 12:50`), with the date in front for another day; hovering the card shows the full start and end, date and seconds. When the title already begins with the tag's name, the tag is left out, so the name is written once: a scheduled run's card is headed by its job alone, and how and when the run was started is in the hover text. An agent run that names no agent carries no tag either. How the task ended is the dot's colour; the card says it in words only when opened. A subagent run, a scheduled run and the memory run also name, on the right of that line, the model they run on, the reasoning level they call it with when the model has levels, and the tokens their calls have spent (`qwen3.8-27b · High · 212k tokens`), updated while they run; hovering the card shows the full model id and the input and output tokens apart. A running card adds a Stop control, a **bell** after the title when the task will wake the agent when it ends (hover: *Wakes the agent when it ends*) and, **only** when the model supplied an estimate, a progress bar; a finished card keeps the bell when its end did wake the agent (hover: *Woke the agent when it ended*). Running tasks stand at the top of the panel under no heading; anything above the **Finished N** counter is running.
-- **A click anywhere on a card opens it in place.** There is no second pane: the open card shows the command with a copy button (neither an agent run nor a preview server has a shell behind it, and nothing is shown there), the error if the run ended with one (not the bare `exit status 2` of a command, which only repeats the exit code), the captured output in a box that scrolls on its own, and at the bottom how the task ended and its exit code (`Failed · Exit code 2`; an agent run and a preview server have no process behind them, so theirs names the outcome alone). How long it ran, and the way into the task - **Show transcript** for a subagent run, the address of a preview server - stay on the card's own line, where they are read whether the card is open or not. Open as many cards as you like: each keeps reading its own output while its task runs. Which cards are open is not part of the address, which says only that the panel is showing.
+- **A click anywhere on a card opens it in place.** There is no second pane: the open card shows the command with a copy button (neither an agent run nor a preview server has a shell behind it, and nothing is shown there), the error if the run ended with one (not the bare `exit status 2` of a command, which only repeats the exit code), the captured output in a box that scrolls on its own, and at the bottom how the task ended and its exit code (`Failed · Exit code 2`; an agent run and a preview server have no process behind them, so theirs names the outcome alone). How long it ran and the address of a preview server stay on the card's own line, where they are read whether the card is open or not; **Show transcript** of a subagent run is under the output of the open card. Open as many cards as you like: each keeps reading its own output while its task runs. Which cards are open is not part of the address, which says only that the panel is showing.
 - **On a desktop-wide window the panel follows the chat.** Open it, then pick other chats in History: the panel stays open and shows the tasks of each chat picked, and clicking past History to dismiss it leaves the panel open. On a tablet or a phone the panel is full screen, and opening History closes it, as before.
 - **Finished N** is a counter, not a list. Expanding it shows the finished cards; the rest stay on disk. That is how "keep every log" and "do not load the app" hold at once: the list is counted, the cards render on demand, and a task's output is fetched only when its card is opened.
 - **Clear** drops the finished history for this session (`DELETE /coddy/sessions/{id}/background-tasks`). Running tasks are untouched.
@@ -13704,7 +13704,7 @@ Setting `enable: false` removes the `background` option from `run_command` and d
 
 ## Preview servers
 
-A third kind of task is neither a command nor an agent run: `kind: server` is the static file server the `preview_server` tool starts over a project directory ([Preview server](preview-server.md)). It is goroutines of the Coddy process, launched through the same callback as a subagent run, so it has no pid, no exit code worth showing and nothing for `background_reap` to find after a crash. Its row carries `url`, the address it answers at: while the server runs the Tasks panel shows it as a link on the card itself, with nothing to expand first - the way a subagent run carries **Show transcript** - `/tasks` shows the same row, `background_list` prints the address after the label, and `background_output` is the request log.
+A third kind of task is neither a command nor an agent run: `kind: server` is the static file server the `preview_server` tool starts over a project directory ([Preview server](preview-server.md)). It is goroutines of the Coddy process, launched through the same callback as a subagent run, so it has no pid, no exit code worth showing and nothing for `background_reap` to find after a crash. Its row carries `url`, the address it answers at: while the server runs the Tasks panel shows it as a link on the card itself, with nothing to expand first, `/tasks` shows the same row, `background_list` prints the address after the label, and `background_output` is the request log.
 
 It is also the one kind of task with no hard limit. A page the operator asked to keep open has no duration to estimate, so the pool arms no timer for it and `timeout_seconds` reads `0`; only a `timeout_seconds` on the `preview_server` call itself ends it early, verbatim and uncapped by `max_timeout_seconds`. A quiet server is never flagged `silent for …`. Everything else is the ordinary lifecycle: it counts toward `max_concurrent`, `background_stop` and the Stop button end it, deleting the session or draining the process takes it down, and a record left `running` by a dead process comes back as `orphaned`.
 
@@ -13734,7 +13734,7 @@ What that changes on the surface:
 - `Spec.Agent` and `Snapshot.Agent` carry the agent identity, serialised as `"agent": {"name": "…", "session_id": "sess_…"}` on the task row, in `GET .../background-tasks` and in the persisted `meta.json`. The child session id is generated before the pool is involved, so the first snapshot ever published already carries it. Without an explicit label the row reads `agent <name>`; the runtime sets `agent <name>: <description>`.
 - The output log is the child's progress: one `[assistant]` line per line of assistant text, `→ tool` on start, `✓` / `✗ tool` on finish, and a closing block starting with `=== subagent report ===` that carries the outcome, the turn count, the duration and the child's final message. `background_output` and `background_wait` return it like any other log.
 - **Stop cancels the child.** `background_stop`, the panel's Stop control, `POST .../stop`, session delete and server drain all go through the handle, which cancels the child's turn; the pool waits for the run to settle before it reports `stopped`.
-- The card of the run carries the agent's name as its tag, and on the card itself - no need to open it - the model the child runs on and its reasoning level, the tokens its calls have spent, how long it has run and **Show transcript**, which routes to the child session (`#/s/<child id>`), a read-only transcript that stays out of History. A shell task has none of these: it has no model and no transcript, only its elapsed time and, in the open card, the output text.
+- The card of the run carries the agent's name as its tag, and on the card itself - no need to open it - the model the child runs on and its reasoning level, the tokens its calls have spent, how long it has run; the open card adds **Show transcript**, which routes to the child session (`#/s/<child id>`), a read-only transcript that stays out of History. A shell task has none of these: it has no model and no transcript, only its elapsed time and, in the open card, the output text.
 - **A detached child that needs a permission answer asks in the parent chat.** Once the spawning turn has ended there is no chat stream left to carry the prompt, so under `coddy serve` with the HTTP surface it is attached to the running agent row as `pending_permission` (the payload of the SSE `permission` event, with the **child** session id, plus `parent_session_id`, `task_id`, `agent_name` and `asked_at`) and announced on `GET /coddy/events` as `subagent_permission`. The web UI shows it at the end of the parent session's chat with the prompt's preview and its **Allow** / **Reject** buttons, which answer `POST /coddy/sessions/{child}/permission`; the same prompt reaches a console attached over `--remote` and, for a Telegram session, the chat. The waiting task keeps running and keeps its timeout, and the drawer keeps its fast poll cadence; nothing about the prompt is persisted. See `docs/features/subagents.md` (Detached runs).
 - The run is a task of the **parent** session, so it counts against the parent's `max_concurrent` like a background command. Work the child starts itself (a backgrounded `run_command`, a grandchild) is registered under the **child's** session id and persisted in the child's bundle; it is stopped and awaited before the child is retired. The number of child LLM loops the whole process may run at once is a separate, process-wide cap, `subagents.max_concurrent`.
 
@@ -13927,7 +13927,7 @@ The summary row is a user-role message flagged `compaction_summary` that starts 
 
 After a compaction the context estimate is recomputed and published as a `usage_update` with `used` and `size`, which is what the composer's context ring and the console footer's context percentage show; `GET /coddy/sessions/{id}/stats` returns the same breakdown by category. Every client of a shared session reads the smaller number: the tab that sent the turn from its own stream, another tab watching the turn from `GET /coddy/sessions/{id}/composer-stream` (the same frames), and a tab that only views the session from the stats it reloads when `turn_ended` arrives. A compaction folds the turns before the kept tail, so the numbers fall when the bulk of the context sits in older turns; a large last message stays verbatim until newer turns push it past `keep_recent_turns`.
 
-The Context popover places a manual compaction action beside its title. With automation enabled it shows the configured threshold, such as **Compact at 95%**; with `auto_enable: false` it shows **Compact now**. Clicking starts the same `POST /coddy/sessions/{id}/compact` action as `/compact`, shows progress and refreshes the transcript and context indicator when it finishes.
+The Context popover places a manual compaction action beside its title. With automation enabled it shows the configured threshold, such as **Compact at 80%** (the default `threshold_percent`); with `auto_enable: false` it shows **Compact now**. Clicking starts the same `POST /coddy/sessions/{id}/compact` action as `/compact`, shows progress and refreshes the transcript and context indicator when it finishes.
 
 ![Context popover with the manual compaction action and configured threshold](../assets/compaction/context-popover-threshold-dark-1280.png)
 *Context popover rendered from the running web UI at 1280px.*
@@ -16901,6 +16901,8 @@ After **`session/new`** and **`session/load`**, Coddy lists its slash commands. 
 
 Tool call statuses: `pending` | `in_progress` | `completed` | `failed` | `cancelled`
 
+Tool call kinds are values of the ACP `ToolKind` enum, and Coddy sends no other: `edit` for `write`, `edit`, `apply_patch`, `mkdir`, `touch`, `config_commit` and `config_rollback`; `delete` for `rm` and `rmdir`; `move` for `mv`; `execute` for `run_command` and `ssh_run_command`; `search` for `glob`, `grep` and `coddy_docs_search`; `fetch` for `webfetch`, `websearch` and `http_request`; `read` for the other reading tools; `other` for everything else, MCP tools included. The same kind goes into the `toolCall` of `session/request_permission`.
+
 ### Coddy-specific session updates: `token_usage`, `usage_update`, `provider_usage`
 
 Coddy sends three `session/update` kinds the ACP specification does not
@@ -17092,7 +17094,7 @@ Under `ask`, a request that belongs to the session itself carries two more optio
     "toolCall": {
       "toolCallId": "call_002",
       "title": "Run: go build ./...",
-      "kind": "run_command",
+      "kind": "execute",
       "status": "pending",
       "content": [
         { "type": "text", "text": "Execute: go build ./..." }
@@ -18269,9 +18271,9 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tu
 
 # Android phones as swarm nodes
 
-https://github.com/user-attachments/assets/c1e1d306-d5d3-40db-a84b-77e3cd5ddd46
+https://github.com/user-attachments/assets/e7786835-0676-47be-8b42-477630dfa998
 
-*A two-minute recording: Coddy in Termux on an Android phone joins a relay, shows up on the relay's map, runs `getprop` and writes a file on the phone for a browser on the laptop. The file is in the repository as [android-swarm.mp4](../assets/video/android-swarm.mp4).*
+*A two-minute recording on 1.3.0: Coddy in Termux on an Android phone joins a relay, the laptop connects to the relay from its environment menu, the phone shows up on the map canvas, runs `getprop` and writes a note, and the Files window opens the phone's workspace through the relay. The file is in the repository as [android-swarm.mp4](../assets/video/android-swarm.mp4).*
 
 **Goal.** A phone that runs Coddy in Termux joins a relay you run on a laptop or a server, and you drive it from the relay's web UI or from the console like any other node: prompts, tools that run on the phone, permission prompts, the phone's own sessions. The phone opens the connection itself, so it needs no public address, no open port and no VPN; a phone on a mobile network behind the carrier's NAT joins the same way as one on your Wi-Fi.
 
@@ -18440,7 +18442,7 @@ This page is for people: the environment, the build, the test runs, the flow of 
 - **Python 3** - for `make test-agent-rules` and the end-to-end harnesses in `examples/`; the console driver needs `pip install -r examples/cli/requirements.txt`.
 
 ```bash
-git clone https://github.com/EvilFreelancer/coddy-agent
+git clone https://github.com/coddy-project/coddy-agent
 cd coddy-agent
 make hooks      # once per clone: git commit runs the gate in .githooks/pre-commit
 make build TAGS="http ui scheduler memory cli gateway swarm"
@@ -18656,7 +18658,7 @@ ffmpeg -i take.mp4 -vf "scale=1280:-2" -c:v libx264 -preset slow -crf 31 -pix_fm
 
 Keep a video under 4 MB and under four minutes; a feature clip is better at twenty seconds than at two minutes. A video that shows a surface that changed is re-recorded or removed.
 
-GitHub renders an inline player only for a file uploaded as a GitHub attachment: a file committed to the repository stays a link on its file page, and a `<video>` tag is dropped by the sanitizer. So a page carries two things: the attachment URL (`https://github.com/user-attachments/assets/<uuid>`) on a line of its own, which GitHub turns into the player, and under it an italic caption with a link to the copy in `docs/assets/video/`, which is what the assets check counts and what the documentation site will embed. To get the URL, drag the file into the comment box of any issue or pull request of this repository, wait for the upload to finish, copy the URL it inserts, and post the comment: an attachment stays private until the comment it was uploaded for is public, so an unposted upload plays for its uploader and for nobody else.
+GitHub renders an inline player only for a file uploaded as a GitHub attachment: a file committed to the repository stays a link on its file page, and a `<video>` tag is dropped by the sanitizer. So a page carries two things: the attachment URL (`https://github.com/user-attachments/assets/<uuid>`) on a line of its own, which GitHub turns into the player, and under it an italic caption with a link to the copy in `docs/assets/video/`, which is what the assets check counts and what the documentation site will embed. To get the URL, drag the file into the comment box of any issue or pull request of this repository, wait for the upload to finish, copy the URL it inserts, and post the comment: an attachment stays private until the comment it was uploaded for is public, so an unposted upload plays for its uploader and for nobody else. The attachment may be a narrated cut of the same take (a voiceover and a music bed); the copy in `docs/assets/video/` stays silent and is what the size limit applies to.
 
 ## Assets index
 
@@ -21245,7 +21247,7 @@ A phone gives the shell 360 to 430 CSS px. Everything below lives in one **`@med
 ### Narrow-rail hover tooltips
 
 - Shown **only** when the rail is **narrow** (no wide labels column). Labels visible in wide rail substitute for tooltips; do not show floating tip rows there.
-- **Copy**: brand area **New Chat**, **History** nav control **History**, **Scheduler** nav control **Scheduler**, external links match their labels. Reference accent chrome in **`docs/assets/ref-navbar-narrow-tooltips-accent.png`**.
+- **Copy**: brand area **New Chat**, **History** nav control **History**, **Scheduler** nav control **Scheduler**, external links match their labels. External accent reference (from another product, colours only) in **`docs/assets/ref-navbar-narrow-tooltips-accent.png`**.
 - **While a control owns an open overlay** (example **History** with the list visible and **`.is-active`** on the trigger), **hide that row's tooltip** even if the mouse still hovers (**nav stacking can sit above backdrop**). Same for **Scheduler** when its drawer is open.
 - Tooltip **horizontal offset** must use the **same gutter math** as the History drawer (**column padding + nav floating gutter (+ border shim where needed)**), not a shorter offset from icon-only **`rail-tip-host`** width alone.
 
@@ -22539,7 +22541,7 @@ The production JS bundle increased from approximately 308.64 kB to 419.16 kB gzi
 
 ## Captures
 
-Captured from the running Vite build with the real ChatScreen and Markdown components and a deterministic JavaScript, CSS, HTML and JSON transcript, at 1280 x 900, after the change; no live provider or user conversation is used. All seven themes were also checked at 390 x 900: header, transcript column and composer edges align at both widths and the page does not overflow horizontally.
+Captured on release 1.3.0 from the built `coddy serve` with the embedded web UI, at 1280 x 900: one chat turn answered by a scripted model with a fixed JavaScript, CSS, HTML and JSON reply, so no live provider or user conversation is used. All seven themes were also checked at 390 x 900: header, transcript column and composer edges align at both widths and the page does not overflow horizontally.
 
 | Theme | After |
 | --- | --- |

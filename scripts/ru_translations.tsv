@@ -101,7 +101,6 @@ The same agent served by	Тот же агент, запущенный через
 Bare	Команда
 in a terminal: pick a model with	без аргументов в терминале. Выберите модель через
 Zed launches	Zed запускает
-for the workspace, and coddy's own modes, models and permission policy show up in the editor's agent panel; its skills arrive as slash commands. One entry in Zed's	для рабочего каталога. Режимы, модели и политика разрешений Coddy появляются в панели агента, а навыки становятся слеш-командами. Хватит одной записи в
 What is Coddy	Что такое Coddy
 Coddy started as a coding agent and grew into a	Coddy начинался как агент для программирования и вырос в
 general-purpose harness	универсальный харнес
@@ -585,12 +584,16 @@ tags. Chat, History, plan documents, the Tasks panel, the scheduler, the documen
 that holds rules, plus your own	, где есть правила, а также вашу папку
 the Homebrew page	страницу про Homebrew
 writes Markdown, HTML or JSON.	выгружает сессию в Markdown, HTML или JSON.
-, approve edits and commands as the agent works, ship them with a	, подтверждайте правки и команды по ходу работы агента, коммитьте их навыком
 skill, look things up on	, открывайте документацию по
 and resume with	и продолжайте сессию через
-: the model picked in the composer, tool calls as rows that name their action, a permission card with the diff of an edit, a	: модель выбирается в поле ввода, вызовы инструментов идут строками с названием действия, карточка разрешения показывает diff правки, навык
-skill from the slash menu, and History, where the session is picked up again.	запускается из меню слеш-команд, а из истории сессию можно открыть снова.
 in Termux joins a relay on the laptop with one	в Termux подключается к ретранслятору на ноутбуке одной записью
-entry and no open port on the phone. The relay's web UI opens the phone from its map, runs	, и открытый порт на телефоне для этого не нужен. Веб-интерфейс ретранслятора открывает телефон с карты роя и запускает там
-there and writes a file into the phone's home, each step approved in the browser.	, а потом пишет файл в домашний каталог телефона, и каждый шаг подтверждается в браузере.
 The tutorial	Пошаговая инструкция
+: a picture read by the model, a	: картинка, которую читает модель, команда
+that moves the work into a git worktree and that a supervisor model confirms, the edits window with the patch of each file, the Files window, and a	, которая переносит работу в git worktree и результат которой подтверждает модель-супервизор, окно правок с патчем каждого файла, окно "Файлы" и навык
+skill from the slash menu.	из меню слеш-команд.
+, hand the agent a	, ставьте агенту цель командой
+that a second model checks, queue a follow-up while the turn runs, ship the change with a	, а вторая модель её проверяет, добавляйте уточнение в очередь, пока идёт ход, коммитьте изменение навыком
+for the workspace, and coddy's own modes, models and permission policy show up in the editor's agent panel. A	для рабочего каталога. Режимы, модели и политика разрешений Coddy появляются в панели агента. Команда
+runs in a fresh worktree, and a shell command the safety check calls safe runs without a prompt. One entry in Zed's	работает в свежем worktree, а команда оболочки, которую пропустила проверка безопасности, выполняется без запроса. Хватит одной записи в
+entry and no open port on the phone. The laptop connects to the relay from its environment menu, opens the phone from the map canvas, runs	, и открытый порт на телефоне для этого не нужен. Ноутбук подключается к ретранслятору из меню окружения, открывает телефон с холста карты и запускает там
+there and reads the note the agent wrote in the Files window.	, а затем в окне "Файлы" читает заметку, которую записал агент.
