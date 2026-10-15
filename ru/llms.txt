@@ -27,6 +27,7 @@
 ## Эксплуатация
 
 - [coddy serve и демон](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/operate/serve.md): Один процесс для всех включённых подсистем, пользовательский сервис systemd (serve install и uninstall), --daemon со status, stop и restart, перезагрузка конфигурации. (docs/ru/operate/serve.md)
+- [Мониторинг](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/operate/monitoring.md): Экспортёр Prometheus в coddy serve, его включение и привязка в контейнере, конфигурация сбора, каждая метрика, поставляемые правила оповещений и то, что не экспортируется никогда. (docs/ru/operate/monitoring.md)
 - [Удалённый режим](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/operate/remote.md): Управление удалённым coddy serve из консоли, ACP или веб-интерфейса через --remote, токены, CORS и меню окружения. (docs/ru/operate/remote.md)
 - [Рой](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/operate/swarm.md): Релеи и узлы, монтирование узлов, общий список сессий, кольца и маршруты, обратный туннель. (docs/ru/operate/swarm.md)
 - [Планировщик](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/operate/scheduler.md): Файлы cron-заданий, правила срабатывания в UTC, запуски как фоновые агентные задачи в сессии задания, панель запусков, инструменты планировщика и REST. (docs/ru/operate/scheduler.md)
