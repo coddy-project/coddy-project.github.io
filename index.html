@@ -325,7 +325,7 @@
           <div class="method" data-method="mac-brew">
             <div class="install-code">
               <button type="button" class="install-copy" data-copy-for="cmd-brew" aria-label="Copy Homebrew install command">Copy</button>
-              <pre><code id="cmd-brew"><span class="cmd">brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</span></code></pre>
+              <pre><code id="cmd-brew"><span class="cmd">brew install coddy-project/coddy/coddy</span></code></pre>
             </div>
           </div>
           <div class="install-bar">
@@ -334,13 +334,13 @@
               <button type="button" class="method-tab" data-method="mac-brew" role="tab" aria-selected="false">Homebrew</button>
             </div>
             <a class="install-view method active" data-method="mac-script" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.sh" target="_blank" rel="noopener noreferrer">View install script <span aria-hidden="true">&#8599;</span></a>
-            <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">About the cask <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">About the tap <span aria-hidden="true">&#8599;</span></a>
           </div>
           <p class="install-note method active" data-method="mac-script">
             Puts the latest release binary on your PATH with its man page and shell completions, and creates <code>~/.coddy/config.yaml</code> from the example when it is missing.
           </p>
           <p class="install-note method" data-method="mac-brew">
-            Every release publishes the cask beside its archives. It adds <code>man coddy</code> and the shell completions, and <code>coddy update</code> hands over to <code>brew upgrade --cask coddy</code>. If macOS blocks the first run, clear the quarantine flag with <code>xattr -d com.apple.quarantine "$(which coddy)"</code>.
+            The cask lives in Coddy's own tap, and every release updates it. It adds <code>man coddy</code> and the shell completions, clears the quarantine flag for you, and <code>coddy update</code> hands over to <code>brew upgrade --cask coddy</code>.
           </p>
         </div>
 
@@ -431,7 +431,7 @@
         Other install methods and details:
         <a href="https://coddy.dev/docs/getting-started/install" target="_blank" rel="noopener noreferrer">Install guide</a>
         · <a href="https://coddy.dev/docs/getting-started/android" target="_blank" rel="noopener noreferrer">Android (Termux)</a>
-        · Homebrew by name is still on its way, see
+        · Homebrew without the tap name is still on its way, see
         <a href="https://coddy.dev/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">the Homebrew page</a>
       </p>
     </section>

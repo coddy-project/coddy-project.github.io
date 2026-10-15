@@ -173,7 +173,7 @@
           <div class="method" data-method="mac-brew">
             <div class="install-code">
               <button type="button" class="install-copy" data-copy-for="cmd-brew" aria-label="Копировать команду установки Homebrew">Копировать</button>
-              <pre><code id="cmd-brew"><span class="cmd">brew install --cask https://github.com/coddy-project/coddy-agent/releases/latest/download/coddy.rb</span></code></pre>
+              <pre><code id="cmd-brew"><span class="cmd">brew install coddy-project/coddy/coddy</span></code></pre>
             </div>
           </div>
           <div class="install-bar">
@@ -188,7 +188,7 @@
             Кладёт бинарник последнего релиза в PATH, ставит справку man и автодополнение команд и создаёт <code>~/.coddy/config.yaml</code> из примера, если его ещё нет.
           </p>
           <p class="install-note method" data-method="mac-brew">
-            Homebrew-пакет выходит с каждым релизом рядом с архивами. Он добавляет <code>man coddy</code> и автодополнение команд, а <code>coddy update</code> передаёт обновление команде <code>brew upgrade --cask coddy</code>. Если macOS блокирует первый запуск, снимите флаг карантина командой <code>xattr -d com.apple.quarantine "$(which coddy)"</code>.
+            Homebrew-пакет лежит в собственном тапе Coddy, и каждый релиз его обновляет. Он добавляет <code>man coddy</code> и автодополнение команд, сам снимает флаг карантина, а <code>coddy update</code> передаёт обновление команде <code>brew upgrade --cask coddy</code>.
           </p>
         </div>
 
@@ -279,7 +279,7 @@
         Другие способы установки и подробности описаны в
         <a href="https://coddy.dev/ru/docs/getting-started/install" target="_blank" rel="noopener noreferrer">руководстве по установке</a>
         · <a href="https://coddy.dev/ru/docs/getting-started/android" target="_blank" rel="noopener noreferrer">Android (Termux)</a>
-        · Установка через Homebrew по имени пакета ещё в работе, см.
+        · Установка через Homebrew без имени тапа ещё в работе, см.
         <a href="https://coddy.dev/ru/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">страницу про Homebrew</a>
       </p>
     </section>
