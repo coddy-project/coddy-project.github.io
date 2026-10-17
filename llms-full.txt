@@ -4242,6 +4242,8 @@ session runs with after the model and the level (`• tools coding`). A preset
 added to the configuration brings both without a restart
 ([Toolsets](../getting-started/configuration.md#toolsets)).
 
+**Pictures** - **ctrl+v** (**alt+v** where the terminal keeps ctrl+v for its own paste) takes the picture the clipboard holds and puts an `[image #N]` marker into the editor; the prompt that holds the marker carries the picture to a model marked `multimodal`. With an X display the picture first opens in a markup window - pencil, ellipse, rectangle, arrow, text, crop, rotate, undo - and Done attaches it as marked up. A picture a prompt was sent with from the web UI or Telegram shows as `[image #N]` too, and the web UI shows a picture pasted here as a picture ([Pasting and marking up pictures](../features/picture-markup.md)).
+
 **Model memory** — the console is a surface of its own. A session-scoped pick
 (`/model`, the picker, or `/model <id>` ahead of a prompt) is remembered in
 `$CODDY_HOME/console-state.json` (`{"last_model": "..."}`), and every **new**
@@ -5811,11 +5813,11 @@ Functional regression checklist:
 
 - The paperclip button (**`data-testid="composer-file-input"`** hidden `<input type="file">` triggered by a visible icon button) appears in the composer **only** when the active model has **`multimodal: true`** from **`GET /v1/models`**. The flag is derived from **`models[].multimodal`** in YAML config and propagated through **`ModelInfo.multimodal`** → **`llmModelMultimodal`** in **`App.tsx`** → **`Composer`** prop.
 - Besides the paperclip picker, files enter **`attachedFiles`** through two more ingress paths, both gated on **`llmModelMultimodal`**:
-  - **Clipboard paste** in **`textarea#composer`**: image items (`kind === "file"`, `image/*`) are attached and the default paste is cancelled; plain-text paste is untouched. Pasted images get deterministic names **`pasted-<n>.<ext>`** (browsers name every clipboard image `image.png`).
+  - **Clipboard paste** in **`textarea#composer`**: image items (`kind === "file"`, `image/*`) are attached and the default paste is cancelled; plain-text paste is untouched. Pasted images get deterministic names **`pasted-<n>.<ext>`** (browsers name every clipboard image `image.png`). One pasted picture opens in the **markup editor** first (**`ui/markup/ImageMarkupDialog.tsx`**): **Done** attaches it as a PNG, **Cancel** or **Escape** attaches nothing ([Pasting and marking up pictures](../features/picture-markup.md#in-the-web-ui)). Several pictures pasted at once, and a browser that cannot draw on a canvas, attach at once.
   - **Drag & drop** onto **`.composer-card`**: dropped files attach like a picker selection; while files are dragged over the card it shows the **`.composer-card--dragover`** drop-target affordance.
 - When the model is **not** multimodal, paste/drop rejection shows the transient inline notice **`.composer-attach-hint`** (`role="status"`, auto-clears after ~4s) instead of attaching.
 - An `image/*` attachment is a **preview card**, not a chip: the picture fills a **128×96** card (**`.composer-attachment-card`** on the composer side, **`.msg-user-file-card`** in the sent bubble, `object-fit: cover`, 12px radius) so the operator can see what was attached. Hovering highlights the card, the cursor is **`zoom-in`**, and a click opens the image in the shared viewer (**`ui/components/ImageLightbox.tsx`**: zoom levels, **+ / - / 0**, drag to pan, wheel and pinch to zoom, **Esc**, portal into `document.body`). Non-image files and locked edit-mode chips keep the icon chip with the file name. A right click on the picture, in the card or in the viewer, offers **Copy image** and **Save image** ([Workspace files](#workspace-files) describes the menu).
-  - In the composer the card's **remove** control (**`composer.removeAttachment`**) sits in its top-right corner and fades in on hover; it stays in the tab order and is visible on **`:focus-visible`**, and removing never opens the viewer. The picture the viewer opens is the local object URL - the file itself, at full size.
+  - In the composer the card's **remove** control (**`composer.removeAttachment`**) sits in its top-right corner and fades in on hover; it stays in the tab order and is visible on **`:focus-visible`**, and removing never opens the viewer. The picture the viewer opens is the local object URL - the file itself, at full size. The **pencil** in the top-left corner (**`composer.markupAttachment`**) opens the picture in the markup editor; Done replaces the attachment with the marked-up PNG, Cancel leaves it as it was.
   - The **sent user bubble** first renders an optimistic **`previewUrl`** blob in the card, then replaces it with the backend **`files[].preview_url`** after persistence; the blob URL is revoked at that point. What the card opens is **`files[].url`**, the original bytes from the session bundle; a message sent before that field existed opens its **`preview_url`** instead of losing the click. Reloading the dialog restores both through **`GET /coddy/sessions/{id}/messages`**.
 - **Attachment-only send** is valid while the selected model is multimodal: **Send** (button or **Enter**) unlocks with attachments even when the draft is empty and submits **`onSend("", files)`**; the server accepts an empty-string `input` alongside `inline_files`. If the user switches to a non-multimodal model, existing chips remain visible with **`.composer-attachment-chip--disabled`**, attachment-only Send becomes disabled, and a text send omits and retains those files.
 - The HTTP handler independently filters **`inline_files`** against the effective YAML model. This keeps a custom or stale client from forwarding or persisting files when **`multimodal`** is false.
@@ -13585,7 +13587,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/fe
 
 # Images
 
-A model that reads images gets a picture two ways: you attach it to a prompt, or the agent opens an image file of the workspace with `read`. This page covers the second way and where you see what the agent looked at. Attaching a picture in the web composer is described in [Web UI](../surfaces/web-ui.md#composer-file-attachments-multimodal) and, for a message sent while a turn runs, in [Message queue](message-queue.md).
+A model that reads images gets a picture two ways: you attach it to a prompt, or the agent opens an image file of the workspace with `read`. This page covers the second way and where you see what the agent looked at. Attaching a picture in the web composer is described in [Web UI](../surfaces/web-ui.md#composer-file-attachments-multimodal) and, for a message sent while a turn runs, in [Message queue](message-queue.md); pasting one in the console or the browser, and marking it up first, in [Pasting and marking up pictures](picture-markup.md).
 
 ## A model that reads images
 
@@ -13647,6 +13649,81 @@ Coddy keeps one copy of every picture it showed the model, with the session's as
 | [Telegram](../surfaces/gateway.md) | The bot sends the picture into the chat as a photo, captioned with the file's name, while the turn runs; as a document when Telegram refuses the photo itself. |
 | [Console](../surfaces/console.md) | The `read` row with its one line of text. |
 | [Editors](../surfaces/editors.md) | The `read` call with its one line of text. |
+
+
+# Features / Pasting and marking up pictures
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/picture-markup.md
+
+# Pasting and marking up pictures
+
+A picture you copied - a screenshot, an image from a viewer or a browser, an image file copied in a file manager - goes into a prompt by pasting it, in the console and in the web UI. Before it is attached, the picture opens in a markup editor, where you circle the part that matters, point at it with an arrow and write a word next to it. The console opens the editor as a window on the desktop, the web UI over the chat; both have the same tools and the same buttons.
+
+The picture reaches only a model that takes pictures, one with `multimodal: true` on its row of `models` ([Images](images.md#a-model-that-reads-images)).
+
+## In the console
+
+Press **ctrl+v** in the console to paste the picture the clipboard holds. A terminal pastes text only, so Coddy asks the desktop for the picture itself:
+
+| Desktop | Where the picture comes from |
+|---|---|
+| X11, or Wayland with XWayland | the X clipboard, read over the X protocol by Coddy itself; `xclip` is not needed |
+| Wayland | `wl-paste` from wl-clipboard when it is installed, then the X clipboard when XWayland runs |
+| macOS | `osascript`, which every Mac has |
+| Windows | PowerShell |
+
+A picture the clipboard offers as PNG, JPEG, WebP, GIF, BMP or TIFF is taken; BMP and TIFF become PNG, since providers do not take them. An image file copied in a file manager is read from its path. A picture larger than 50 MB, or one whose header declares more than 40 megapixels, is refused before its pixels are decoded, with the reason; a clipboard whose owner does not answer within 15 seconds is reported as such. Where the terminal keeps ctrl+v for its own paste, as Windows Terminal does, press **alt+v**.
+
+The picture appears in the editor as a marker, and the prompt that holds the marker carries the picture:
+
+```text
+what is circled here? [image #1]
+```
+
+Backspace deletes a marker as one piece, and the picture goes with it. The marker text reaches the model too, so a prompt with several pictures can say which one it means. A prompt recalled from history with the up arrow attaches its pictures again while they are among the last 32 pasted. A picture pasted while a turn runs travels with the message you queue ([Message queue](message-queue.md)).
+
+The console has no pictures, so it names every picture a prompt carries as text: `[image #N]` for a picture, `[file: name]` for any other file. A prompt sent from the web UI or a Telegram chat with a picture shows in the console the same way, `[image #1] describe it`. The session keeps every picture with its assets, so the web UI shows a picture pasted in the console as a picture, and a click opens it full size:
+
+![The web UI showing a prompt typed in the console: the pasted chart as a preview card over the bubble "[image #1] which node backs up here?", and the answer under it](../assets/picture-markup/console-paste-in-web-dark-1280.png)
+
+*A picture pasted in the console, in the web UI.*
+
+The console says so when the clipboard holds no picture, and refuses the paste when the session's model is not marked `multimodal` or has no row in `models`; a picture still in the markup window when the session switches to such a model is not attached either. Over `--remote` the server decides which models take pictures.
+
+## The markup window
+
+![The markup window over a pasted screenshot: an ellipse, an arrow and a label in red, the tools and the palette along the bottom](../assets/picture-markup/console-markup-window-dark-1280.png)
+
+*The console's markup window on an X display.*
+
+Where the environment names an X display (`DISPLAY` is set: an X11 session, Wayland with XWayland, XQuartz on a Mac, a display forwarded with `ssh -X`), the pasted picture opens in a window before it is attached. **Done** attaches the picture as marked up, **Cancel** attaches nothing. Closing the window is Cancel too. While the window is open the console keeps working, and the marker appears in the editor when you click Done.
+
+The window is drawn by Coddy itself over the X protocol, with no GUI library, so the same static binary opens it everywhere an X server is reachable. Without an X display - a pure Wayland session, macOS without XQuartz, Windows, a remote shell - the picture is attached as copied. When the display is there but the window cannot open, the console says why and attaches the picture as copied as well.
+
+| Tool | Key | What a drag does |
+|---|---|---|
+| Pencil | `p` | draws a line along the pointer |
+| Ellipse | `o` | draws the outline of an ellipse in the box dragged |
+| Rectangle | `r` | draws the outline of a rectangle |
+| Arrow | `a` | draws an arrow from where the drag starts to where it ends |
+| Text | `t` | a click puts a label there; type it, Enter finishes it, Escape drops it |
+| Crop | `c` | keeps the part of the picture inside the box dragged |
+
+The toolbar also turns the picture a quarter clockwise and takes back the last step: a shape, a label, a crop or a turn. Nothing is lost to a crop, since undo replays the original. The seven colours are red, orange, yellow, green, blue, white and black; a line's width and a label's size follow the size of the picture. **Enter** is Done and **Escape** is Cancel while no label is being typed, **ctrl+z** is undo. A label is typed in the keyboard layout in effect, a second layout such as Russian included, while the shortcuts go by the key: `r` and ctrl+z work in a Russian layout and with caps lock on. The window follows the desktop's scale (`Xft.dpi`).
+
+## In the web UI
+
+![The markup editor in the web UI over a pasted chart: an ellipse, an arrow, a label and a rectangle, the tools and the palette along the bottom](../assets/picture-markup/web-markup-editor-dark-1280.png)
+
+*The markup editor in the web UI.*
+
+One picture pasted into the composer opens in the same editor over the chat. **Done** attaches it as a PNG named after the paste (`pasted-1.png`), **Cancel** or **Escape** attaches nothing. The tools, the keys and the colours are the ones in the table above, the keys going by their place on the keyboard as in the console; **Ctrl+Z** or **⌘Z** undoes the last step. Enter on a focused button of the toolbar presses that button, and Tab stays inside the editor.
+
+A picture attached with the paperclip, dropped onto the composer or pasted together with others is attached at once. The pencil in the top-left corner of its card opens it in the editor: Done replaces it with the marked-up copy, Cancel leaves it as it was. A browser that cannot draw on a canvas attaches a pasted picture at once and shows no pencil. The editor's code is loaded the first time a picture opens; when it cannot be loaded (a tab left open across an update), a pasted picture is attached as it is.
+
+## What is sent
+
+Done turns the picture as it stands into a PNG: the marks drawn into it, cropped and turned as you left it. A picture attached without the editor goes as it was copied, in its own format. Either way it is an ordinary attachment from there on: the session keeps it with its assets, and the limits of [Images](images.md#what-the-model-is-sent) apply.
 
 
 # Features / Built-in documentation
@@ -16211,6 +16288,7 @@ Keys are parsed into the `ctrl+x` / `shift+enter` / `alt+backspace` notation of 
 | ctrl+o | expand the header hints, the last tool output (a live draft while `write` / `edit` / `apply_patch` arguments still stream) and the last `!!` block |
 | ctrl+t | collapse or expand thinking blocks |
 | up / down | prompt history on the first / last line of the draft; cursor movement otherwise |
+| ctrl+v / alt+v | paste the picture the clipboard holds as an `[image #N]` marker; with an X display it opens in the markup window first ([Pasting and marking up pictures](../features/picture-markup.md)) |
 | tab | during a turn with a draft and no suggestion menu open, queue in the mode opposite to Enter; otherwise open completion or insert a tab |
 | 1 / 2 | only while the first-use queue question is on the status line: save Steer / After turn as the Enter mode and queue the message; escape puts the draft back |
 | `/` at the start of the draft, `@` anywhere | open the command menu and the mention menu as you type ([Mentions](../features/mentions.md#in-the-console)) |
@@ -16267,6 +16345,16 @@ Menus, selectors and prompts:
 | space | question with `multiple: true` | toggle the highlighted option |
 | escape | custom answer editor of a question | back to the option list |
 
+The markup window a pasted picture opens in on an X display ([Pasting and marking up pictures](../features/picture-markup.md#the-markup-window)):
+
+| Key | Action |
+|---|---|
+| p / o / r / a / t / c | pick the pencil, ellipse, rectangle, arrow, text or crop tool |
+| enter | Done: attach the picture as marked up; while a label is typed, finish the label |
+| escape | Cancel: attach nothing; while a label is typed, drop the label |
+| backspace | while a label is typed, delete its last character |
+| ctrl+z | drop the label being typed, else take back the last step |
+
 Platform notes from the code: a lone Escape is resolved after 10 ms locally and 100 ms when `SSH_CONNECTION` or `SSH_TTY` is set (`external/cli/tui/terminal.go`); the backslash-and-enter newline exists for terminals that do not report shift+enter; `ctrl+c` on a non-empty editor clears it, so the exit needs an empty editor and a second press.
 
 ## Web UI
@@ -16306,6 +16394,9 @@ The composer is a plain `textarea`; keys not listed here keep their browser mean
 | Ctrl+Shift+F / Cmd+Shift+F | an open chat, composer included | open the Files window, or close it ([Web UI](../surfaces/web-ui.md#workspace-files)) |
 | Escape | Files window | clear the filter when it has text, else close the window; the dock under it stays for the next Escape |
 | Escape | edits window | put the ⋮ menu away when it is open, clear the tree's filter when it has text, else close the window; with the discard question open, answer that instead and leave the window ([Web UI](../surfaces/web-ui.md#the-edits-window)) |
+| P / O / R / A / T / C | markup editor, outside a label | pick the pencil, ellipse, rectangle, arrow, text or crop tool ([Pasting and marking up pictures](../features/picture-markup.md#in-the-web-ui)) |
+| Enter / Escape | markup editor | Done / Cancel; in a label, finish it / drop it |
+| Ctrl+Z / Cmd+Z | markup editor | drop the label being typed, else take back the last step |
 | F1 | anywhere | open the documentation reader, or close it ([Built-in documentation](../features/built-in-docs.md#the-web-ui-reader)) |
 | / | documentation reader, outside a field | put the cursor in its search box |
 | ArrowUp / ArrowDown, Enter, Escape | documentation search box | move the selected hit, open it at its section, clear the search; in an empty box Escape closes the reader |
@@ -22229,6 +22320,7 @@ Attachments row (**`.composer-attachments`**) renders **inside** **`.composer-ca
 - **The picture menu** (**`ui/components/ImageMenu.tsx`**, **`ImageMenuHost`** mounted once in **`main.tsx`**): a right click on a picture of the app - a file in the Files window, an attachment or a tool's picture in the chat, a diagram, the documentation, the image viewer - or a long press on a touch screen opens a small menu at the pointer with **Copy image** and **Save image** (the **`mode-menu`** family, portalled, **`z-index: 900`**, over the viewer's **400** and under the settings field tips' **1000**, flipped left or up at an edge). One listener on the document serves every picture: only the app's own (a **`blob:`** or **`data:`** address, or the page's origin) take it, a picture from another site and anything under **`[data-native-image-menu]`** keep the browser's menu, and a right click something else already answered (a shared file's card opens its own menu) is left to it. **Copy** writes a PNG (a PNG as it is, any other picture drawn onto a canvas first), handing **`ClipboardItem`** a promise so the write starts inside the click as Safari requires, and is offered only where the clipboard takes pictures; **Save** downloads the bytes under **`data-image-name`** (the Files window sets the file's name), else the alt text when it reads as a file name, else **image**, with the extension of the type. A press beside it, a scroll, a resize, the page losing focus or **Escape** close it; its Escape is heard on the window in the capture phase, so it closes the menu and not the viewer under it. The outcome shows for a moment at the pointer (**`.image-menu-notice`**, **`role="status"`**).
 - **`ImageLightbox`** (**`ui/components/ImageLightbox.tsx`**) is the SPA's one image viewer: the documentation reader, the composer cards and the sent bubble's all open it. Fitted to the window first, then zoom levels 1 / 1.5 / 2 / 3 with the buttons, **+ / - / 0**, or a click; the **wheel** over the picture and a **pinch** of two fingers zoom between the fitted size and 3 as a factor of its own, off the ladder, and the buttons then take the next level above or below it. A zoomed picture is **dragged** with the pointer (mouse, pen or one finger), cursor **`grab`** / **`grabbing`**, and a press that travelled more than **`DRAG_SLOP_PX`** (4px) swallows the click it ends with, so a drag never also toggles the zoom. **Esc**, the close control or a click beside the image closes it; portal into `document.body`. Its **`.docs-lightbox*`** class names are older than that shared role and stay as they are.
 - Pasted clipboard images get deterministic names **`pasted-<n>.<ext>`** (browsers hand every clipboard image over as `image.png`).
+- **Picture markup** (**`ui/markup/ImageMarkupDialog.tsx`**, model in **`markupModel.ts`**, drawing in **`markupCanvas.ts`**): one picture pasted into the field opens in the markup editor before it is attached, as **ctrl+v** in the console opens the X window of **`external/cli/markup`**; the two editors share the tools, the palette, the line and label sizes and the meaning of the buttons. The editor is a full-window layer (**`.markup-dialog`**, portal into `document.body`, **`z-index: 400`** like the viewer, the viewer's frosted ground) with the picture fitted into **`.markup-stage`** and never enlarged, and the toolbar along the bottom (**`.markup-bar`**): **Cancel** on the left (a text button), the tools and the palette in one rounded group in the middle (**`.markup-tools`**: pencil, ellipse, rectangle, arrow, text, a separator, crop, rotate a quarter turn clockwise, undo, a separator, seven swatches - red, orange, yellow, green, blue, white, black), **Done** on the right (accent ground). The chosen tool is a lighter ground (**`.markup-tool.is-active`**), never the accent; the chosen swatch a ring in the text colour. A label is typed into a field over the picture (**`.markup-label-input`**, dashed accent outline, the label's font and colour); the press that opens it is cancelled so the browser does not hand the focus to the dialog and close the field. Done renders the history onto a canvas and hands back a PNG named after the original; Cancel and **Escape** hand back nothing. A pasted picture is attached only on Done; an attached one opens from the pencil in the card's top-left corner (**`.composer-attachment-card-markup`**, the remove control's twin: **`opacity: 0`** until hover or **`:focus-visible`**), and Done replaces it in place. A browser that cannot draw (no **`CanvasRenderingContext2D`**, asked through **`markupSupport.ts`** without loading the editor) attaches a pasted picture at once and shows no pencil. The editor is a lazy chunk (**`React.lazy`** in **`Composer.tsx`**), fetched before a picture first opens (**`openMarkup`**), so the canvas code stays out of **`app.js`** and its budget, and a chunk that cannot be fetched attaches a pasted picture as it is instead of failing a render. A press on a control of the toolbar keeps the focus on the editor (**`mousedown`** cancelled), so Enter after it is still Done; Enter on a control focused from the keyboard is that control's press, Tab is wrapped inside the editor, and the shortcuts read **`KeyboardEvent.code`**, so they hold in any layout. A shape is drawn onto the current raster; undo, a crop and a turn replay the history onto a fresh canvas and release the old one (**`releaseCanvas`**: zero size), since Safari caps the memory of a page's canvases together. Cancel, Escape or leaving the screen while the PNG is encoded hands nothing back. On a phone the actions stand over the group, which scrolls sideways.
 - Paste/drop against a non-multimodal model attaches nothing and flashes the inline notice **`.composer-attach-hint`** (**`role="status"`**, auto-clears) below the attachments row.
 - Switching to a non-multimodal model does not discard existing files: chips use **`.composer-attachment-chip--disabled`** (muted, grayscale, dashed border), attachment-only Send is disabled, and text sends omit while retaining them for a later multimodal selection.
 - The server repeats this capability check against the effective YAML model and drops any client-supplied **`inline_files`** when **`multimodal`** is false, so disabled files cannot reach the provider or session assets through a stale/custom client.
