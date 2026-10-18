@@ -6297,6 +6297,26 @@ On a phone: [390 px](../assets/views-toolbar-dark-390.png). `Ctrl+Shift+F`
 (`Cmd+Shift+F` on a Mac) opens and closes the Files window from anywhere in a chat,
 the composer included.
 
+## Canvas
+
+A `.canvas` file of the workspace opens in the Files window as a board, in its own
+tab: live frames, each a page of the workspace running in a sandbox, the file's cards,
+groups and edges, and a prompt bar under the board, with the permission and question
+cards of the turn above the bar. The Files window opens on it by itself when the agent
+puts a page on a canvas (never on a phone), from the canvas_show card of the transcript
+and from **Open on canvas** in the window's **More** menu for an HTML file; its address
+is the window's, `#/s/<id>/files?path=<file>.canvas`. The board's top left switches
+**Interact** and **Comment**, its top right holds the zoom controls, the same as the
+picture viewer's and the swarm map's (minus, the level, plus; the wheel zooms at the
+pointer), and **Preview** in **More** shows the file's JSON instead. While a board
+shows, the window is opaque and the chat it covers drops its glass: a blur over or
+under a moving board is drawn again on every frame. The guide is
+[Canvas](../features/canvas.md).
+
+![A .canvas file in the Files window in the light theme: two frames of one page, the prompt bar under the board](../assets/canvas/canvas-board-light-1280.png)
+
+*A .canvas file in the Files window, in the light theme.*
+
 ## Workspace files
 
 The **Files** window shows the session's workspace over the chat, the way the
@@ -6476,7 +6496,10 @@ to keep that row in view when the list is long. On a
 phone the window opens on the diffs and the tree switch brings the list over them.
 
 A file section has a sticky header: the name, which folds the diff, then copy-path and
-discard, always in sight, and the file's `+a −b` at the right end. Between hunks sits a wordless separator
+discard, always in sight, and the file's `+a −b` at the right end. The line numbers stand in
+cells as wide as the file's longest number, so the code of every row, a removed or an added one
+included, starts at one edge; inside a change the removed lines come first, then the added ones,
+the way git writes them. Between hunks sits a wordless separator
 rather than an `N unmodified lines` filler row. In a folder with nothing to show it says
 so: clean, or not in a git repository.
 
@@ -6911,9 +6934,11 @@ Guide: `docs/operate/swarm.md`. Visual contract: `DESIGN.md` (**Swarm screen**).
   or Graph is browser-only state in localStorage key `coddy_swarm_layout`; a
   saved legacy `star` value migrates to Graph, and an absent, blocked or invalid
   value selects Tree. No server configuration changes.
-- The canvas starts fitted. Its Tree/Graph selector and **Zoom out**, **Fit
-  graph**, and **Zoom in** controls are usable with 40px targets on the stacked
-  shell. Wheel zoom follows the pointer, drag pans in both axes even when fitted,
+- The canvas starts fitted. Its Tree/Graph selector and its zoom controls -
+  **Zoom out**, the level and **Zoom in**, the same controls as the picture
+  viewer's and a `.canvas` board's - are usable with 40px targets on the stacked
+  shell; the level shows the zoom as a percentage once the operator zooms or pans,
+  the fit glyph while the map is fitted, and a click on it fits the graph. Wheel zoom follows the pointer, drag pans in both axes even when fitted,
   two-finger pinch zooms, and drag/pinch gestures do not open nodes. When
   focused, **`+`** / **`=`**, **`-`** and **`0`** zoom in, zoom out and fit. Fit,
   a relay change, or a layout change resets the camera; polling refits only an
@@ -6995,7 +7020,10 @@ Guide: `docs/features/built-in-docs.md`. Visual contract: `DESIGN.md` (**Documen
   where it is; a press that travelled pans and does not also toggle the zoom, so
   the click still works for a press that stayed put. The buttons and the keys keep
   the 100 / 150 / 200 / 300 ladder and take the next level above or below wherever
-  a pinch left the picture. A video of a page
+  a pinch left the picture. The controls are the shared zoom controls of the
+  canvas and the swarm map (**`ui/components/ZoomControls.tsx`**), in the viewer's
+  bar beside the close control, and the wheel follows the same rule
+  (**`ui/components/zoom.ts`**: 500 pixels of wheel double the picture). A video of a page
   (a Markdown image whose file is **`.mp4`**, **`.webm`** or **`.mov`**, which is
   what the server makes of a GitHub attachment line) plays in a **`<video>`**
   fetched from GitHub at the release.
@@ -7053,6 +7081,23 @@ CODDY_UI_URL=http://127.0.0.1:5241 npm --prefix external/ui run check:chevron
 ```
 
 **`CODDY_ENGINE=webkit`** (or **`firefox`**) runs the same measurements in another engine, and **`CODDY_CHEVRON_TOLERANCE_PX`** raises the allowance. Like the WebKit harness above, this one is **not part of `make test`**: it is a manual check, run when a change touches the chevron, the rows it sits on or the type around them.
+
+### Checking the line numbers of a diff
+
+Every line number cell of a diff in the edits window is as wide as the file's longest number (**`DESIGN.md`**, *Edits of a chat*), because a cell sized by its own number put the code of a removed or an added line, whose other cell is blank, a few pixels left of the context around it. How wide a cell is drawn is a layout fact, and jsdom has none, so the vitest suite cannot answer it. **`external/ui/scripts/diff-gutter-check.mjs`** measures it in a real engine: in the unified view and in each column of the split view it reads where the code of every row starts, and exits non-zero when two rows differ by more than **0.5px** or when a line number does not fit its cell.
+
+It drives **`src/diff-gutter-check.html`**, a stand that mounts one file of the edits window from the real component against the real stylesheet, with removed and added lines and numbers of two to four digits, so it needs a **`vite`** dev server and no backend at all.
+
+```bash
+cd external/ui && npm i --no-save playwright && npx playwright install chromium
+```
+
+```bash
+cd external/ui && npx vite --port 5242 &
+CODDY_UI_URL=http://127.0.0.1:5242 npm --prefix external/ui run check:diff-gutter
+```
+
+**`CODDY_ENGINE=webkit`** (or **`firefox`**) runs the same measurements in another engine, and **`CODDY_DIFF_GUTTER_TOLERANCE_PX`** raises the allowance. It is **not part of `make test`**: run it when a change touches the diff rows of the edits window, their line numbers or their type.
 
 ### Checking the composer caret at every zoom
 
@@ -7220,6 +7265,38 @@ CODDY_UI_URL=http://127.0.0.1:5247 npm --prefix external/ui run check:diagrams
 ```
 
 The stand also takes **`?theme=<id>`**, **`?lang=ru`** and **`?case=<name>`** (one answer of the stand) for screenshots. **`CODDY_BROWSER_PATH`** and **`CODDY_ENGINE=webkit`** work as in the checks above. It is **not part of `make test`**: run it when a change touches the Markdown renderers, their styles or the build of the chunks.
+
+### Checking the canvas through a swarm relay
+
+The canvas is checked against the real binary by
+**`external/ui/scripts/canvas-check.mjs`**: a scripted model puts a shop page of the
+workspace on a canvas, edits its script and reads the browser's report, a node that
+asks for a bearer token sits behind a relay with its own client token, and the browser
+reaches the node through the relay's mount only. It checks that the Files window opens
+by itself on the `.canvas` file the page went on, with the prompt bar under the board,
+that the page's module script runs in an opaque origin with the parent and the API out
+of reach, that a pick in Comment mode becomes the prompt of the chat, that the page's
+console error reaches `canvas_inspect`, that an edit reloads only the frame whose files
+moved, that the wheel zooms the board without drawing anything on it again and with
+the window's blur off, in about one frame of the screen, that a page which navigated
+away says so and its old address stops working, that a frame's address opened as a
+tab of its own is still sandboxed and refused by an open node, that the window and the
+board's controls fit every tier of the grid in English and in Russian, and that an
+Obsidian `.canvas` file opened in the window becomes the chat's canvas: its page runs,
+its cards, group and edges are drawn, a dragged card and a resized frame move in the
+file with the keys Coddy does not know kept, an edit of the file elsewhere shows on the
+open board, and Preview shows the file's JSON.
+
+```bash
+make build TAGS="http ui swarm"
+cd external/ui && npm i --no-save playwright
+CODDY_BROWSER_PATH=/usr/bin/chromium npm run check:canvas
+```
+
+**`CODDY_SHOTS_DIR`** writes the screenshots of this page and of the canvas guide, and
+**`CODDY_ENGINE=webkit`** runs it in WebKit. It is **not part of `make test`**: run it
+when a change touches `external/ui/src/ui/canvas/`, `internal/canvas`, the canvas routes
+or the relay's mount.
 
 ### Checking the transcript at every width of the grid
 
@@ -9776,6 +9853,17 @@ token such a request gets nothing from the relay itself but the gate's plain `40
 relay would refuse (an unknown or unreachable node, a path it does not carry); only the node answers it
 otherwise. A relay that asks no client token hands such a request on the same way, without its own
 credential, so a relay with a gate above it in a chain cannot be walked around through it.
+
+The frames of the [canvas](../features/canvas.md) are the second such request: a `GET` or `HEAD` of a
+node's `/coddy/canvas/<capability>/<path>` with no `Authorization` header, through one mount or a
+chain of them. A frame is an iframe whose page runs in an opaque origin and loads its own scripts and
+files from its address, so the capability is in the path: the node signed it for one frame of one
+session, and only the node checks it. The relay carries the request without its own credential,
+answers its CORS itself with `Access-Control-Allow-Origin: *` (a preflight included) and passes the
+node's `Content-Security-Policy` through, which is what keeps the page in its sandbox. Every other
+request whose `Origin` is `null` - what a sandboxed page sends - is refused by the relay with `403`,
+whatever credential it carries, so a page on the canvas cannot reach a node's API through the relay
+either.
 
 Credentials are preserved across a config save by **destination**, not by label: renaming an
 entry keeps its token, pointing it at a new address does not.
@@ -14470,6 +14558,142 @@ tools:
 When Coddy runs where your browser is not - a container, a remote machine - loopback is out of reach. Bind `host: 0.0.0.0` and set `public_host` to the name you reach that machine by; inside a container the port is a random one, so publish a range or use host networking. A bind that is not loopback exposes the served directory to whoever can reach that address, and the `Host` check no longer applies: set it on purpose. The fields are listed in the [configuration reference](../reference/config.md).
 
 
+# Features / Canvas
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/canvas.md
+
+# Canvas
+
+A canvas is a `.canvas` file of the workspace, in JSON Canvas, the format of Obsidian's canvases, opened in the Files window of the web UI like any other file. Its tab shows a board: the HTML pages the file names run on it as live frames, and its cards, groups and edges are drawn as Obsidian draws them. You click through the pages, point at an element and say what to change in the prompt bar under the board, and the agent reads what the browser saw. Since the board is the file, it is in git, a board drawn in Obsidian opens in Coddy and a board made in Coddy opens in Obsidian.
+
+Ask in your own words:
+
+```text
+Sketch a landing page for the shop and put it on the canvas, phone and desktop.
+```
+
+The agent writes the page with the file tools, in a folder of its own, and calls `canvas_show`. With no canvas in the chat yet it makes one, `canvas/<folder of the page>.canvas`, and the Files window opens on it at the new frame; on a phone the chat stays, and the tool's card opens the file.
+
+![A .canvas file in the Files window: two frames of the same page, at desktop and phone size, the prompt bar under the board](../assets/canvas/canvas-board-dark-1280.png)
+
+*One page at two sizes: each frame runs the page's own files.*
+
+## Putting a page on the canvas
+
+A frame is an HTML page of the session's workspace (`.html` or `.htm`, outside dot-named folders, at most 10 MB; data inlined past that belongs in files of its folder), and a file node of the `.canvas` file. It is put there two ways:
+
+- the agent calls `canvas_show` with its path, and with `file` to name the canvas;
+- you pick **Open on canvas** in the **More** menu of the Files window, for an HTML file.
+
+A page shown without a file goes on the chat's canvas: the `.canvas` file a page was last shown on or the one you opened last in the Files window. A chat that has none gets a new `canvas/<folder>.canvas`, numbered when the name is taken. The canvas_show card in the transcript opens the file on the frame it put there.
+
+| Size | Width × height |
+|---|---|
+| `desktop` (default) | 1280 × 800 |
+| `tablet` | 820 × 1180 |
+| `phone` | 390 × 844 |
+| custom | 320-3840 × 320-4320, `width` and `height` together |
+
+The same page at the same size is one frame: showing it again focuses that frame. Showing it at another size adds a second frame, which is how one page is checked at three widths at once. A canvas runs at most 24 pages; a node past that is drawn as a card. The address of a canvas is the Files window's, `#/s/<session>/files?path=<file>.canvas`.
+
+A frame loads the files under its **root**, by default the page's folder. A page in the workspace's top folder has the whole workspace as its root and can read every file of it outside dot-named folders, so the tool warns about it: keep a page in a folder of its own.
+
+## Working on the board
+
+The switch at the board's top left says what a click does:
+
+- **Interact** - clicks, keys and the wheel over a page go to the page;
+- **Comment** - a click on an element of a page picks it.
+
+The wheel over the board zooms it at the pointer, the way the picture viewer and the swarm map zoom: a turn of the same length doubles or halves what is under the pointer. Dragging the empty board pans it, two fingers pinch it. The zoom controls at the board's top right are the same as theirs: minus, the level (the percentage, or the fit glyph while the board is fitted; a click fits everything), plus; with the board focused, `+`, `-` and `0` do the same. A pan or a zoom moves the board as one layer and draws nothing on it again, so a board of many pages stays as smooth as an empty one. A frame's title bar moves it, and its buttons change its size, reload it and take it off the canvas (the files stay).
+
+A picked element opens a note beside it. **Add** makes it a chip of the prompt bar under the board, and **Send** sends the chips and the text as one prompt of the chat: each element by its page, its size, a CSS selector, its text and its note. While a turn runs, the message waits in the [message queue](message-queue.md). A permission or a question the turn waits for shows above the bar, since the window covers the chat. **Chat** closes the Files window and goes back to the conversation; the bar keeps a half-written request, per file, for the life of the page.
+
+![Comment mode: a heading of the page picked, with a note for the agent](../assets/canvas/canvas-comment-dark-1280.png)
+
+*A picked element and its note: Add makes it a chip of the prompt bar.*
+
+A frame reloads itself when a file under its root changes, and only that frame: the board is read again after every tool call, on every change the server announces and every 4 seconds while it is open, a frame whose files moved loads again, and a read that changed nothing draws nothing. Escape closes the note first, then leaves Comment, then closes the window. **Preview** in the window's **More** menu switches the tab to the file's JSON and back.
+
+On a phone the Files window takes the screen below the top bar, the board takes the file's place, and the frames start fitted.
+
+![A .canvas file on a phone: the frames fitted, a picked element as a chip of the prompt bar](../assets/canvas/canvas-board-dark-390.png)
+
+*On a phone: the same board, fitted to the screen.*
+
+## What the agent sees
+
+The browser that shows a frame reports on it: whether it loaded, its title, the errors and warnings of its console and the exceptions nobody caught. `canvas_inspect` reads those reports, so the agent finds a broken script without asking you to open a console. After an edit it passes `wait_seconds` and gets the report for the new files, or says that none came. The console lines are the page's own output and are handed to the model as untrusted data, never as instructions. Reports exist only while someone has the canvas open; they are kept in memory, 20 lines per frame.
+
+| Tool | Arguments | What it does |
+|---|---|---|
+| `canvas_show` | `path`, `file`, `title`, `device`, `width`, `height`, `root`, `frame` | Puts a page on the `.canvas` file `file` (made when missing), or on the chat's canvas, or points the frame `frame` at it; with a `.canvas` file as `path`, makes that file the chat's canvas |
+| `canvas_inspect` | `file`, `frame`, `wait_seconds` | Reads the browser's reports of one frame or all of them, waiting up to 15 seconds for one on the current files |
+
+A subagent working in the chat's folder shows its pages on the chat's canvas, so three variants of a page from three subagents are compared side by side. A subagent in a [worktree](worktrees.md) of its own is refused: its pages are not files of the folder the chat's canvas is in.
+
+## Obsidian canvases
+
+Obsidian keeps a canvas as a `.canvas` file in [JSON Canvas 1.0](https://jsoncanvas.org): nodes of four kinds - text, file, link and group - placed on a plane, and edges between them. Every canvas of Coddy is such a file, so a `.canvas` file of the workspace opens in the Files window as its board, and opening it makes it the chat's canvas: the pages the agent shows next go on it.
+
+![An Obsidian canvas in the Files window: a group with a text card, a note and a link, an edge with a label into a live frame of the shop page](../assets/canvas/canvas-obsidian-dark-1280.png)
+
+*A board drawn in Obsidian: its page runs as a frame, its cards, group and edges are drawn as they are.*
+
+What the board shows of the file:
+
+- a file node naming an HTML page of the workspace is a live frame, at the node's size;
+- a text card is its Markdown, rendered;
+- a file node of a `.md` note shows the note, read again every 10 seconds while the board is open, a picture shows the picture, any other file is a card with **Open in Files**;
+- a link node is a card that opens the address in a new tab (only an `http` or `https` one);
+- a group is a frame under the nodes, with its label;
+- an edge is a curve from side to side, with its arrows, its label and its colour; colours are the six presets of JSON Canvas or a hex value.
+
+What the canvas writes back to the file:
+
+- a frame shown, moved, resized or taken off the canvas; a new frame becomes a file node right of everything on the board, a removed one takes its edges along;
+- a card, a link or a group dragged on the board; a group carries the nodes inside it;
+- nothing else. Every other node, edge and key stays as it was, keys Coddy does not know included, and the file is written byte for byte the way Obsidian writes it: a node or an edge of plain values on one line, one holding an object (`styleAttributes`, the `coddy` key) one key a line, the keys of a node Coddy changed in the order Obsidian gives a node it changed, characters escaped as Obsidian escapes them, and the file ending at its closing brace. Saved in Obsidian 1.14.4, such a file changes only on the lines of the edit made there, and Coddy writing it while it is open in Obsidian changes only the lines Coddy moved: Obsidian reads the change and keeps it on its next save. Opening or reading a file writes nothing.
+
+Obsidian makes edits of its own as it draws a canvas: a picture node takes the picture's proportions, and an edge without sides gets the sides it is drawn with. They show in the file after Obsidian's next save, not after Coddy's.
+
+`canvas_show` writes the file without a permission prompt: the node of the frame it shows and nothing else, or a new file with that one node under `canvas/`.
+
+A frame's settings that JSON Canvas has no field for - a device its size does not say, a title - go under a `coddy` key of its node, which Obsidian keeps. A node Coddy did not move keeps its own numbers, even one smaller than a frame may be. A root wider than the page's folder, the generation behind a frame's address and which file is the chat's canvas stay with the session and never reach the file, so a `.canvas` file that arrives with a checkout cannot widen what its pages may read: a page reads its own folder unless `canvas_show` widened it in this chat. Two chats with the same file open take turns writing it, and each writes only what it changed.
+
+The board reads the file again whenever it is read, so an edit in Obsidian, or one the agent makes with the file tools, shows on the open board within seconds. Text cards, edges and new links are edited that way, in the file: the canvas moves nodes, it does not write text.
+
+Paths in a node are relative to the workspace, so the workspace is the Obsidian vault, or the file names its pages from the vault's root. The file must be a regular file of the workspace outside dot-named folders, at most 8 MB; one that does not parse says so on the board and is never written. A node whose id is not letters, digits, `-` and `_` (at most 64) is drawn as a card and does not run.
+
+## What a page can do
+
+A frame runs under a sandbox that grants it no origin of its own:
+
+- the frame's address carries its own capability: `/coddy/canvas/<capability>/<page>`, signed by the server for that session, `.canvas` file, frame, root and generation, valid while the file holds the frame at that generation in the session's working directory, and for 12 hours at most;
+- the server answers it with `Content-Security-Policy: sandbox allow-scripts allow-forms allow-modals` and the iframe has the same sandbox, so the page runs scripts in an opaque origin: no cookies, no storage of the web UI, no access to its API; `localStorage` and `sessionStorage` work in memory for the life of the frame, and forms post nowhere;
+- every API route refuses a request whose `Origin` is `null` with 403, whatever credential it carries, so a page cannot drive the server even where the server has no token; the frame's own file route is the one exception;
+- a page loads from its own address, from `data:` and `blob:` addresses, from the common CDNs while `tools.canvas.allow_cdn` is on and from the hosts of `tools.canvas.allowed_sources`; `fetch` and WebSocket reach its own address and the same hosts;
+- the page can read every file under its root and send it to any of those sources: what it may read is what you put under its root;
+- a page that navigates away from the canvas says so on its frame, and the frame's old address stops working; **Back to the page** loads it again under a new one;
+- the frames serve no symbolic links and no dot-named path, and a folder answers its `index.html`, never a listing.
+
+A frame's address works through a [remote server](../surfaces/console.md#remote-mode---remote) and through a [swarm relay](../operate/swarm.md) as it does locally: the relay carries it to the node without the relay's credential, and the capability in the path is all the node checks.
+
+## Configuration
+
+```yaml
+tools:
+  canvas:
+    enable: true          # false hides the tools and the canvas
+    allow_cdn: true       # cdn.jsdelivr.net, unpkg.com, cdnjs.cloudflare.com, cdn.tailwindcss.com, Google Fonts
+    allowed_sources: []   # more hosts a frame may load from and connect to, as https://host or https://*.host
+```
+
+A CDN and a host in `allowed_sources` are places a page can send what it reads. The fields are listed in the [configuration reference](../reference/config.md). The routes of the canvas and of the frames are in the [HTTP API reference](../reference/http-api.md#canvas).
+
+The canvas is a surface of the web UI. In the console and in an editor over ACP the tools are offered as well and the `.canvas` files are written, but nothing runs the frames; there the [preview server](preview-server.md) serves a page for a browser of your own.
+
+
 # Features / Context compaction
 
 Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/compaction.md
@@ -15615,6 +15839,10 @@ Filesystem and shell policy for built-in tools.
 | `tools.preview_server.enable` | boolean or null | true | Offer the preview_server tool. The server is a background task, so tools.background.enable: false turns it off as well. |
 | `tools.preview_server.host` | string | 127.0.0.1 | Address the server binds, without a port: the port is always a free one. Anything that is not loopback exposes the served directory to whoever can reach that address. |
 | `tools.preview_server.public_host` | string | "" | Host written into the URL the agent hands out, for a coddy that runs where the operator's browser is not (a container, a remote machine). Empty uses the bind host. |
+| `tools.canvas` | object |  | The canvas of the web UI: a board of live frames beside a chat, each a page of the workspace running in a sandbox, put there by the agent with canvas_show or by the person from the Files window; canvas_inspect reads what the browser saw. See https://coddy.dev/docs/features/canvas. |
+| `tools.canvas.enable` | boolean or null | true | Offer the canvas_show and canvas_inspect tools, serve frames and show the canvas in the web UI. |
+| `tools.canvas.allow_cdn` | boolean or null | true | Let a frame load libraries, styles and fonts from the common CDNs: cdn.jsdelivr.net, unpkg.com, cdnjs.cloudflare.com, cdn.tailwindcss.com, fonts.googleapis.com and fonts.gstatic.com. |
+| `tools.canvas.allowed_sources` | list of strings |  | Further hosts a frame may load from and connect to, as https://host or https://*.host with an optional port and path. A page on the canvas can send what it reads under its folder to any of them. |
 | `tools.websearch` | object |  | Which search engines the websearch tool asks, in what order their results merge, and what it may spend asking them. Each engine reports its own outcome next to the results, so a blocked backend is named rather than counted as "the web has nothing". |
 | `tools.websearch.engines` | list of strings | ["brave","bing"] | Search engines to ask, in merge order. Unset asks brave then bing. "ddg" and "google" are not asked by default: measured from a server, DuckDuckGo answers every query with an anti-bot interstitial and Google renders its results in the browser. "searxng" needs searxng_url. |
 | `tools.websearch.engine_timeout_seconds` | integer | 8 | Seconds one engine may take before it is reported as unavailable. 0 uses the default. |
@@ -16532,7 +16760,7 @@ The Permission column uses the classes the gate in `internal/agent/react.go` app
 
 ## Shell and background tasks
 
-The `background_*` tools are registered only while `tools.background` is enabled (the default), and `preview_server` while `tools.preview_server` is enabled as well. The guide is [Background tasks](../features/background-tasks.md#model-facing-surface).
+The `background_*` tools are registered only while `tools.background` is enabled (the default), and `preview_server` while `tools.preview_server` is enabled as well. `canvas_show` and `canvas_inspect` are registered while `tools.canvas` is enabled (the default). The guide is [Background tasks](../features/background-tasks.md#model-facing-surface).
 
 | Tool | Purpose | Arguments (short) | Permission | Modes |
 |---|---|---|---|---|
@@ -16545,6 +16773,8 @@ The `background_*` tools are registered only while `tools.background` is enabled
 | `background_stop` | Terminate a task and everything it spawned | `task_id` | none | agent, plan |
 | `background_reap` | Find and kill processes of this session that outlived the run which started them | none | always | agent |
 | `preview_server` | Serve a directory of the project as a static website on a free localhost port and return the address for the user to open; the server is a background task that runs until it is stopped ([Preview server](../features/preview-server.md)) | `path`, `timeout_seconds` | none | agent |
+| `canvas_show` | Put an HTML page of the workspace on a canvas, a `.canvas` file (JSON Canvas, Obsidian's format) the web UI opens in its Files window, as a live frame at a device size or a custom one, or point a frame at it; without `file` the page goes on the chat's canvas or a new `canvas/<folder>.canvas`, and a `.canvas` file as `path` makes that file the chat's canvas ([Canvas](../features/canvas.md)) | `path`, `file`, `title`, `device`, `width`, `height`, `root`, `frame` | none | agent |
+| `canvas_inspect` | Read what the browser running a canvas frame reported: loaded or not, its title, console errors and warnings, uncaught exceptions; waits for a report on the current files; `file` names the canvas, default the chat's | `file`, `frame`, `wait_seconds` | none | agent |
 | `ssh_run_command` | Run a command on a remote host over SSH, using the agent socket and then key files ([Configuration](../getting-started/configuration.md#ssh-remote-execution)) | `host`, `command`, `port`, `timeout_seconds`, `permission_rationale` | always | agent |
 
 ## Web
@@ -16824,7 +17054,9 @@ httpserver:
 When `cors.enable` is true, preflight `OPTIONS` requests for an allowed origin return `204` with
 `Access-Control-Allow-Origin` (echoed origin, or `*` when configured), `Vary: Origin` and
 `Access-Control-Allow-Headers: Authorization, Content-Type, X-Coddy-Session-ID`; disallowed origins
-receive no CORS headers. An origin is allowed when `allowed_origins` names it exactly, when
+receive no CORS headers. A request whose `Origin` is `null` (a sandboxed page, a `file://`
+page) is refused with `403` on every route but a canvas frame's address
+([Canvas](#canvas)). An origin is allowed when `allowed_origins` names it exactly, when
 `allowed_origins` holds `"*"`, or when `allow_loopback` is on and the origin is `http` or `https`
 with a loopback host - `localhost`, a `*.localhost` name, `127.0.0.0/8` or `[::1]` - on any port.
 The list is read first and in order, so a `"*"` in it answers `*` to every origin no entry names
@@ -17180,6 +17412,68 @@ rotating that credential invalidates outstanding URLs. An unauthenticated server
 uses a random per-process key. No API credential is placed in a media URL. CORS
 allows HEAD, Range and If-None-Match and exposes Content-Range, Accept-Ranges, ETag
 and Content-Disposition.
+
+## Canvas
+
+The routes of a chat's [canvases](../features/canvas.md): `.canvas` files of the session's workspace
+(JSON Canvas 1.0, the format of Obsidian's canvases) whose file nodes naming HTML pages run as live
+frames. A subagent's id acts on the canvas of the top session of its spawn tree. Every route names its
+file with the `file` query, relative to the workspace, a `.canvas` file outside dot-named folders
+(`400` otherwise); `GET .../canvas` and `POST .../canvas/frames` take none and act on the chat's
+current canvas: the file a page was last shown on or opened. Every route answers `404` while
+`tools.canvas.enable` is false, and `409` for a session that is not saved.
+
+| Method | Route | Contract |
+|---|---|---|
+| GET | `/coddy/sessions/{id}/canvas` | A canvas as the board: `session_id`, `file`, `current` (whether it is the chat's current canvas), `revision`, `stamp` (moves when the file changes, whoever changed it; `missing` when it is gone), `error` (why it cannot be read; nothing of it is shown then), `frames[]`, `items[]`, `edges[]`. A frame carries `id` (its node's), `path`, `root`, `title`, `device`, `width`, `height`, `x`, `y`, `added_by`, `gen`, `stamp` (a digest of the names, sizes and times of the files under its root, which moves when they change), `url` (its address relative to the API base, signed now) with `expires_at`, and `report`, the counts of the newest browser report. `items[]` are its other nodes (`id`, `type` - `text`, `file`, `link` or `group` - `x`, `y`, `width`, `height`, `color`, `text`, `file`, `url`, `label`, and `note` for a page that does not run), `edges[]` its lines (`id`, `fromNode`, `fromSide`, `fromEnd`, `toNode`, `toSide`, `toEnd`, `color`, `label`), read from the file on every request. Without `file` the current canvas, or an answer with an empty `file` while the chat has none. Reading writes nothing. `Cache-Control: no-store`. |
+| POST | `/coddy/sessions/{id}/canvas/open` | Makes the `file` the chat's current canvas, the one pages shown without a file go on; the web UI calls it when the person opens the file. Writes nothing to the file; `400` for one that is missing or does not parse. Answers the board. |
+| POST | `/coddy/sessions/{id}/canvas/frames` | Puts a page on a canvas: `{"path","root","title","device","width","height"}`, the page relative to the workspace, as a file node of the `file`, or of the current canvas, or of a new `canvas/<page folder>.canvas` (numbered when the name is taken) while the chat has none. The same page at the same size is one frame (`reason: shown`); past 24 frames `409`. Answers `reason`, `file`, `created` (the file was made for it), `frame`, `revision`. |
+| DELETE | `/coddy/sessions/{id}/canvas/frames/{frame}` | Takes a frame off the canvas: its node and the edges at it leave the file, the page's files stay, every address of the frame stops working. |
+| POST | `/coddy/sessions/{id}/canvas/frames/{frame}/rotate` | Moves the frame to its next generation, so every address handed out before stops working; the web UI calls it when the page navigated away from the canvas. Answers the frame with its new address. The file is not written. |
+| POST | `/coddy/sessions/{id}/canvas/frames/{frame}/report` | What the browser saw: `stamp` (the files it loaded), `loaded`, `closed`, `error`, `title`, `console[]` (`level` `error` or `warning`, `message`, `source`, `line`, `column`). Kept in memory, the newest per frame of a file, at most 20 lines of at most 1,000 characters; `canvas_inspect` reads it. `204`. |
+| PATCH | `/coddy/sessions/{id}/canvas/nodes` | Moves or resizes nodes in one change: `{"nodes":[{"id","x","y","width","height","device"}]}`, frames (by a size or a `device`) and cards, links and groups, at most 500, written to the file once. All of them or none: an id the file does not hold is `404`. |
+| GET / HEAD | `/coddy/canvas/{capability}/{path}` | A file of a frame, `path` relative to its root; `.coddy/bridge.js` is the bridge script. |
+
+Writes keep every node, edge and key they do not change, the keys Coddy does not know and their order
+included, and write the file byte for byte as Obsidian 1.14 does: a node of plain values on one line,
+one holding an object one key a line, a node Coddy changed in Obsidian's key order, characters escaped
+as `JSON.stringify` escapes them, the file ending where it ended. A frame's device and title go under
+a `coddy` key of its node; a node Coddy did not move keeps its own numbers. A root wider than the
+page's folder, the generation behind a frame's address and the current canvas are kept in the session
+bundle (`canvas.json`), never in the file, so a file cannot widen what its pages read. One file's
+read-modify-write is one turn across chats, and a node deleted in the file since it was read stays
+deleted.
+
+Every change made through the canvas is announced on `GET /coddy/events` as `event: canvas_changed`
+with `{"object":"coddy.canvas_changed","sessionId","file","revision","frameId","reason","at"}`;
+`reason` is `added`, `shown`, `updated`, `removed` or `opened`.
+
+**A frame's address.** `/coddy/canvas/<capability>/<page>` is authenticated by the capability in its
+path alone: no bearer, no cookie, so it loads in an iframe of any origin, through a remote server
+and through a swarm relay alike. The capability is an HMAC over the session, the `.canvas` file, the
+frame, its workspace, its root, its generation and an expiry of 12 hours, signed with a key derived for the
+canvas from the secret behind media tokens, so a media token never passes for a frame address. It is
+valid while the file holds the frame at that generation with that root, in the session's working
+directory; a removed, repointed or rotated frame, and a session that moved to another folder, answer
+`401`. Files are served through `os.Root` with no symbolic link
+on the way and the opened file checked to be the one walked to: `GET` and `HEAD` only, no
+dot-named path, a folder's `index.html` (with a `301` to add a missing slash), never a listing.
+
+Every answer of the route carries:
+
+- `Content-Security-Policy: sandbox allow-scripts allow-forms allow-modals; default-src 'self' data: blob: 'unsafe-inline' 'unsafe-eval' <sources>; connect-src 'self' <sources>; form-action 'none'; base-uri 'self'; frame-ancestors *`, the sources being the CDNs of `tools.canvas.allow_cdn` and `tools.canvas.allowed_sources`;
+- `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`;
+- `Access-Control-Allow-Origin: *`, since the page's own module scripts and fetches come from an opaque origin; a preflight `OPTIONS` of the route is answered the same way.
+
+An HTML page gets the bridge script and a `<meta name="referrer" content="no-referrer">` at the
+start of its head. A page is at most 10 MB: `canvas_show` and `POST .../canvas/frames` refuse a larger
+one, and one that grew past it is answered with `413` and a short page, with the bridge, that says so.
+
+**Opaque origins.** Every other route refuses a request whose `Origin` header is `null` with `403`,
+before authentication and whatever credential it carries: a sandboxed page sends `Origin: null`, and
+neither a bearer it read from a file nor a relay's substituted credential may let it drive the
+server. A client that sends `Origin: null` by itself (a `file://` page) is refused the same way; one
+that sends no `Origin` is not affected.
 
 
 # Reference / ACP protocol
@@ -18075,7 +18369,7 @@ jobs:
       CODDY_HOME: ${{ runner.temp }}/coddy
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -19862,7 +20156,7 @@ This page is the detailed reference for local builds. For a short version, see [
 
 Optional:
 
-- **`golangci-lint` v2.x** (built with Go **1.26** or newer) - for **`make lint`**. CI uses **`golangci/golangci-lint-action@v7`** or newer (v6 supports only golangci-lint v1).
+- **`golangci-lint` v2.x** (built with Go **1.26** or newer) - for **`make lint`**. CI uses **`golangci/golangci-lint-action@v9`** (v6 supports only golangci-lint v1, v8 and later need golangci-lint v2.1.0 or newer).
 
 ## Recommended full binary (HTTP, UI, scheduler, memory, console)
 
@@ -21839,10 +22133,31 @@ Checks: **`files/FilesView.test.tsx`**, **`chat/ChatHeader.test.tsx`**, **`App.w
   - **Tree** (**`EditsTree.tsx`**, the Files window's **`.files-sidebar`** with its filter and rows): **only the files git reports as changed and not committed**, in their folders (a run of single folders is one row, **`fileTree.ts`**), each with an icon by what it holds and git's letter at the right end of the row (**`.edits-tree-status`**: **A** in the colour of an addition, **D** of a deletion, **M** muted). The filter narrows it by path; a folder folds on a click. The diffs read in the tree's order (**`treeOrder`**), so the mark walks the tree from top to bottom: the file at the top of the diffs is marked like the file on show in the Files window, a file picked scrolls the diffs to its section, and as the reader scrolls the mark follows, the tree bringing the marked row into its own view when many files make it scroll. A pick scrolls the diffs alone (never **`scrollIntoView`**, which moves every scrollable box around them), the file's card **10px** under their top, and **pins** it there while the diffs above it load or fold, until the reader scrolls away; a pick made while the patches were still on their way was otherwise carried down by every one that landed above it. The tree shows as the window opens; on a **phone** the window opens on the diffs, the tree switch brings the tree over them, and a file picked there gives the screen back to the diffs.
   - **The diffs' column keeps the tree's distances**: **10px** from its sides and its top (**`.dv-scroll`**), like the filter in the tree's column, the cards **10px** apart; the first card starts where the filter does.
   - **File section** (**`.dv-file`**) has a **sticky** header **33px** tall, which with the card's **1px** border is the filter's **34px**, so its line is level with the filter's bottom edge; left to right: the fold chevron, the muted folder and the bold file name (one button, which folds the diff; no status dot, the tree's letter says it and the button's tooltip names it), then **copy path** and **discard**, always in sight, never revealed on hover, and git's **`+a −b`** closing the row at its right end. There is no second chevron at the right: the name already folds the diff. The body renders **unified** (default) or **split** from **`toUnifiedRows`** / **`toSplitRows`**; a run of removals is zipped against the following run of additions, and context ends a run so unrelated edits are never drawn as a replacement.
+  - **Line numbers** stand in cells as wide as the file's widest number (**`.dv-num`**, **`--dv-num-digits`** set on **`.dv-diff`** from **`lineNumberDigits`**, two digits at least), never as their own number: a cell sized by its content put the code of a removed or an added line, whose other cell is blank, and of a row of shorter numbers a few pixels left of the context around it. So the code starts at one edge on every row of a file, in either view (**`editsWindowCss.test.ts`**, **`DiffFileSection.test.tsx`**; measured in a real engine by **`npm run check:diff-gutter`**). Inside a change the removed lines come first, then the added ones, the way git writes them (**`internal/linediff`**, **`removalsFirst`**), which is the order the split view pairs.
   - **Between hunks** is a wordless separator (**`.dv-gap`**). The reference UI writes **`N unmodified lines`** there; this does not, because that is a number the reader cannot act on.
   - **Syntax colouring** comes from **`lowlight`** - highlight.js behind a tree API, the same engine the markdown renderer already uses, with the same grammars (**`markdown/syntaxLanguages.ts`**) - so the **`hljs-*`** classes already in the stylesheet apply and no markup is ever injected. The grammar is chosen from the file extension (**`diffLanguage.ts`**), never auto-detected: a diff hands the highlighter a few lines at a time and detection on a fragment that short changes its mind between hunks. An unknown extension renders as plain text. Colouring is per line, so a construct spanning lines is coloured as if it began on the line drawn - the trade every line-addressed diff view makes.
   - **Discard** puts a file back at **`HEAD`** (its section's action), **Discard all** every change (the last row of **More**). Each asks first in the shared confirmation dialog (**`useConfirm`**, the danger variant), whose text says what happens to that file - restored to the last commit, or deleted when **`HEAD`** does not hold it - then posts **`{"paths":[...]}`** or **`{"all":true}`** to **`.../changes/revert`** and reads the folder again whatever the answer (**`useDiscard.ts`**). A failure is a line over the sections. Discarding is the one thing the window writes; a commit is not offered. With nothing left the window says the folder is clean.
   - **Patches load per file**, four at a time, so the list and its counts paint at once and one huge file cannot hold up the rest; when git's report moves, only the files whose state moved are read again. The view choice persists in the **`coddy_diff_view`** cookie. On the stacked shell (**`isMobileShell`**) the split option is hidden and every diff reads inline.
+
+### Canvas
+
+**`external/ui/src/ui/canvas/`** (**`CanvasBoard.tsx`**, **`CanvasFrame.tsx`**, **`CanvasNodes.tsx`**, **`CanvasPromptBar.tsx`**, the camera in **`cameraStore.ts`**, the board read in **`useCanvasBoard.ts`**, REST client in **`api.ts`**, pure helpers in **`camera.ts`**, **`bridgeProtocol.ts`**, **`pickPrompt.ts`**, **`jsonCanvas.ts`**). The guide is **`docs/features/canvas.md`**.
+
+- **A tab of the Files window.** A canvas is a `.canvas` file of the workspace, and it opens where every file opens: a tab of the Files window (**Workspace files window**, above), whose body is the board instead of the file's text (**`.canvas-pane`**, a column: the board, then the prompts strip, then the prompt bar). There is no window, no header button and no address of its own: the address is the Files window's, **`#/s/<id>/files?path=<file>.canvas`**. The board is a chunk of its own (**`lazy(() => import("../canvas/CanvasBoard"))`** in **`FilesView.tsx`**), so **`app.js`** carries only the Files window, the tool card and the API client. **Preview** in the window's **More** shows the file's JSON instead (**`coddy_files_preview`**, kind **`canvas`**, a board by default). The Files window opens on the file by itself when the agent puts a page on a canvas (never on a phone, never over another window or screen), from the canvas_show card, and from **Open on canvas** in **More** for an HTML file, which puts the page on the chat's canvas and opens that file on its frame. Opening the tab makes the file the chat's canvas (**`POST .../canvas/open`**).
+- **The board** (**`.canvas-board`**): a dotted ground (**22px** grid, a **13%** text tint). The wheel zooms it at the pointer and a drag of the empty board pans it, two fingers pinch it, **5%** to **200%** (**Zoom**, below). It is fitted when it first shows something and on the frame the agent's last show points at; until the person moves or zooms it, a resize fits it again. The mode switch (**Interact** / **Comment**, **`.canvas-mode`**) stands at its top left, the zoom controls at its top right, both opaque (no **`backdrop-filter`** over a board that moves).
+- **One world layer.** Everything on the board stands at its own size in board units inside **`.canvas-world`**, a point at the board's origin whose transform the camera writes (**`CameraStore`**: once per animation frame, outside React, with **`--canvas-scale`** and **`--canvas-inv`** on the board for what keeps its size on screen). A pan or a zoom renders nothing: frames, nodes and edges are memoized and change only when the board read says so; the level of the zoom controls is the only subscriber. While the board moves it is one compositor layer (**`.is-moving`**, **`will-change: transform`**, dropped **160ms** after the last move so the pages are drawn sharp again). While a board shows, the Files window is opaque and the chat it covers drops its glass (**`.files-dock-cluster:has(.canvas-pane)`**, **`:root:has(.canvas-pane)`**): a blur over or under a moving board is drawn again on every frame, which cost about a hundred milliseconds a frame.
+- **A frame** is an **`<iframe>`** of its page at the page's own size in the world layer, never transformed itself, under **`sandbox="allow-scripts allow-forms allow-modals"`** and **`referrerpolicy="no-referrer"`**, never **`allow-same-origin`**, on a white ground whatever the theme. Its title bar (**`.canvas-frame-bar`**) stands on its top edge scaled back by **`--canvas-inv`**, as wide on screen as the frame and never under **180px**, the size giving way before the title; it moves the frame, and holds its size menu (**`.canvas-frame-menu`**), reload and remove. The bar stands over the pages (**z-index 2**, **3** while its menu is open), so the menu is never under a page. A frame reloads only when its stamp, its generation or its page moves, or its address nears its end (renewed on the page's own clock); a board read again that changed nothing draws nothing again (**`boardFingerprint`**, the fresh signatures aside, which the board takes every **10 minutes**).
+- **Nodes of the file** (**`CanvasNodes.tsx`**) are drawn in Obsidian's order: groups first (**`.canvas-group`**, a **2px** border at **28%** of the text or **70%** of its colour, a **5%**/**9%** wash, its label as a chip above its top left edge, scaled back like a title bar), then the edges, then the cards (**`.canvas-node`**, **8px** radius, a faint border and a lifted ground, a coloured node taking its colour for the border and **10%** of it for the ground), then the frames. A card's body stands at the node's own size: a text card is its Markdown at **16px**, a `.md` note shows its name and its Markdown (read again every **10 s** on the card's own clock, the last text kept meanwhile), a picture fills the node, any other file and a link are a card (kind in small capitals, the name, the folder or the address, **Open in Files**), and a link opens only an `http(s)` address. Colours are the six presets of JSON Canvas (**`PRESET_COLORS`**, Obsidian's red, orange, yellow, green, cyan and purple) or a hex value; anything else is ignored, never put into a style. Dragging a card moves it, dragging a group moves it with every node inside it, in board units (the pointer's travel over the scale at the press); the pointer is captured only once a drag passes **4px**, so a click on a link inside a card stays a click, and a moved node stays where it was put until the board read after the change says so.
+- **Edges** (**`.canvas-edges`**, one SVG in the world layer, **`pointer-events: none`**) are Obsidian's curves in board units: from the middle of the side an edge names, or the side facing the other node, out along that side and into the other node the same way, a **2px** stroke on screen (**`vector-effect: non-scaling-stroke`**) at **45%** of the text or the edge's colour, an arrowhead at the end unless it says none and at the start when it says so, and the label as a chip at the middle of the curve, scaled back like a title bar.
+- **Comment** picks an element of a page: the bridge outlines it, a note opens beside it (**`.canvas-popover`**, opaque so the page does not show through, placed in screen units from the camera at the pick), **Add** makes it a chip of the prompt bar. **The prompts strip** (**`.canvas-prompts`**) shows the permission and question cards the turn waits for above the bar, since the window covers the chat. **The prompt bar** (**`CanvasPromptBar`**) under the board is the chat's composer in small: **Chat** closes the Files window, the field, and one action button as the composer's (Send, Queue while a turn runs and the field holds text, Stop while it runs and the field is empty); its draft is kept per chat and file for the life of the page, and a request the server never took comes back to it. A file that cannot be read says so in a banner at the top of the board (**`.canvas-link-error`**, a danger-tinted ground).
+- **Escape** closes the note first, then leaves Comment, then closes the window.
+
+### Zoom
+
+Every surface that zooms - the picture viewer (**`ImageLightbox`**), a canvas board, the swarm map - zooms one way and shows one set of controls (**`ui/components/zoom.ts`**, **`ui/components/ZoomControls.tsx`**).
+
+- **The wheel** zooms at the pointer, continuously: **`wheelFactor`** reads the delta in pixels (lines **16px**, pages **400px**) and **500px** of wheel double or halve what is under the pointer (**`WHEEL_DOUBLING_PX`**). A pinch zooms around the point between the fingers; a drag pans.
+- **The controls** (**`.zoom-controls`**) are one group at the top right of what they zoom - the canvas board's and the swarm map's corner, the picture viewer's bar beside its close control (**`zoom-controls--inline`**): minus, **the level** (**`.zoom-control--level`**: the percentage, or the fit glyph while the view is fitted; a click fits) and plus, each **28px** (**40px** on the stacked shell), on an opaque ground with the glass border, never a **`backdrop-filter`**. The buttons and **`+`** / **`-`** step by **`ZOOM_STEP`** (**1.25**) on the board and the map; the picture viewer keeps its 100 / 150 / 200 / 300 ladder. **`0`** fits.
 
 ### Background task on a transcript row
 
@@ -22943,8 +23258,9 @@ is the screen: there is no list of nodes under it, because everything the list d
   `star` value migrates to Graph, and an absent, blocked or invalid value means Tree. It never
   changes server configuration or another browser's choice.
 - **Canvas camera.** The graph is fitted into its viewport on first open and whenever the relay or
-  layout changes. The **Tree** and **Graph** controls select the layout; **Zoom out**, **Fit graph**
-  and **Zoom in** control the camera. Pointer-wheel zoom is centred on the pointer, dragging pans
+  layout changes. The **Tree** and **Graph** controls select the layout; the shared zoom controls (**Zoom**) -
+  **Zoom out**, the level (the fit glyph while untouched, the percentage once the operator zooms or
+  pans; a click fits the graph) and **Zoom in** - control the camera. Pointer-wheel zoom is centred on the pointer, dragging pans
   across both axes even in the fitted view, and a two-finger pinch zooms around the pinch midpoint;
   a drag or pinch never also enters a node. When the canvas has focus, **`+`** / **`=`** zoom in,
   **`-`** zooms out and **`0`** fits. Zoom never goes below the fitted view or above three times
@@ -23003,7 +23319,7 @@ Coddy's own documentation, read out of the binary (**`GET /coddy/docs*`**), at *
 - **Contents** (**`.docs-toc`**): group titles in **11px** uppercase at **52%** text, set **10px** in; the pages of a group sit **12px** further right than that (**`.docs-toc-group > ul`**, **`padding-left: 12px`**), so the title reads as the heading of its list and not as one more page of it - flush, the two ran together. Each page is a **`.docs-toc-page`** drawn exactly like a Settings tab (**`.settings-nav-item`**: **10px** radius, the **6%** text-tint hover, the page being read on a **22%** accent plate with a **40%** accent border and **`aria-current="page"`**).
 - **Search** (**`.docs-search`**) is the swarm screen's field (**`--coddy-surface-field`**, **10px** radius, **14px** text, a **2px** accent focus outline), with a **`/`** key cap at its right end while it is empty. The hits hang under it (**`.docs-search-results`**, **12px** radius, the panel border and shadow, at most **62vh**) while the box is in use, and the contents stay where they are. The panel is **opaque** - the canvas colour with a **5%** text tint layered on it - because it lives inside the blurred header, where a nested blur sees nothing and a glass tint lets the page show through. The list (**`.docs-hits`**, a **`role="listbox"`** the input controls as a **combobox**) reads page **›** section, then a three-line snippet whose matched words are **`<mark>`**s on a **24%** accent plate; the selected hit (**`aria-activedescendant`**, also the one under the pointer) sits on a **14%** accent plate with a **32%** accent border. Opening a hit folds the panel away; focusing the box brings it back; Escape clears it, and in an empty box goes on to close the reader (**Escape and the screens of the rail**).
 - **The page** (**`.docs-article .md`**) reads, it does not chat: **15px** at **1.68** line height, **h1 28px**, **h2 20px** with a hairline under it and **36px** above, **h3 16px**; links in the accent mixed **72%** with the text, underlined at **45%**; images fit the column with the panel border. Every section heading carries a **`#`** link (**`.docs-heading-anchor`**) that shows on hover or focus. A breadcrumb (group **›** page) and a quiet **coddy.dev ↗** link sit above the title. While the next page loads, the one on screen stays at **55%** opacity (**`.is-loading`**, **`aria-busy`**) and the ask pill is disabled.
-- **Images and videos.** An image of the page shows **`cursor: zoom-in`** and opens in a lightbox (**`.docs-lightbox`**, rendered into the body at **`z-index: 400`** over an **88%** canvas veil with an **8px** blur): a bar with the caption, **−**, the level, **+** and the shared close control, all **30px** tall in the close control's frame, over a stage that scrolls a zoomed image. The level is one **58px** control that puts the image back to fit: a frame icon while the image is fitted, the percentage while it is zoomed, so the bar keeps its width either way (the words are its **`title`**). A zoom keeps the point clicked, the point between two pinching fingers, or the middle of the view for the keys and the buttons, where it was. The stage takes the gestures itself (**`touch-action: none`**, which lives with the stage and so leaves the page behind it alone): one pointer drags the picture within what there is to scroll, two fingers pinch it, and the wheel zooms around the pointer instead of scrolling - a listener of the stage's own, **not passive**, so the page behind the viewer does not scroll either (**`WHEEL_DOUBLING_PX`** 500, and lines and pages are read as pixels first). A video (**`video.md-video`**) fills the column with a **10px** radius and the panel border, on black until its first frame (**`#t=0.1`**) arrives.
+- **Images and videos.** An image of the page shows **`cursor: zoom-in`** and opens in a lightbox (**`.docs-lightbox`**, rendered into the body at **`z-index: 400`** over an **88%** canvas veil with an **8px** blur): a bar with the caption, the shared zoom controls (**Zoom**: **−**, the level, **+**) and the shared close control, over a stage that scrolls a zoomed image. The level puts the image back to fit: the fit glyph while the image is fitted, the percentage while it is zoomed (the words are its **`title`**). A zoom keeps the point clicked, the point between two pinching fingers, or the middle of the view for the keys and the buttons, where it was. The stage takes the gestures itself (**`touch-action: none`**, which lives with the stage and so leaves the page behind it alone): one pointer drags the picture within what there is to scroll, two fingers pinch it, and the wheel zooms around the pointer instead of scrolling - a listener of the stage's own, **not passive**, so the page behind the viewer does not scroll either (**`WHEEL_DOUBLING_PX`** 500, and lines and pages are read as pixels first). A video (**`video.md-video`**) fills the column with a **10px** radius and the panel border, on black until its first frame (**`#t=0.1`**) arrives.
 - **`/docs`** in the composer opens this screen rather than sending a prompt, and the slash menu's **Commands** group lists it (a row the browser adds to the server's catalog, only where the composer can open the reader). With words it opens the reader with them typed in the search box and the hits open under it.
 - **The foot** (**`.docs-pager`**): the page before and the page after as two cards on **`--coddy-surface-subtle`** with the panel border, the direction in **12px** muted text over the title; the accent frames the one under the pointer.
 - **On this page** (**`.docs-outline`**): the sections two levels deep on a hairline rule, the one being read (it follows the scroll) marked by a **2px** accent segment of that rule and the full text colour.
@@ -23548,6 +23864,7 @@ Short map for automation-friendly contributors.
 | `internal/mcp` | MCP transports, merged server list (**`<home>/mcp.json`** and the project's **`.coddy/mcp.json`** only: **`config.yaml`** declares no server, and **`internal/config/legacy_keys.go`** moves an old **`mcp_servers`** key into the home file on load), and the **workspace trust gate** for project-local **`.coddy/mcp.json`** (**`trust.go`**, **`gate.go`**; policy **`mcp.project_trust`**, approvals in **`<home>/mcp-trust.json`**, **`ReadsEnvironment`** naming on every approval surface the variables a declaration's **`${NAME}`** values read). A server's `command` and `args` run exactly as written, their **`${CWD}`** and **`${NAME}`** resolved by **`config.ExpandMCPValue`** the same way in every file: nothing here knows `npx` or any other package runner. The session manager watches **`<home>/mcp.json`** (**`StartGlobalMCPServers`** starts the watcher, **`ReloadMCPDeclarations`** reconciles only the servers whose declaration or switch moved). **`mcptest`** serves test MCP servers of every kind a user configures - the test binary re-executed on stdio, a local npm package started by the real `npx`, streamable HTTP and SSE - each answering one tool with its token. The **server pool** (**`pool.go`**: **`Pool`**, **`PoolKey`**, **`WorkspaceBound`**) shares the configured servers between sessions: a session holds a lease (**`Client`** is a handle on a shared **`conn`**), a global server is one process for the whole process and a project server (or a global one naming **`${CWD}`**) one per workspace, a connection nothing holds stops after **`DefaultStopDelay`** unless the pool keeps it (**`Keep`**: the global servers **`session.Manager.StartGlobalMCPServers`** starts with `coddy serve`, the console and `coddy acp`, ended by **`CloseMCP`**), and a stdio server runs in its own process group, stopped by stdin EOF and then the group (**`client.go`**). The dial itself lives in **`internal/session/mcp_dial.go`** (every configured server through **`TrustGate.Acquire`** under its own 20 s bound, one more try at the next turn for one that did not answer), the manager's side of the pool in **`internal/session/mcp_pool.go`** (a server whose connection ended is parked and started again at the next turn) and the console's background connect in **`internal/session/mcp_background.go`**. Guide: **`docs/features/mcp.md`** (Shared servers). |
 | `internal/remote` | Go client for a remote `coddy serve` server: SSE frames back into ACP updates, `/coddy` REST, permission/question answers, and the permission prompts of background subagents the server announces on its events stream (**`detached_prompts.go`**). Powers `--remote` on the console and `coddy acp`. Guide: **`docs/surfaces/console.md`** (Remote mode), **`docs/plans/remote-control.md`**. |
 | `internal/bgtask` | Background task pool for detached shell commands (**`run_command`** **`background: true`** plus the **`background_*`** tools, the Tasks panel, and **`/coddy/sessions/{id}/background-tasks`**), for subagent runs started by **`spawn_agent`** (**`Pool.Launch`**, kind **`agent`**, **`Agent {name, session_id}`** on the row), and for in-process servers the **`preview_server`** tool starts (**`Pool.Launch`**, kind **`server`**, **`Spec.URL`** / **`Snapshot.URL`**, **`Spec.NoTimeout`** - no hard limit unless the call names one). **`Pool.Adopt`** takes over a foreground command that outlived its timeout instead of killing it. **`Pool.CanWake`** says whether this process subscribed a waker (**`WakeWatcherKey`**), so **`run_command`** and **`spawn_agent`** promise a **`notify_on_finish`** wake only where one will happen, and **`Pool.MarkWokeAgent`** records on the row (**`woke_agent`**, persisted) that a task's end did start a turn, which is what keeps the bell on a finished card in the Tasks panel and **`woke the agent`** in **`/tasks`**. Guide: **`docs/features/background-tasks.md`**. |
+| `internal/canvas`, `internal/tools/canvas` | The canvas of the web UI (**`tools.canvas`**): every board is a `.canvas` file of the workspace (JSON Canvas 1.0, Obsidian's format) whose file nodes naming HTML pages run as live frames, shown as a tab of the Files window. **`board.go`**: **`Ref`** (the chat's bundle, its workspace, the file), **`Load`**, **`Show`** (on the named file, the chat's current one or a new `canvas/<page folder>.canvas`), **`Open`**, **`UpdateNodes`**, **`Rotate`**, **`Remove`**, and the chat's bookkeeping in its bundle (**`canvas.json`**, **`State`**: the current file, the generations of frame addresses and the roots wider than a page's folder, keyed by **`NodeKey`** file and node, applying only in the workspace they were written in), a subagent's pages on the canvas of the top session of its spawn tree and refused from a worktree of its own; **`file.go`**: reading a file into frames, items and edges, writing back only what changed under a per-file lock that makes one file's read-modify-write one turn across chats, **`FrameOf`** for the one frame a file request needs, **`FileStamp`**; **`jsoncanvas.go`** and **`obsidian_json.go`**: an ordered codec that keeps unknown keys and writes byte for byte as Obsidian does. The stamp of a frame's files (**`stamp.go`**), the frame capability (**`capability.go`**: an HMAC in the path naming the session, the file, the frame, its root, workspace and generation, the key derived for the canvas from the secret behind media tokens), serving a frame (**`serve.go`**: **`os.Root`** under the workspace, no links, no dot-names, the sandbox CSP, the bridge script **`bridge.js`** injected), the browser's reports in memory (**`reports.go`**, by session and **`NodeKey`**). **`internal/tools/canvas`** holds **`canvas_show`** and **`canvas_inspect`**; the routes are **`external/httpserver/canvas_http.go`** (every route names its file with **`?file=`**), the relay's exception **`external/swarm`** (**`isCanvasFramePath`**), the board **`external/ui/src/ui/canvas/`**. A request whose **`Origin`** is **`null`** is refused with 403 on every API route but a frame's address (**`external/httpserver/auth.go`**, the relay's gate). Guide: **`docs/features/canvas.md`**, design: **`docs/plans/canvas.md`**. |
 | `internal/subagents` | Subagent definitions (markdown + YAML frontmatter from four default folders - **`~/.agents/agents`**, **`.agents/agents`**, **`${CODDY_HOME}/agents`**, **`.coddy/agents`**, always read, the later winning a name - and then the extra **`subagents.dirs`**, through **`config.Subagents.SearchDirs`**; built-ins **`general`**, **`explore`** and the hidden orchestrator **`crossreview`**), canonical **scopes**, the **trust receipts** for project-scope files (**`trust.go`**; policy **`subagents.project_trust`**, receipts in **`<home>/subagents-trust.json`**), the process-wide **`Limiter`**, and the catalog (**`coddy agents list`**, **`GET /coddy/subagents`** with the bounds each definition declares, the prompt block; the web UI lists it under **Settings → Subagents**, where a project definition under **`ask`** carries the MCP shield that approves it, bound to the digest it showed). A definition's **`spawns`** allowlist (builtin/user scope only) admits exactly the named children exactly one level past **`subagents.max_depth`** - the mechanism a coordinator uses to fan out. The runtime that spawns a child is **`internal/agent/subagent.go`**; it also continues a finished run in its own child session when the parent passes **`spawn_agent`** **`resume`**, instead of a second child starting over (issue #389). Child sessions are owned by **`internal/session`**, which stores each one inside the bundle of the session that spawned it (**`<parent>/subagents/<child>/`**) under an ordinary **`sess_`** id and reopens it from that bundle for a resumed run (**`SubagentSpec.Resume`**). Guide: **`docs/features/subagents.md`**. |
 | `internal/hooks` | Operator lifecycle hooks: definition files in Claude Code's shape (**`definition.go`**, **`matcher.go`** with tool-name aliases), the loader with canonical **scopes** (**`loader.go`**; policy **`hooks.project_trust`**), the **trust receipts** for project-scope files (**`trust.go`**; **`<home>/hooks-trust.json`**, keyed by canonical workspace, file and digest; surfaces **`coddy hooks list|trust|untrust`**, **`GET /coddy/hooks`**, **`POST /coddy/hooks/trust|untrust`**), the **catalog** (**`catalog.go`**), and the **runner** (**`runner.go`**: stdin JSON payload, exit-code and JSON answer, timeouts and process groups through **`internal/platform`**). **`internal/agent/hooks.go`** wires `PreToolUse` / `PostToolUse` / `PostToolUseFailure` into **`executeToolCall`**, `UserPromptSubmit` and `Stop` into the loop, `PreCompact` / `PostCompact` into **`CompactSession`**, `SubagentStart` / `SubagentStop` into the spawn runtime and `Notification` into the permission gate; **`internal/session/hooks.go`** fires `SessionStart` from the manager and keeps its context on the session. **`hooktest`** re-executes a test binary as the hook process. Guide: **`docs/features/hooks.md`**, design: **`docs/plans/hooks.md`**. |
 | `internal/session` | Session manager, Filesystem persistence, Acp hooks, rules catalog, the **paged reads** of a history (**`message_window.go`**: **`PageMessages`** step-aligned pages and the counts a client numbers them from, **`MessagePage.UILog`**; behind **`GET /coddy/sessions/{id}/messages?limit=&before=&from=`**, issue #338), and the **provider usage** cache and schedule (**`provider_usage.go`**: the account quota behind a session's model, published as **`provider_usage`** at session ready and from every turn's release, served over **`GET /coddy/providers/{name}/usage`** and the events stream; **`provider_usage_sources.go`** picks the reader per provider type - **`internal/llm/neuraldeep_usage.go`** for the hub's `GET /v1/limits`, **`codex_usage.go`** for the Codex backend's usage endpoint, **`devin_usage.go`** for the seat-management status RPC), and the **tool-call pairing** guard (**`tool_pairing.go`**: **`ValidateToolPairing`** checks assistant batches against their contiguous tool results, **`RepairMissingToolResults`** inserts stable synthetic results for unambiguous missing calls on the outbound projection only - the stored transcript is never rewritten; the agent refuses a still-malformed history at the send boundary). Design: **`docs/plans/neuraldeep-usage.md`**. |
