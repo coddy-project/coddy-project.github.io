@@ -37,6 +37,8 @@ Debian, Ubuntu, Fedora and their relatives can take the `.deb` or `.rpm` instead
 
 ## 2. Give it a model
 
+The shortest way needs neither a key nor an edit: run `coddy` and type `/login`. A bare `/login` signs in to NeuralDeep, `/login codex`, `/login devin` and `/login opencode` to the others; the console prints the page and the code to confirm in a browser, then writes the provider and every model it serves into `config.yaml` and runs on them ([Signing in from the console](../surfaces/console.md#signing-in-to-a-provider-login)). The rest of this section sets a provider up by hand.
+
 Everything Coddy needs to know lives in `~/.coddy/config.yaml` (`%USERPROFILE%\.coddy\config.yaml` on Windows). The file the installer created is a copy of `config.example.yaml`, with every section explained in comments; the minimum for an OpenAI-compatible provider is three blocks:
 
 ```yaml
@@ -74,7 +76,7 @@ providers:
     api_key: "~"
 ```
 
-Anthropic, NeuralDeep (`coddy providers login neuraldeep` instead of a key) and Codex (ChatGPT OAuth) are covered in [Configuration](configuration.md); a Devin account signs in with `coddy providers login devin` ([Devin](../features/devin.md)), and an OpenCode Go or Console account with `coddy providers login opencode` ([OpenCode](../features/opencode.md)).
+Anthropic, NeuralDeep (`coddy providers login neuraldeep`, or `/login` in the console, instead of a key) and Codex (ChatGPT OAuth) are covered in [Configuration](configuration.md); a Devin account signs in with `coddy providers login devin` ([Devin](../features/devin.md)), and an OpenCode Go or Console account with `coddy providers login opencode` ([OpenCode](../features/opencode.md)); in the console `/login devin` and `/login opencode` do the same.
 
 ## 3. Check the file
 
@@ -96,7 +98,7 @@ cd ~/src/my-project
 coddy
 ```
 
-That opens the interactive console: type a request, press Enter, and watch the tool boxes, the thinking block and the answer stream in. Under the default permission mode the agent asks before it runs a command or writes a file. Escape interrupts a turn, `/quit` (or Ctrl-C twice) leaves, and `coddy -c` reopens the latest session of this folder.
+That opens the interactive console: type a request, press Enter, and watch the tool boxes, the thinking block and the answer stream in. Under the default permission mode the agent asks before it runs a command or writes a file. Escape interrupts a turn, `/quit` or `/exit` (or Ctrl-C twice) leaves, and `coddy -c` reopens the latest session of this folder.
 
 ![The console after a finished turn](../assets/screenshot-console-chat.png)
 
@@ -280,6 +282,10 @@ cp /usr/share/doc/coddy/config.example.yaml ~/.coddy/config.yaml
 coddy
 ```
 
+Or skip the copy: run **`coddy`** and type **`/login`**, which signs in to NeuralDeep (or
+**`/login codex`**, **`devin`**, **`opencode`**) and writes the provider and its models into
+**`~/.coddy/config.yaml`** ([Console](../surfaces/console.md#signing-in-to-a-provider-login)).
+
 ### Upgrading and removing
 
 Upgrade through the package manager, or let Coddy fetch the release package for you as root - both
@@ -329,7 +335,9 @@ and every release updates it. The command adds the tap, trusts this one cask and
 **`coddy`** binary from the macOS archive of the latest release, plus **`man coddy`** and the bash and zsh
 completions. It needs macOS 12 or later. It does not install **`tmux`**: its caveats, printed after
 the install and by **`brew info --cask coddy`**, recommend **`brew install tmux`** for a console
-session that outlives the terminal.
+session that outlives the terminal. They also give the two lines for **`~/.zshrc`** that make zsh load
+the completion: the zsh macOS ships runs no **`compinit`**, and without it Tab does not complete
+**`coddy`** ([Homebrew](homebrew.md#installing-today)).
 
 Upgrades follow the releases:
 
@@ -387,7 +395,7 @@ is on its own page: [Android (Termux)](android.md).
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 coddy -v
-# edit ~/.coddy/config.yaml
+# edit ~/.coddy/config.yaml, or run coddy and type /login
 coddy serve            # in this terminal
 coddy serve --daemon   # in the background, restarted if it dies
 coddy serve install    # Linux: as a systemd user service
@@ -1209,7 +1217,7 @@ Provider needs **`api_key`**. Optional **`api_base`** overrides the Anthropic AP
 ### `neuraldeep`
 NeuralDeep API via its OpenAI-compatible endpoint.
 
-Credentials come from either a hub sign-in or a plain key. **`coddy providers login neuraldeep`** signs in through the device flow: it prints a short code and the hub page that confirms it, so the browser can be on any machine - a laptop, a phone - while Coddy runs on a server reached over SSH. It opens that page for you when this machine has a browser of its own. **`--browser`** asks for the older loopback callback instead; that one only completes in a browser running on this machine. A login waits for the confirmation until the hub's fifteen-minute deadline, and Ctrl-C ends it sooner. Either way it stores the hub-issued key under **`$CODDY_HOME/providers/<name>/neuraldeep-auth.json`**, and appends the tier's models to the config; the bundled web UI offers **Sign In with NeuralDeep** on the provider row. An explicit **`api_key`** (or **`api_key_command`** / **`NEURALDEEP_API_KEY`**) always wins over the stored login.
+Credentials come from either a hub sign-in or a plain key. **`coddy providers login neuraldeep`** signs in through the device flow: it prints a short code and the hub page that confirms it, so the browser can be on any machine - a laptop, a phone - while Coddy runs on a server reached over SSH. It opens that page for you when this machine has a browser of its own. **`--browser`** asks for the older loopback callback instead; that one only completes in a browser running on this machine. A login waits for the confirmation until the hub's fifteen-minute deadline, and Ctrl-C ends it sooner. Either way it stores the hub-issued key under **`$CODDY_HOME/providers/<name>/neuraldeep-auth.json`**, and appends the tier's models to the config; **`/login`** in the console runs the same device flow, and the bundled web UI offers **Sign In with NeuralDeep** on the provider row. An explicit **`api_key`** (or **`api_key_command`** / **`NEURALDEEP_API_KEY`**) always wins over the stored login.
 
 While a model of a provider with a usage source is active, the console footer, the remote console and the HTTP API show the account's usage, refreshed at session start and after every turn; see **`docs/surfaces/console.md`** (Footer, `/usage`) and **`docs/reference/http-api.md`** (**`GET /coddy/providers/{name}/usage`**). The sources today: **`type: neuraldeep`** reads the hub's read-only **`GET /v1/limits`** (session and week windows as percent used with reset times, the wallet in rubles, a hit limit with its reset time); **`type: codex`** reads the Codex backend's usage endpoint with the saved ChatGPT OAuth token (the plan and percentage windows by their upstream durations, plus feature-scoped entries); **`type: devin`** reads the seat-management status RPC of the Devin API server (the plan, and daily/weekly quota windows as percent used for quota plans or an ACU meter for ACU plans). The row's own credential is used, no dollar figure and no invented request counts are ever shown. The panel is on by default; **`usage_limits_panel: false`** on the row (the **Usage limits panel** switch in Settings → LLM Providers) hides it on every surface and stops the usage reads for that row, for a shared screen or an account that is not yours to watch.
 
@@ -1810,6 +1818,25 @@ and not notarised, and with the attribute in place Gatekeeper stops its first ru
 an Apple Developer ID, which the project does not have. The cask asks for macOS 12 or later, because
 binaries built by Go 1.25 and later do not run on older releases.
 
+The zsh completion lands in **`$(brew --prefix)/share/zsh/site-functions/_coddy`**. **`brew shellenv`**,
+which the Homebrew installer adds to **`~/.zprofile`**, puts that folder on zsh's **`fpath`**, but zsh
+reads a completion only once **`compinit`** runs, and the zsh macOS ships runs none. So after the
+install Tab does not complete **`coddy`** until **`~/.zshrc`** has these two lines, which the caveats
+print as well:
+
+```zsh
+fpath=(/opt/homebrew/share/zsh/site-functions $fpath)   # /usr/local on an Intel Mac
+autoload -Uz compinit && compinit
+```
+
+Oh My Zsh and the other frameworks run **`compinit`** themselves; there it is enough that
+**`brew shellenv`** runs first. If zsh warns about insecure directories, **`compaudit | xargs chmod g-w`**
+fixes their permissions, and a setup that calls **`compinit -C`** skips the check for new completions:
+remove **`~/.zcompdump*`** and open a new terminal. The install script writes the same block into
+**`~/.zshrc`** for its own folders; a cask must not touch your dotfiles, so it prints the lines instead.
+The **Homebrew tap** workflow checks that zsh registers **`_coddy`** from that folder once
+**`compinit`** runs.
+
 The cask installs Coddy alone and recommends **`tmux`** in its caveats (**`brew install tmux`**).
 A cask's **`depends_on`** has no optional form, so declaring tmux there would install it for
 everyone, and Coddy runs without it; the deb and the rpm suggest it the same way.
@@ -2243,7 +2270,7 @@ agent:
   # wait_for_limit_reset_max_ms: 14400000   # at most 4 h per turn, the default
 ```
 
-A top-level turn then waits for the reset, reports `Usage limit reached · resuming at 20:59` every 20 seconds, and re-issues the same call; Escape stops the wait like any turn. A key the hub rejects reads `key rejected` in the footer and is repaired with `coddy providers login neuraldeep`. See [Console (TUI)](../surfaces/console.md) and the [`agent` reference](../reference/config.md#agent).
+A top-level turn then waits for the reset, reports `Usage limit reached · resuming at 20:59` every 20 seconds, and re-issues the same call; Escape stops the wait like any turn. A key the hub rejects reads `key rejected` in the footer and is repaired with `coddy providers login neuraldeep`, or `/login neuraldeep` in the console. See [Console (TUI)](../surfaces/console.md) and the [`agent` reference](../reference/config.md#agent).
 
 ## A turn fails with a network error before the provider answers
 
@@ -4031,7 +4058,7 @@ the footer is read with a three-second bound for the same reason. A first
 ctrl+c during startup cancels it; a second one ends the process the default
 way instead of being swallowed.
 
-Quitting the console (double ctrl+c, ctrl+d, `/quit`) prints a resume hint
+Quitting the console (double ctrl+c, ctrl+d, `/quit` or `/exit`) prints a resume hint
 after the terminal is restored:
 
 ```
@@ -4044,6 +4071,65 @@ closed without one - or left with `/new` before anything was sent - leaves no
 folder in the sessions root and no row in History, and prints no hint: there
 is nothing to continue. The settings changed before that first prompt (the
 model, the mode, the permission mode) are kept in memory and written with it.
+
+
+## Signing in to a provider (`/login`)
+
+A fresh install has no model provider Coddy can talk to: there is no
+`config.yaml` yet (Homebrew, the Linux packages, a binary unpacked by hand), or
+`install.sh` wrote the example one, whose `openai` row reads its key from
+`OPENAI_API_KEY`. While no provider row can answer - none has a key in
+`api_key`, `api_key_command` or its `NAME_API_KEY` variable, a stored sign-in,
+an `acp` agent or, on an OpenAI- or Anthropic-compatible row, an `api_base` of
+its own - the header says so in the warning colour and points at `/login`, and
+the same line follows a turn that failed for that reason. A turn that failed
+because the session's model runs on a provider with no key or sign-in is
+followed by a line that names the provider and the way out: `/login <name>` for
+a provider that signs in, its key for one that takes a key, ctrl+l for a model
+of another provider.
+
+![The first start on a fresh install: the header points at /login](../assets/screenshot-console-login-hint.png)
+
+*The first start with no `config.yaml`: the line in the warning colour points at `/login`, and the footer names no model.*
+
+`/login` runs the sign-in of `coddy providers login` without leaving the
+console:
+
+| Command | Signs in to | How |
+|---|---|---|
+| `/login` | NeuralDeep | device code: open the hub's page, confirm the code |
+| `/login codex` | Codex (ChatGPT) | device code |
+| `/login devin` | Devin | browser sign-in; the page sends the browser back to this machine |
+| `/login opencode` | OpenCode | device code, then the organization on the page |
+| `/login <name>` | a provider `config.yaml` lists | the sign-in of its type |
+
+The console prints the page to open and the code to confirm, and opens the page
+in this machine's browser when it has one; over SSH it prints the address only,
+for any browser, a phone's included. Escape stops the sign-in. A Devin sign-in
+whose browser runs on another machine completes from the address that browser
+was sent back to: paste it into the editor and press Enter. A bare `/login`
+signs in against the NeuralDeep deployment for Russia; for the international
+mirror, give the `neuraldeep` row `api_base: https://api.neuraldeep.tech/v1`
+first and then run `/login neuraldeep` ([NeuralDeep](../getting-started/configuration.md#neuraldeep)).
+
+Once the sign-in succeeds, the console adds the provider row and every model the
+account serves to `config.yaml`, and `agent.model` when none is set, the same
+catalog `coddy providers login` adds. Then it loads the new configuration at
+once: the footer names the model, ctrl+l lists the new models and the header
+line is gone. When `agent.model` runs on a provider that cannot answer - the
+example config's `openai` row with its key unset - the sign-in moves
+`agent.model` to the provider it signed in, and the console moves the session
+the same way and says so; a session on a provider that answers keeps its model,
+and ctrl+l or `/model` picks one of the new ones. `coddy providers login` moves
+`agent.model` the same way. Settings in the web UI add models one at a time instead, with the
+plus next to each ([Web UI](web-ui.md#settings-provider-models)). A row of
+another type, such as `openai` or `anthropic`, takes a key, and `/login` says
+so; an `acp` agent signs in on its own. Over `--remote` the configuration is the
+server's, so `/login` sends you there.
+
+![The console after a bare /login: the hub's page and the code, Signed in to NeuralDeep, what config.yaml gained, and the footer on the new model with its usage](../assets/cli-tui/login-signed-in-dark-1280.png)
+
+*A bare `/login` on a fresh install: the page and the code, the account, the provider and its five models in `config.yaml`, and the footer on `neuraldeep/qwen3.8-27b` with the account usage.*
 
 
 ## Live file drafts
@@ -4095,7 +4181,8 @@ Top to bottom:
 
 - **Header**: `coddy` (bold accent) + dim version; a dim hint line
   (`escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ctrl+o more`);
-  a dim welcome line; `[Context]` (the documents the session's prompt carries:
+  while no provider can answer, a line in the warning colour that points at
+  `/login` ([Signing in](#signing-in-to-a-provider-login)); `[Context]` (the documents the session's prompt carries:
   your and the workspace's `AGENTS.md` and `DESIGN.md` that exist, then the
   files `instructions.files` adds, each once; after them, in the warning
   colour, an `instructions.files` entry whose file the session cannot read,
@@ -4169,9 +4256,13 @@ Top to bottom:
   `@Dockerfile:21-31` or `@f.go#L21-31`, absolute paths included. In remote mode the
   list comes from the server that runs the session. The grammar, what each kind
   attaches and the limits are in [Mentions](../features/mentions.md).
-- **Footer**: dim `cwd (git-branch) [• plan|ask] [• MCP N/M] [• N tasks running (/tasks)] [• accept edits|bypass]`,
-  then `↑in ↓out  N.N%/ctx (auto)` left and `(provider) model [• reasoning]`
-  right. The permission mode closes the first line when it is not `ask`,
+- **Footer**: two dim lines. The first holds
+  `cwd (git-branch) [• plan|ask] [• MCP N/M] [• N tasks running (/tasks)] [• accept edits|bypass]`
+  on the left and `(provider) model [• reasoning] [• tools <preset>]` on the
+  right, the reasoning level whenever the model has one; the second holds
+  `↑in ↓out N.N%/ctx` (the tokens of the session and how much of the context
+  window it fills) on the left and, under the model, the account usage
+  described below. The permission mode closes the left side of the first line when it is not `ask`,
   `bypass` in the warning colour, so a session that approves everything never
   looks like one that asks; it is the mode of the session on screen, and
   `/new` and `/resume` move it, with the line of turn overrides, to the
@@ -4182,16 +4273,17 @@ Top to bottom:
   count is there only while a configured server is still connecting after
   the first frame - connected out of the ones being dialed, a held project
   declaration not counted - and leaves the line once every one has
-  answered. When the line does not fit, the path gives way and the notes
-  stay.
-  A third line appears while the active model's provider reports account
+  answered. When the first line does not fit, the notes stay whole: the path
+  gives way first, then the model is cut.
+  The right side of the second line shows while the active model's provider reports account
   usage (today: `neuraldeep`, read from the hub's `GET /v1/limits`; `codex`,
   read from the Codex backend's usage endpoint; `devin`, read from the
   seat-management status RPC):
-  `Pro • 3h 3% (resets 20:59) • week 7% (resets Mon 03:00) • wallet -1 229 ₽`,
-  the plan, each metered window as percent **used** with its reset time in
-  your clock (time of day within 24 h, weekday within a week, date and time beyond),
-  and the account's own ruble balance for NeuralDeep wallet keys. NeuralDeep
+  `Pro • 3h 3% • week 7% • wallet -1 229 ₽`,
+  the plan, each metered window as percent **used**, and the account's own
+  ruble balance for NeuralDeep wallet keys. The reset times stay out of the
+  footer: `/usage` prints them in your clock (time of day within 24 h, weekday
+  within a week, date and time beyond), and so does a hit limit. NeuralDeep
   shows the day window only when it is above zero; Codex and Devin show every
   window they report, a zero one included. Codex windows are labelled by
   their upstream durations (`5h`, `week`, and feature-scoped entries such as
@@ -4210,8 +4302,8 @@ Top to bottom:
   limit reached · resuming at 20:59` without a running counter, the footer
   keeps the hub's numbers, and the same call runs again when the limit
   lifts (Esc stops the wait like any turn). A model on NeuralDeep's unlimited option (Qwen ∞)
-  reads `∞ volume`. A rejected key reads `neuraldeep: key rejected, run
-  coddy providers login neuraldeep`; when the hub cannot be reached the last
+  reads `∞ volume`. A rejected key reads `neuraldeep: key rejected,
+  /login neuraldeep`; when the hub cannot be reached the last
   numbers stay with `(stale)`. On narrow terminals the wallet, the day, the
   week and the plan leave in that order. The numbers arrive from the session
   manager at session start and after every turn (`provider_usage` update,
@@ -4236,7 +4328,7 @@ Slash commands: the settings commands `/model`, `/reasoning` (`/effort`),
 `/think`, `/nothink`, `/toolset`, `/agent`, `/plan`, `/ask` and `/permissions`, each with
 `--once` or `--count=N` for the next turns only
 ([Session settings](../features/session-settings.md)); client-side `/resume`,
-`/new`, `/theme`, `/hotkeys`, `/queue`, `/usage`, `/tasks`, `/mcp`, `/docs`, `/quit`, and a bare `/goal`, which opens
+`/new`, `/login`, `/theme`, `/hotkeys`, `/queue`, `/usage`, `/tasks`, `/mcp`, `/docs`, `/quit` (`/exit`), and a bare `/goal`, which opens
 the goal menu; server-driven `/compact`, `/goal <objective>` and its `pause`, `resume` and `clear` forms, `/export`,
 `/plugin`, `/worktree`, and every loaded skill (from the ACP available-commands catalog).
 A bare `/model`, `/reasoning`, `/toolset` or `/permissions` opens its picker; with a value
@@ -4456,7 +4548,7 @@ offers the same tools; under `--remote` the server owns the reload.
 | enter | send when idle; during a turn, queue the draft in `agent.queue_mode` (the first time asks which) |
 | tab | during a turn with a draft, queue it in the other mode |
 | shift+enter / ctrl+j | newline (backslash+enter also splits) |
-| escape | interrupt the running turn (`HandleSessionCancel`), or stop a `!!` command |
+| escape | interrupt the running turn (`HandleSessionCancel`), or stop a `!!` command or a `/login` sign-in |
 | ctrl+c | clear editor; twice within 2 s exits |
 | ctrl+d | exit when the editor is empty |
 | ctrl+l | model selector |
@@ -4910,7 +5002,9 @@ in a real **Konsole** window (1920 px wide, cropped to the used rows): the
 launch line and header with `[Context]` / `[Skills]`
 (`screenshot-console-start.png`), the `ctrl+l` model selector
 (`screenshot-console-models.png`), and a finished turn with a tool box, a
-thinking block, and the footer counters (`screenshot-console-chat.png`). Use
+thinking block, and the footer counters (`screenshot-console-chat.png`), plus
+the first start of a fresh install, its header pointing at `/login`
+(`screenshot-console-login-hint.png`, on an empty `CODDY_HOME`). Use
 these in README and on the site: they show what a user actually sees in a
 terminal emulator. They are taken on a clean `CODDY_HOME` with two skills of
 its own and a small project with an `AGENTS.md`, so the header lists what a
@@ -4939,6 +5033,10 @@ and types `@ment` against a provider that is never asked anything.
 `examples/cli/capture_settings.py`: `/permissions bypass`, then a chained
 `/model --once /reasoning --count=3`, with a temporary home standing in for
 `HOME` too, so the header lists the bundled skills only.
+`login-signed-in-dark-1280` comes from `examples/cli/capture_login.py`: a
+bare `/login` on an empty `CODDY_HOME`, with the hub and the API base pointed
+at a local stand-in that answers the device sign-in, the account, the tier's
+models and the usage, so neither a hub nor a key is needed.
 
 
 ## Testing
@@ -5114,7 +5212,7 @@ Clear the field to use the session model for summarization.
 - In **Settings → LLM providers**, an OpenCode row offers **Sign In with OpenCode** below the Go/Console gateway picker. The device code stays in the form beside **Open sign-in page**, which opens Console when the operator asks for it, so the two codes can be compared before approving. Confirm the code and organization in Console; the row then shows the organization and **Sign Out**. Sign-in uses the current unsaved proxy; the login serves both gateways, and the picker decides where the row's requests go. **Save All** keeps the row settings; tokens stay on the server. See [OpenCode](../features/opencode.md#sign-in-from-settings);
 - The button starts **`POST /coddy/providers/{name}/neuraldeep-auth/device`** (the hub's RFC 8628 device flow for client **`coddy`** — the browser and the Coddy server may be different machines), opens the returned portal page with the pre-filled code, displays the one-time code, and polls **`GET .../device/{loginID}`** until completion or failure.
 - Connected state comes from **`GET /coddy/providers/{name}/neuraldeep-auth`** (masked key only), read for the endpoint currently picked (**`?api_base=`**). When the stored login was issued by the other deployment's hub (**`hub`** differs from **`endpoint_hub`**), a note under the status says requests with it are rejected and asks to sign in again for this endpoint; the note is suppressed while an explicit key shadows the login. A login already in progress keeps polling if the endpoint is changed meanwhile (the key comes from the hub the flow started with), and the status read afterwards flags the mismatch. **Sign Out** best-effort revokes the key on the hub, then deletes the local credential through **`DELETE`**.
-- The key never enters the settings document or browser; it is stored by the server under **`$CODDY_HOME/providers/<name>/neuraldeep-auth.json`**. Tier models are added under **Logical models** from the **Models** list at the end of the provider form, which fetches the provider catalog with this login before the row is saved (see [Settings: provider models](#settings-provider-models)); the CLI flow (**`coddy providers login neuraldeep`**) appends them to the config automatically.
+- The key never enters the settings document or browser; it is stored by the server under **`$CODDY_HOME/providers/<name>/neuraldeep-auth.json`**. Tier models are added under **Logical models** from the **Models** list at the end of the provider form, which fetches the provider catalog with this login before the row is saved (see [Settings: provider models](#settings-provider-models)); the CLI flow (**`coddy providers login neuraldeep`**) and the console's **`/login`** append them all to the config automatically.
 
 ## Settings: provider proxy
 
@@ -13452,7 +13550,7 @@ The command opens the Devin sign-in page in a browser and waits. After you sign 
 
 - the session token, to `$CODDY_HOME/providers/devin/devin-auth.json` with mode `0600`;
 - the provider row and one model per family the account can use, into `config.yaml`;
-- `agent.model`, when the config has none yet.
+- `agent.model`, when the config has none yet or the one it has runs on a provider that cannot answer (the example config's `openai` row with its key unset).
 
 ```text
 $ coddy providers login devin
@@ -13465,6 +13563,8 @@ Updated /home/jane/.coddy/config.yaml: provider devin, agent.model devin/claude-
 ```
 
 On a machine reached over SSH there is no browser to open, and a browser on your laptop cannot reach the server's loopback port. Open the printed address on the laptop, sign in, and when the browser lands on the `127.0.0.1` page that does not load, copy that address from the address bar and paste it into the terminal: it carries the code, and the sign-in completes the same way. A line that is not such an address is refused with a note and the wait goes on. The wait ends after ten minutes, or sooner with Ctrl-C.
+
+In the console, `/login devin` runs the same sign-in and writes the same three things, then the console runs on the new models without a restart; the address of a browser on another machine is pasted into the editor ([Console](../surfaces/console.md#signing-in-to-a-provider-login)).
 
 `--no-config` stores the token and leaves `config.yaml` alone. A second login only adds what is missing: rows and models already in the file stay as you wrote them.
 
@@ -13581,7 +13681,9 @@ coddy providers login opencode
 
 Coddy prints a short code and opens the OpenCode Console account page. Sign in, confirm the code and select your organization. You can open the printed URL in a browser on another machine. This follows the [OpenCode client's device method](https://github.com/anomalyco/opencode/blob/f394d9d410bc6bb7cafcebfc5e3180a9b80ebed9/packages/core/src/plugin/provider/opencode.ts).
 
-The login stores access and refresh tokens at `$CODDY_HOME/providers/opencode/opencode-auth.json` with mode `0600`. Unless `--no-config` is given, it also adds the provider row, the gateway's models and an `agent.model` when it is empty to `config.yaml`. Use `--type opencode` to sign in another named profile, or `--api-base https://opencode.ai/inference/v1` to write Console into the row instead of Go. With `--no-config` the row stays as it is, so `--api-base` is refused there.
+In the console, `/login opencode` runs the same sign-in and writes the provider row and the gateway's models into `config.yaml` ([Console](../surfaces/console.md#signing-in-to-a-provider-login)).
+
+The login stores access and refresh tokens at `$CODDY_HOME/providers/opencode/opencode-auth.json` with mode `0600`. Unless `--no-config` is given, it also adds the provider row, the gateway's models and an `agent.model` to `config.yaml`, the last one when it is empty or runs on a provider that cannot answer. Use `--type opencode` to sign in another named profile, or `--api-base https://opencode.ai/inference/v1` to write Console into the row instead of Go. With `--no-config` the row stays as it is, so `--api-base` is refused there.
 
 Before each catalog or inference request, Coddy refreshes a token that expires within 60 seconds and saves rotated tokens atomically. Requests carry the selected organization in `x-org-id`. A revoked refresh token requires a new login. `coddy providers list` shows the account organization without exposing tokens. The stored credential works on every Coddy surface. A running server reads it for an already loaded provider row; restart the server after adding a new row.
 
@@ -16051,6 +16153,8 @@ Usage:
         web UI; without --lang it speaks the terminal's language: CODDY_LANG,
         then LC_ALL, LC_MESSAGES, LANG)
   coddy update [flags]
+  coddy help [command] (the command list, or the usage of that command:
+        the same answers as coddy --help and as that command's own --help)
 ```
 
 ### coddy cli
@@ -16286,7 +16390,6 @@ Usage of providers:
     	login: do not add the provider and its models to config.yaml after login
   -type string
     	login: type of a provider config.yaml does not list yet (neuraldeep, opencode, codex or devin), so another profile of a type is created by signing it in
-flag: help requested
 ```
 
 ### coddy plugin
@@ -16857,7 +16960,7 @@ coddy providers logout codex   # removes the Coddy-managed credential (leaves th
 
 (Up to 1.0.11 the same flow also had a codex-only command, `coddy codex login | status | logout`. It was removed in favour of the commands above, which cover every backend; `coddy providers list` reports what `codex status` used to.)
 
-A successful login also publishes the subscription catalog into `config.yaml`, the way `coddy providers login neuraldeep` publishes its tier models (the Settings button stores the credential only): it adds the `codex` provider row when it is missing, one `models[]` entry per catalog model Codex lists (the ids Codex hides from its own picker, such as `gpt-reserve` and `codex-auto-review`, are left out), and `agent.model` when nothing is set yet - Codex's own top-ranked model. Nothing already in the file is rewritten: an existing provider row, an already listed model, and a chosen `agent.model` survive untouched, so a repeated login is a no-op. `--no-config` stores only the credential. Entries carry no `max_tokens`, because the Codex backend rejects `max_output_tokens`. A running `coddy serve` keeps its loaded config, so restart it to pick the new models up.
+A successful login also publishes the subscription catalog into `config.yaml`, the way `coddy providers login neuraldeep` publishes its tier models (the Settings button stores the credential only): it adds the `codex` provider row when it is missing, one `models[]` entry per catalog model Codex lists (the ids Codex hides from its own picker, such as `gpt-reserve` and `codex-auto-review`, are left out), and `agent.model` when nothing is set yet - Codex's own top-ranked model. Nothing already in the file is rewritten: an existing provider row, an already listed model, and a chosen `agent.model` survive untouched, so a repeated login is a no-op. The one exception is an `agent.model` whose provider cannot answer - the example config's `openai` row with its key unset - which the login moves to the codex model it added, and says so. `--no-config` stores only the credential. Entries carry no `max_tokens`, because the Codex backend rejects `max_output_tokens`. A running `coddy serve` keeps its loaded config, so restart it to pick the new models up.
 
 Both paths use the same storage; the provider name is the argument, so `coddy providers login <name>` targets a specific codex row when `config.yaml` defines several (a row under a name other than `codex` either exists in `config.yaml` or is created by the login with `--type codex`). Each codex row keeps a login of its own; the Codex CLI login stands in only for the only codex row, or the row named `codex` among several ([Several profiles of one provider type](../getting-started/configuration.md#several-profiles-of-one-provider-type)). Coddy uses the official device authorization flow and stores refreshable credentials at `$CODDY_HOME/providers/<provider-name>/codex-auth.json` with restrictive file permissions; tokens never enter `config.yaml`. `api_key`, `api_key_command`, and `api_base` are ignored for Codex (an `api_key_command` left on a codex row never runs), while `proxy` applies to OAuth and provider requests. A Codex model has no output cap Coddy can set: the backend answers `Unsupported parameter` to `max_output_tokens`, so `models[].max_tokens` on a codex model bounds nothing. It is still accepted - the settings form seeds it on every model row - but `coddy -t`, `--dry-run` and the startup log of `coddy serve` warn about it, and a `max_tokens` sent on `POST /v1/chat/completions` for a codex model is refused with `400`. `max_context_tokens` is a different thing: the window the context ring and automatic compaction measure against, not a limit the provider enforces. Left unset on a codex model, it is the window the Codex catalog reports for the model, `context_window` (272000 for every model it serves today) ([The context window](../features/compaction.md#the-context-window)). The model picker reads the catalog from the official Codex backend with the saved token. The backend offers each model only to Codex releases from the model's `minimal_client_version` on, since an older Codex binary cannot run it; Coddy runs every model through its own loop and tools, so it asks as Codex release 0.999.0, far above the releases the gates name, and lists every model the account is offered, the newest included, whichever Codex CLI is installed, if any. The models Codex hides from its own picker stay out of the list. If no Coddy-managed credential exists, Coddy remains compatible with a Codex CLI login in `~/.codex/auth.json` (or `$CODEX_HOME/auth.json`). Codex requests always target the official backend; the process-level `CODDY_CODEX_BASE_URL` is the only override (tests and self-hosted gateways), so a settings document can never redirect an OAuth token on its own.
 
@@ -17188,6 +17291,7 @@ The built-in commands on each surface and how skills become commands. A slash co
 | `/toolset <name\|default> [--once\|--count=N]` | console, web UI, ACP editors, `POST /v1/responses`, Telegram, Pachca | Picks the `toolsets[]` preset this session is offered its tools by; `default` offers every tool of the mode. Kept in the session's `session.json`. Listed in the menus only while the configuration has a preset; typed bare in the console or picked from the web UI's menu, it opens the toolset selector. | [Session settings](../features/session-settings.md#the-toolset) |
 | `/resume [id or title]` | console; Telegram (the bot's admins) | Console: a picker over the sessions of the current folder; the chosen one replaces the current session. Telegram: an inline keyboard over every session the server keeps, or, with words after it, the session whose id or title they name. | [Sessions](../features/sessions.md#resuming), [Telegram gateway](../surfaces/gateway.md#commands) |
 | `/new` | console | Starts a new session in the same folder. | [Console](../surfaces/console.md#commands-and-keys) |
+| `/login [provider]` | console | Signs this machine in to a model provider and adds the provider and every model it serves to `config.yaml`: bare, NeuralDeep; `codex`, `devin` or `opencode`, the others; a name, a provider `config.yaml` lists. The console runs on the new configuration at once. Not over `--remote`. | [Console](../surfaces/console.md#signing-in-to-a-provider-login) |
 | `/theme` | console | Selector between the dark and the light palette. | [Console](../surfaces/console.md#flags) |
 | `/hotkeys` | console | Prints the key list. | [Keyboard](keyboard.md) |
 | `/queue [list\|drop <n>\|mode <n> <steer\|after_turn>\|clear]` | console | Lists waiting messages, changes one mode, takes one back into the input, or clears the queue. Works against a remote server too. | [Message queue](../features/message-queue.md#in-the-console) |
@@ -17283,7 +17387,7 @@ Keys are parsed into the `ctrl+x` / `shift+enter` / `alt+backspace` notation of 
 |---|---|
 | enter | send when idle; during a turn queue in `agent.queue_mode` (first use asks for the default) |
 | shift+enter / ctrl+j | newline (a backslash right before enter also splits the line, for terminals that do not report shift+enter) |
-| escape | close the suggestion menu if open; otherwise stop a running `!!` command; otherwise interrupt the running turn (`HandleSessionCancel`) |
+| escape | close the suggestion menu if open; otherwise stop a running `!!` command; otherwise stop a `/login` sign-in that waits for the browser; otherwise interrupt the running turn (`HandleSessionCancel`) |
 | ctrl+c | clear the editor; on an empty editor, twice within 2 s exits |
 | ctrl+d | exit when the editor is empty |
 | ctrl+l | model selector |
@@ -18714,8 +18818,8 @@ define; a client that ignores unknown kinds keeps working.
 - **`usage_update`** when the context window occupancy changes (a model call,
   manual or automatic compaction): `used` and `size` in tokens.
 - **`provider_usage`**: the account quota behind the session's model
-  provider, so a client can draw a status bar like the console's third footer
-  line. Sent at session ready and after every turn (never for a subagent
+  provider, so a client can draw a status bar like the quota under the model
+  in the console's footer. Sent at session ready and after every turn (never for a subagent
   child), once the provider has a usage source and the row's panel is on
   (`providers[].usage_limits_panel`, default true); the types with a source
   today are `neuraldeep` (the hub's read-only `GET /v1/limits`), `codex`
@@ -24607,6 +24711,7 @@ Short map for automation-friendly contributors.
 | `internal/agent` | ReAct orchestration, MCP/tool wiring, and the opt-in wait for a hit usage limit (**`limit_wait.go`**: a **`llm.QuotaResetError`** from the resilient wrapper makes a top-level turn wait for the reset under **`agent.wait_for_limit_reset`**, sending **`provider_usage`** updates with **`resuming`** every 20 s, then re-issue the same call). |
 | `internal/mcp` | MCP transports, merged server list (**`<home>/mcp.json`** and the project's **`.coddy/mcp.json`** only: **`config.yaml`** declares no server, and **`internal/config/legacy_keys.go`** moves an old **`mcp_servers`** key into the home file on load), and the **workspace trust gate** for project-local **`.coddy/mcp.json`** (**`trust.go`**, **`gate.go`**; policy **`mcp.project_trust`**, approvals in **`<home>/mcp-trust.json`** keyed by the project (**`mcp.TrustWorkspace`**: a linked git worktree shares its main checkout's), **`ReadsEnvironment`** naming on every approval surface the variables a declaration's **`${NAME}`** values read). A server's `command` and `args` run exactly as written, their **`${CWD}`** and **`${NAME}`** resolved by **`config.ExpandMCPValue`** the same way in every file: nothing here knows `npx` or any other package runner. The session manager watches **`<home>/mcp.json`** (**`StartGlobalMCPServers`** starts the watcher, **`ReloadMCPDeclarations`** reconciles only the servers whose declaration or switch moved). **`Client.CallToolResult`** returns what a result carries: its text (text blocks, the text of embedded resources, resource links), its pictures (**`ToolImage`**) and its files (**`ToolFile`**: audio, binary resources), which **`internal/agent`** keeps with the session's assets. **`mcptest`** serves test MCP servers of every kind a user configures - the test binary re-executed on stdio, a local npm package started by the real `npx`, streamable HTTP answering with JSON (**`NewHTTPServer`**) or with event streams (**`NewEventStreamServer`**) and SSE - each answering one tool with its token, and all but the npx one a screenshot tool too (**`ScreenshotTool`**: the token and **`Picture`**, **`LargePicture`** over 4 MiB as base64, or several, **`Pictures`**). The **server pool** (**`pool.go`**: **`Pool`**, **`PoolKey`**, **`WorkspaceBound`**) shares the configured servers between sessions: a session holds a lease (**`Client`** is a handle on a shared **`conn`**), a global server is one process for the whole process, a project server that does not name **`${CWD}`** one per project (a linked git worktree shares the one of its main checkout) and any server naming **`${CWD}`** one per workspace, a connection nothing holds stops after **`DefaultStopDelay`** unless the pool keeps it (**`Keep`**: the global servers **`session.Manager.StartGlobalMCPServers`** starts with `coddy serve`, the console and `coddy acp`, ended by **`CloseMCP`**), and a stdio server runs in its own process group, stopped by stdin EOF and then the group (**`client.go`**). The dial itself lives in **`internal/session/mcp_dial.go`** (every configured server through **`TrustGate.Acquire`** under its own 20 s bound, one more try at the next turn for one that did not answer), the manager's side of the pool in **`internal/session/mcp_pool.go`** (a server whose connection ended is parked and started again at the next turn) and the console's background connect in **`internal/session/mcp_background.go`**. Guide: **`docs/features/mcp.md`** (Shared servers). |
 | `internal/remote` | Go client for a remote `coddy serve` server: SSE frames back into ACP updates, `/coddy` REST, permission/question answers, and the permission prompts of background subagents the server announces on its events stream (**`detached_prompts.go`**). Powers `--remote` on the console and `coddy acp`. Guide: **`docs/surfaces/console.md`** (Remote mode), **`docs/plans/remote-control.md`**. |
+| `internal/providerlogin` | Signing a provider in without a key: **`Run`** (the device flows of NeuralDeep, Codex and OpenCode, Devin's browser sign-in, every request through the row's **`proxy`**, then the catalog **`llm.Apply*LoginToConfig`** adds to `config.yaml`), the resolution and endpoint rules **`coddy providers login`** shares (**`Resolve`**, **`NeuralDeepAPIBase`**, **`OpenCodeAPIBase`**, **`SummarizeAdded`**), and **`Ready`**, whether a provider row can answer, decided without a request or a credential helper. The console's **`/login`** (**`external/cli/login.go`**) runs it and installs the config it wrote through the manager's **`InstallConfig`**; the header points a console with no ready provider at it. Guide: **`docs/surfaces/console.md`** (Signing in to a provider). |
 | `internal/bgtask` | Background task pool for detached shell commands (**`run_command`** **`background: true`** plus the **`background_*`** tools, the Tasks panel, and **`/coddy/sessions/{id}/background-tasks`**), for subagent runs started by **`spawn_agent`** (**`Pool.Launch`**, kind **`agent`**, **`Agent {name, session_id}`** on the row), and for in-process servers the **`preview_server`** tool starts (**`Pool.Launch`**, kind **`server`**, **`Spec.URL`** / **`Snapshot.URL`**, **`Spec.NoTimeout`** - no hard limit unless the call names one). **`Pool.Adopt`** takes over a foreground command that outlived its timeout instead of killing it. **`Pool.CanWake`** says whether this process subscribed a waker (**`WakeWatcherKey`**), so **`run_command`** and **`spawn_agent`** promise a **`notify_on_finish`** wake only where one will happen, and **`Pool.MarkWokeAgent`** records on the row (**`woke_agent`**, persisted) that a task's end did start a turn, which is what keeps the bell on a finished card in the Tasks panel and **`woke the agent`** in **`/tasks`**. Guide: **`docs/features/background-tasks.md`**. |
 | `internal/canvas`, `internal/tools/canvas` | The canvas of the web UI (**`tools.canvas`**): every board is a `.canvas` file of the workspace (JSON Canvas 1.0, Obsidian's format) whose file nodes naming HTML pages run as live frames, shown as a tab of the Files window. **`board.go`**: **`Ref`** (the chat's bundle, its workspace, the file), **`Load`**, **`Show`** (on the named file, the chat's current one or a new `canvas/<page folder>.canvas`), **`Open`**, **`UpdateNodes`**, **`Rotate`**, **`Remove`**, and the chat's bookkeeping in its bundle (**`canvas.json`**, **`State`**: the current file, the generations of frame addresses and the roots wider than a page's folder, keyed by **`NodeKey`** file and node, applying only in the workspace they were written in), a subagent's pages on the canvas of the top session of its spawn tree and refused from a worktree of its own; **`file.go`**: reading a file into frames, items and edges, writing back only what changed under a per-file lock that makes one file's read-modify-write one turn across chats, **`FrameOf`** for the one frame a file request needs, **`FileStamp`**; **`jsoncanvas.go`** and **`obsidian_json.go`**: an ordered codec that keeps unknown keys and writes byte for byte as Obsidian does. The stamp of a frame's files (**`stamp.go`**), the frame capability (**`capability.go`**: an HMAC in the path naming the session, the file, the frame, its root, workspace and generation, the key derived for the canvas from the secret behind media tokens), serving a frame (**`serve.go`**: **`os.Root`** under the workspace, no links, no dot-names, the sandbox CSP, the bridge script **`bridge.js`** injected), the browser's reports in memory (**`reports.go`**, by session and **`NodeKey`**). **`internal/tools/canvas`** holds **`canvas_show`** and **`canvas_inspect`**; the routes are **`external/httpserver/canvas_http.go`** (every route names its file with **`?file=`**), the relay's exception **`external/swarm`** (**`isCanvasFramePath`**), the board **`external/ui/src/ui/canvas/`**. A request whose **`Origin`** is **`null`** is refused with 403 on every API route but a frame's address (**`external/httpserver/auth.go`**, the relay's gate). Guide: **`docs/features/canvas.md`**, design: **`docs/plans/canvas.md`**. |
 | `internal/subagents` | Subagent definitions (markdown + YAML frontmatter from four default folders - **`~/.agents/agents`**, **`.agents/agents`**, **`${CODDY_HOME}/agents`**, **`.coddy/agents`**, always read, the later winning a name - and then the extra **`subagents.dirs`**, through **`config.Subagents.SearchDirs`**; built-ins **`general`**, **`explore`** and the hidden orchestrator **`crossreview`**), canonical **scopes**, the **trust receipts** for project-scope files (**`trust.go`**; policy **`subagents.project_trust`**, receipts in **`<home>/subagents-trust.json`**), the process-wide **`Limiter`**, and the catalog (**`coddy agents list`**, **`GET /coddy/subagents`** with the bounds each definition declares, the prompt block; the web UI lists it under **Settings → Subagents**, where a project definition under **`ask`** carries the MCP shield that approves it, bound to the digest it showed). A definition's **`spawns`** allowlist (builtin/user scope only) admits exactly the named children exactly one level past **`subagents.max_depth`** - the mechanism a coordinator uses to fan out. The runtime that spawns a child is **`internal/agent/subagent.go`**; it also continues a finished run in its own child session when the parent passes **`spawn_agent`** **`resume`**, instead of a second child starting over (issue #389). Child sessions are owned by **`internal/session`**, which stores each one inside the bundle of the session that spawned it (**`<parent>/subagents/<child>/`**) under an ordinary **`sess_`** id and reopens it from that bundle for a resumed run (**`SubagentSpec.Resume`**). Guide: **`docs/features/subagents.md`**. |
