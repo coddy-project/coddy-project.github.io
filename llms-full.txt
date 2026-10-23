@@ -10674,25 +10674,33 @@ The supervisor is a second model rather than the worker grading itself. It judge
 
 | Command | What it does |
 |---|---|
-| `/goal [-m\|--model <id>] [-r\|--reasoning <level>] [--then-file <path>] <objective>` | Sets the goal, replacing any earlier one, and starts a turn on it right away. The objective is limited to 4000 characters; put longer specifications in a file and name it. `--model` and `--reasoning` choose the model and the reasoning level that check this goal, like `/compact --model`: a configured `models[].model` (or a part of one that matches exactly one model) and a level that model offers (`default` for its own). `-m` and `-r` are the short spellings. `--then-file` names a file whose text becomes the goal of a new session once this goal is met (see [Goal chains](#goal-chains)). |
+| `/goal [-m\|--model <id>] [-r\|--reasoning <level>] [--then-file <path>] <objective>` | Sets the goal, replacing any earlier one, and starts a turn on it right away. The objective is limited to 4000 characters; put longer specifications in a file and name it, with an `@` mention (`/goal finish @plan.md`) or by attaching the file in the composer - the file rides with the first turn, where the worker reads it. `--model` and `--reasoning` choose the model and the reasoning level that check this goal, like `/compact --model`: a configured `models[].model` (or a part of one that matches exactly one model) and a level that model offers (`default` for its own). `-m` and `-r` are the short spellings. `--then-file` names a file whose text becomes the goal of a new session once this goal is met (see [Goal chains](#goal-chains)). |
 | `/goal` | Shows the goal: its status and why, continuations used, the last check's verdict, and what is still open. The web UI and the console open their goal menu instead. |
 | `/goal pause` | Stops the automatic continuations and keeps the goal. A turn working on it finishes the step it is in. |
-| `/goal resume [-m\|--model <id>] [-r\|--reasoning <level>]` | Makes a paused, blocked or limited goal active again with a fresh continuation and token budget, and starts a turn. The goal keeps the checker it was set with unless the options name another. |
+| `/goal resume [-m\|--model <id>] [-r\|--reasoning <level>]` | Makes a paused, blocked or limited goal active again with a fresh continuation and token budget, and starts a turn. The goal keeps the checker it was set with unless the options name another. Resuming a blocked goal also accepts what the [risk gate](#risk-gate) found (see [Acknowledging a block](#acknowledging-a-block)). |
 | `/goal clear` | Removes the goal. `stop`, `off`, `cancel`, `reset` and `none` work as well. |
 
 The commands work in the web composer, the console, ACP editors, `POST /v1/responses`, Telegram and Pachca. In a messenger, only the bot's admins can set, pause, resume or clear a goal; any permitted user can show it. A goal is worked on in agent mode. It is saved with the session, so it survives a restart, and a compaction keeps the progress toward it in the summary.
 
+Options go before the objective; they do not count toward its 4000 characters. An objective whose last two words are an option and a value (`/goal ship it --model mini`), or whose last word is `--model=mini`, is refused with a notice that names the option, since the option would otherwise become part of the objective. A sentence that ends with an option name and one more word, such as `document the --model flag`, reads the same way; reword the end of such an objective. An option written with a typographic dash (`—model`, which smart punctuation makes of `--model`) is refused at the start and at the end of the objective, with or without a value after it. An option name anywhere else in the objective stays text. Options after `resume`, `pause` or a clear word belong to that subcommand: `/goal resume -m <id>` picks the checker, `pause` and the clear words refuse options, and a mistyped option there (`/goal pause --modle mini`) is refused too instead of becoming the objective of a new goal.
+
+The web composer counts the objective as you type `/goal`, the way the server counts it: without the leading options, trimmed, in characters. It does not send an objective longer than 4000 characters, and a `/goal` the server refuses comes back into the field with its attached files, so you can shorten it and send it again.
+
+![Goal length counter and warning in the web composer](../assets/session-supervisor/goal-composer-limit-dark-1280.png)
+
+*An overlong goal stays in the composer for correction.*
+
 ## How a goal is worked on
 
-1. **Kickoff.** `/goal <objective>` stores the goal and starts a turn whose message tells the worker to start now, restates the objective, and gives the rules: work from evidence, prove claims with tool results, do not weaken checks to pass them, and say so plainly when the work needs you.
-2. **Check.** When the turn ends, the supervisor gets the objective, the requirement list from its previous check, and an **evidence digest**. The digest lists every tool call since the goal was set with its arguments and the head and tail of its result, plus the files the turns changed and red flags such as edited tests, test data or CI files and added skip or suppression markers. The worker's final message comes last, labelled as claims. The supervisor answers with a requirement checklist and a verdict:
+1. **Kickoff.** `/goal <objective>` stores the goal and starts a turn whose message tells the worker to start now, restates the objective, and gives the rules: work from evidence, prove claims with tool results, do not weaken checks to pass them, and say so plainly when the work needs you. A file the objective names - an `@` mention in it, a file attached in the composer - rides with that first turn, so the worker reads it there; the turns after it restate the objective as text, and the file stays readable by its path.
+2. **Check.** When the turn ends, the supervisor gets the objective, the requirement list from its previous check, and an **evidence digest**. The digest lists the tool calls in the goal's messages (see [Which messages count](#which-messages-count)) with their arguments and the head and tail of each result, plus the files the turns changed and the red flags of the [risk gate](#risk-gate): docker commands that changed containers or volumes, changed migration files, edited tests, test data or CI files, and added skip or suppression markers. The worker's final message comes last, labelled as claims. The supervisor answers with a requirement checklist and a verdict:
    - `met`: every requirement is proven by a tool result shown;
    - `not_met`: work is left, with the next steps;
    - `needs_user`: the worker asked a question only you can answer, lacks access, or found a conflict between the request and the tests;
    - `impossible`: the objective cannot be met in this workspace.
 3. **Verify.** A `met` verdict goes to the verifier, a system subagent on the read-only tools (`read`, `glob`, `grep`, `print_tree`) that runs on the supervisor's model. It reads the files behind every requirement and answers in the same format. If it finds a gap, the goal goes on with the verifier's list. Its run appears in the session's Tasks panel as **Goal verification**. If the verifier itself fails to answer, the check's verdict stands and the reason says it was not verified. `supervisor.verify: false` skips this step.
 4. **Continue.** For `not_met`, the next turn opens with the verdict's reason, what is still open, the checklist, the whole objective again, and the budget used so far. Restating the objective keeps a long run from drifting toward an easier task.
-5. **Stop.** The goal becomes `complete` when the check (and the verifier) find it met, and `blocked` with the question when the work needs you. It becomes `limited` when `max_continuations` or `token_budget` is used up. Before that last stop the worker gets one wrap-up turn: no new work, only a summary of what is done, what is open and the next step.
+5. **Stop.** The goal becomes `complete` when the check (and the verifier) find it met, and `blocked` with the question when the work needs you. It becomes `limited` when `max_continuations` or `token_budget` is used up. Before that last stop the worker gets one wrap-up turn: no new work, only a summary of what is done, what is open and the next step. Ahead of all of these, the [risk gate](#risk-gate) blocks the goal straight after a turn whose messages hold a docker command that changes containers or volumes or a changed migration file.
 
 A message you send while the supervisor works goes first; the goal is checked again after its turn. A `/goal` command sent while a turn runs waits for the turn's end, whatever the queue mode, and runs before any continuation. Pausing, clearing or replacing the goal while the supervisor is checking it takes effect at once: the check's verdict is dropped and no continuation starts. A turn that leaves a background command or subagent running with `notify_on_finish` defers its check: the wake that reports the work starts the next supervised turn. Work that wakes nobody - a system task such as the memory run, a task started with `notify_on_finish: false`, a process without a waker - is not waited for. Stop ends the run without changing the goal's status. Your next message is checked against the goal again, or use `/goal pause`.
 
@@ -10704,9 +10712,79 @@ Turns the supervisor starts are not messages you typed. Every surface shows each
 |---|---|---|
 | `active` | Every turn end is checked; unfinished work is continued. | `/goal <objective>`, `/goal resume` |
 | `paused` | Kept, nothing is checked or continued. The reason says who paused it: you, a usage limit, a turn that failed, a check that failed twice. | `/goal pause`, the menu, the system |
-| `blocked` | The work needs you, or two turns in a row ended without a single tool call, or recovery from a stall or loop ran out. The reason holds the question. | the supervisor |
+| `blocked` | The work needs you, or two turns in a row ended without a single tool call, or recovery from a stall or loop ran out, or the [risk gate](#risk-gate) found a docker command that changes containers or volumes or a changed migration file. The reason holds the question, or the line the gate wrote. | the supervisor |
 | `complete` | Checked as met, and confirmed by the verifier when it could answer; a goal the verifier could not confirm says "not verified" and why in its notice and its last check. | the supervisor |
 | `limited` | The continuation or token budget is used up. | the supervisor |
+
+## Risk gate
+
+A goal can run for hours with nobody watching, and two kinds of step do damage that a later turn does not repair: a command that replaces containers or volumes, and a rewrite of migrations that were already committed. After every turn of a goal, the supervisor applies two hard rules to what the goal's messages show. A turn that broke one blocks the goal at once, with a line that names the command or the files.
+
+The rules apply to a session goal: one set with `/goal`, with `PATCH /coddy/sessions/{id}/goal`, or by a [goal chain](#goal-chains). The implicit supervision of `supervisor.enable` with no goal set is never blocked, because it keeps no goal status to block; its checker still sees the docker flag line among the red flags.
+
+### Which messages count
+
+The goal's evidence is the messages stored while the goal was active. Each carries the goal's id, and so do a compaction summary and a plan snapshot stored at that time. A client of `POST /v1/chat/completions` that sends the history back keeps the ids of the messages it replays unchanged; a message it changed or added carries none. The checker's digest (its activity part, the files and the red flags) and the gate read those messages and no others. A message stored while the goal is paused, blocked or limited, such as a turn you run yourself in between, is not the goal's: the gate does not read it and the digest does not show it. The ids are never sent to the model provider. The implicit supervision of `supervisor.enable` has no goal id and reads the messages from your latest request on.
+
+A rewind removes messages together with the id they carry, and its undo brings them back with it. A new goal has a new id, so earlier messages are not its evidence: `/goal <objective>` makes one even with the same objective, and so do `PATCH` with an objective and the next link of a goal chain. A message stored by an older Coddy carries no id, so a goal set before the upgrade has as evidence only what it stores after it.
+
+### Docker mutation
+
+A `run_command` call of the goal whose command line holds the word `docker` or `docker-compose` and, in the same command, one of the words `up`, `down`, `rm`, `stop`, `restart`, `create`, `run`, `kill` or `prune`, in any position.
+
+The gate reads the command line lexically, not as a shell does. It drops case, the quote characters `'` and `"` and backslashes (a backslash at the end of a line joins the line to the next), cuts what is left into commands at `;`, `&`, `|` and line breaks, so `&&`, `||` and pipes are covered, and looks at the words of each command. A word is a run of letters, digits, `-`, `_`, `.` and `/`, read from its last `/`, so a path counts by its last component: `/usr/bin/docker` is the word `docker`. Hence `/usr/bin/docker rm x`, `>/tmp/x docker compose down`, `(docker rm x)` and `$(docker rm x)` match, and so do `rm -rf docker` and `git rm docker`, where `docker` names a folder. A folder on the way of a path is no word of its own, so `rm -rf docker/tmp`, `go run ./docker/gen` and `cat docker-compose.yml` do not match. `--rm` is a different word from `rm`.
+
+The reading is coarse on purpose. Quoted text matches like a command (`echo "docker compose down"`, `sh -c 'docker rm x'`, a line in the body of a here-document), `--help` and `--dry-run` exempt nothing, and `docker network create`, `docker image rm` and `docker compose run` match. A false positive costs one `/goal resume`. What the rule does not see is what a script (`./deploy.sh`, `make down`), an alias, a function or a variable expanded at run time (`$CMD`) runs.
+
+A call that never ran does not count. These are the calls refused by a person (`permission denied by user`, `permission not granted: ...`), blocked by a hook (`blocked by hook: ...`), cancelled because a hook changed the approved arguments, because the arguments could not be saved before the permission prompt or because the turn was cancelled while a hook ran, rejected or not run by the [command safety check](decisions.md) in bypass mode, refused by Ask or Plan mode, by the session's toolset, by a subagent's tool set or by a restricted turn (a messenger user who is not the bot's admin), skipped (`not executed: ...`), and a repeat that the agent's loop guard did not execute. A call that ran and failed counts, and so does one with no recorded result. A result is read only when it carries the call's goal id (see [Which messages count](#which-messages-count)). A client of `POST /v1/chat/completions` cannot write the id, so a result it changed or added is not read. Its call counts like one with no recorded result, and the digest shows it without a result.
+
+### Migration changed
+
+A tracked file inside the workspace folder the goal was set in, under a folder named `migrations/`, `alembic/versions/`, `db/migrate/` or `db/changelog/` at any depth of the repository, that existed in the commit `HEAD` named when the goal was set and whose content now differs from its state at that moment. The folder names are matched on the path from the repository root, so a workspace that is itself such a folder, or lies below one, is covered too. Line endings alone are no change: a file that differs from that state only in CRLF against LF is not reported, also when it was already changed when the goal was set. It does not matter how the file changed: an `edit`, `write` or `apply_patch` call, a shell loop, `git commit`, `git checkout`, a deletion or a rename. A file whose index entry is flagged `assume-unchanged` or `skip-worktree` (the flag of a sparse checkout), which `git diff` does not look at, is compared by content too. A migration file added during the goal is not covered by this rule.
+
+When the goal is set, it stores the start commit, the workspace folder and the content hash of every migration file the working copy already held changed. Your own pending edits are therefore not attributed to the goal until they change again, and a later workspace switch of the session does not move the folder the rule compares.
+
+The comparison needs the `git` binary. There is no built-in fallback, so without git on `PATH` the rule is unavailable. Each look at the repository (when the goal is set, after each goal turn and at `/goal resume` of a blocked goal) is bounded by 10 seconds. It stops at the next file when that time runs out or the turn is cancelled, and a file larger than 16 MiB, on disk or in the commit, makes the comparison fail. A `diff.relative` setting in your git config does not matter. Only the files that git lists as changed, the files flagged `assume-unchanged` or `skip-worktree`, and the files already changed when the goal was set are read.
+
+A goal set in a folder outside any git repository has nothing to compare: the rule does not apply to it and the digest has no line about it. When no start was recorded (no `git` binary, no commit yet, no answer in time, or a goal set by an older Coddy) or the comparison fails or times out, the digest says that the migration files could not be compared with the goal's start, gives the reason, and says that whether they changed is unknown, never "no changes". Unavailability alone never blocks.
+
+### Red flags for the checker
+
+The same rule table holds two advisory flags: tests, test data or CI files were changed, and a call adds a skip or suppression marker. The checker weighs them, and they never block.
+
+Every flag, hard or advisory, is listed in the **Red flags** part of the digest, with the command or the files quoted. The listing stays even when the step that raised the flag was dropped from the activity part by its size budget, which keeps the newest steps within about 24,000 bytes. A finding you accepted is listed with `(acknowledged with /goal resume)`.
+
+### What the gate does
+
+The gate runs after every goal turn, directly after the supervisor confirms that the goal is still the one the turn worked on and still active, and before anything else: the wrap-up turn of a used-up budget, a turn that ended with queued messages, a recovery after a failed or stuck turn, a check deferred for background work, and the check itself. A hard finding that `/goal resume` has not accepted blocks the goal at once, with one line that names the commands or files:
+
+```text
+Goal blocked: run_command changed docker containers or volumes: `docker compose up -d`
+Goal blocked: migration files that existed when the goal started were changed: migrations/0007_users.py, migrations/0008_orders.py
+```
+
+The line holds one clause per kind of finding, joined with `; `. A clause quotes each command in backticks, joins several with `, ` and lists at most 20 items, then `and N more`. The gate asks for no check, spends no recovery turn, adds no message to the history, and the verifier does not run. A pause, a clear or a replacement of the goal made while the gate reads git wins, and the gate then leaves the goal alone. Messages queued behind the turn still run after it as ordinary turns, since the goal is no longer active; with `supervisor.enable` they get its implicit check.
+
+A turn that ends through a permission answer after a server restart (`POST /coddy/sessions/{id}/permission` resumes it outside the supervisor's loop) goes through the same gate when it ends, with the same ownership and cancellation rules. Only the gate: no check, recovery or continuation follows that turn.
+
+The gate looks at what already happened. It never stops a step before it runs, so the container is already gone when the goal blocks. To stop such a step before it runs, use a `PreToolUse` hook with `failClosed: true`; [Hooks](hooks.md#examples) has an example for these two kinds of step.
+
+### Acknowledging a block
+
+`/goal resume` on a blocked goal accepts what the gate finds at that moment, in the same change that makes the goal active again: every docker call that counts in the goal's messages so far, and each changed migration file at the content it has then. The acceptance of a call is stored on the assistant message that made it and saved with the transcript. The acceptance of a file is saved with the goal. A restart keeps both.
+
+A new matching call blocks again: it is a new message, even when it is stored in the same second with the same command and call id. A rewind takes the accepted messages away, so a regenerated call blocks again, and the undo of a rewind brings them back accepted. A further change of an accepted file to any other content blocks again; putting the file back to its start state is no change. A new goal (`/goal <objective>`, `PATCH` with an objective, or the next link of a goal chain) starts clean.
+
+`/goal resume` on a paused or limited goal accepts nothing. A turn that was still running when the goal was paused gets no gate, so after the resume the gate reports the steps that turn stored before the pause once the next goal turn ends. What it stored after the pause is not the goal's.
+
+### Limits
+
+- The docker rule reads only the command line of `run_command`. What a script (`./deploy.sh`, `make down`), an alias, a function or a variable expanded at run time (`$CMD`) runs is not seen.
+- A [`PreToolUse` hook](hooks.md) that rewrites the command is not seen: the gate reads the command as the model wrote it.
+- A subagent's own `run_command` calls are in its own transcript and are not read. The migration rule still sees the files a subagent changed.
+- Migration files outside the workspace folder the goal was set in are not checked, which matters when the session works in a subfolder of the repository.
+- The gate tells that a call did not run from the text of its result. A call that ran, but whose own output reads like one of the harness's refusal texts (`permission denied by user`, `not executed: ...` and the like), is read as not run, and a docker command in it does not count.
+- The rules are lexical and incomplete, and no sandbox: they name the common spellings after the fact.
 
 ## Goal chains
 
@@ -12775,6 +12853,70 @@ case "$command" in
 esac
 exit 0
 ```
+
+Refuse, before they run, the steps that the [risk gate](session-supervisor.md#risk-gate) of a session goal can only report after the turn: docker commands that change containers or volumes, and changes to a migration that git already tracks (`~/.coddy/hooks.json`):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "run_command", "hooks": [{ "type": "command", "command": "~/.coddy/hooks/no-docker-changes.sh", "failClosed": true }] },
+      { "matcher": "edit|write|apply_patch|rm|mv", "hooks": [{ "type": "command", "command": "~/.coddy/hooks/no-migration-edits.sh", "failClosed": true }] }
+    ]
+  }
+}
+```
+
+```bash
+#!/bin/sh
+# ~/.coddy/hooks/no-docker-changes.sh
+command=$(jq -r '.tool_input.command // ""') || exit 1
+# Join continued lines, then one command per line, lower case, no quote characters or backslashes.
+# Each step runs on its own: a pipe would hide the failure of every tool but the last.
+joined=$(printf '%s\n' "$command" | awk '{ if (sub(/\\$/, " ")) printf "%s", $0; else print }') || exit 1
+lines=$(printf '%s\n' "$joined" | tr 'A-Z;&|' 'a-z\n\n\n') || exit 1
+commands=$(printf '%s\n' "$lines" | tr -d "\\\\'\"") || exit 1
+# A word is a run of [a-z0-9_./-] read from its last /; $w is a character outside a word.
+w='[^a-z0-9_./-]'
+# grep exits with 1 when nothing matches, which lets the call through, and with more on an error.
+dockers=$(printf '%s\n' "$commands" | grep -E "(^|$w|/)docker(-compose)?($|$w)")
+case $? in
+  0) ;;
+  1) exit 0 ;;
+  *) exit 1 ;;
+esac
+printf '%s\n' "$dockers" | grep -Eq "(^|$w|/)(up|down|rm|stop|restart|create|run|kill|prune)($|$w)"
+case $? in
+  0) printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"docker commands that change containers or volumes are not allowed here"}}' ;;
+  1) ;;
+  *) exit 1 ;;
+esac
+exit 0
+```
+
+```bash
+#!/bin/sh
+# ~/.coddy/hooks/no-migration-edits.sh
+input=$(cat)
+for key in path src dst; do
+  file=$(printf '%s' "$input" | jq -r --arg key "$key" '.tool_input[$key] // empty') || exit 1
+  case "/$file" in
+    */migrations|*/migrations/*|*/alembic/versions|*/alembic/versions/*|*/db/migrate|*/db/migrate/*|*/db/changelog|*/db/changelog/*)
+      git ls-files --error-unmatch -- "$file" >/dev/null 2>&1
+      status=$?
+      if [ "$status" -eq 0 ]; then
+        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"committed migrations are not changed here; add a new migration"}}'
+        exit 0
+      elif [ "$status" -ne 1 ]; then
+        exit 1
+      fi
+      ;;
+  esac
+done
+exit 0
+```
+
+The first script reads the command the way the gate does: it joins continued lines, drops case, quote characters and backslashes, cuts the line into commands at `;`, `&`, `|` and line breaks, and refuses a command that holds the word `docker` or `docker-compose` and one of `up`, `down`, `rm`, `stop`, `restart`, `create`, `run`, `kill` or `prune`. The second script reads `path`, and for `mv` both `src` and `dst`, so moving a tracked migration away and moving another file over one are both refused. It refuses only a file that git tracks, so a new migration can still be written. `git ls-files --error-unmatch` exits with 1 for a path git does not track, and only that status lets the call through. Both scripts exit with 1 when `jq` cannot parse the input. The first one also exits with 1 when `awk`, `tr` or `grep` is missing or fails, running each step on its own because a pipe would report only the status of its last tool; `grep` exits with 1 when nothing matches, and only that status lets the call through. The second one exits with 1 when git fails in any other way (git missing, no repository, an unreadable index). `failClosed: true` turns every such exit into a block, so neither input that does not parse, nor a tool that is missing, nor a git that cannot answer lets a call through. A hook sees each call before it runs, while the risk gate reads the results after the turn, and a hook applies to every session, not to a goal only. Neither script catches every spelling: both match text, so the first also refuses `echo docker compose down` and misses a command hidden in a script such as `./deploy.sh`, and the second sees only the file a tool call names, not one that a shell command rewrites.
 
 Run the formatter after every edit and tell the model what it changed:
 
@@ -17317,7 +17459,7 @@ The built-in commands on each surface and how skills become commands. A slash co
 | `/docs [words or page]` | console, web UI | Opens Coddy's built-in documentation, the same screen F1 opens: the contents, a search for the words, or a page (`/docs features/mentions#completion`) opened at its section. A page is named by its address or its exact title; any other words are a search. In the web UI the composer runs it in the browser and nothing reaches the agent. `/help` is the same command in the console. | [Built-in documentation](../features/built-in-docs.md#the-console-help) |
 | `/quit`, `/exit` | console | Exits. | [Console](../surfaces/console.md#commands-and-keys) |
 | `/compact [-m\|--model <id>] [-r\|--reasoning <level>] [instructions]` | console, web UI, ACP editors, `POST /v1/responses` | Summarises the older history and keeps the recent turns verbatim; the words after the command steer the summariser, `--model` (`-m`) names the model that writes this one summary (a `models[].model`, its name without the provider, or a part of one that matches exactly one) and `--reasoning` (`-r`) the level it writes at. Listed only while `compaction.enable` is true; a manual compaction is always forced. | [Context compaction](../features/compaction.md#the-compact-command) |
-| `/goal [-m\|--model <id>] [-r\|--reasoning <level>] [--then-file <path>] <objective>`, `/goal`, `/goal pause`, `/goal resume [-m\|--model <id>] [-r\|--reasoning <level>]`, `/goal clear` | console, web UI, ACP editors, `POST /v1/responses`, Telegram, Pachca | Sets a session goal and starts working on it at once; a second model checks every turn and continues unfinished work until the goal is met, needs you or runs out of budget. Bare `/goal` shows it (the web UI and the console open the goal menu), `pause` and `resume` stop and restart the continuations, `clear` removes it. `--model` and `--reasoning` choose the model and the level that check the goal, like `/compact --model`. `--then-file` chains the goal: once it is met, the text of that file becomes the goal of a new session (`coddy serve` only). In a messenger only the bot's admins change it. | [Session goal and supervisor](../features/session-supervisor.md) |
+| `/goal [-m\|--model <id>] [-r\|--reasoning <level>] [--then-file <path>] <objective>`, `/goal`, `/goal pause`, `/goal resume [-m\|--model <id>] [-r\|--reasoning <level>]`, `/goal clear` | console, web UI, ACP editors, `POST /v1/responses`, Telegram, Pachca | Sets a session goal and starts working on it at once; a second model checks every turn and continues unfinished work until the goal is met, needs you or runs out of budget. Bare `/goal` shows it (the web UI and the console open the goal menu), `pause` and `resume` stop and restart the continuations, `resume` also accepts what blocked the goal ([risk gate](../features/session-supervisor.md#risk-gate)), `clear` removes it. `--model` and `--reasoning` choose the model and the level that check the goal, like `/compact --model`. `--then-file` chains the goal: once it is met, the text of that file becomes the goal of a new session (`coddy serve` only). In a messenger only the bot's admins change it. | [Session goal and supervisor](../features/session-supervisor.md) |
 | `/export [md\|html\|json\|jsonl] [path] [--no-tools] [--no-thinking]` | console, web UI, ACP editors, `POST /v1/responses` | Writes the transcript into the session workspace; a directory receives `coddy-export-<timestamp>.<ext>`, a file name sets the format by extension. Under `--remote` the file lands on the server. | [Session export](../features/session-export.md#usage) |
 | `/plugin marketplace add\|list\|update\|remove`, `/plugin install <plugin>@<marketplace>`, `/plugin install\|remove\|enable\|disable` | console, web UI, ACP editors, `POST /v1/responses` | Manages skill plugins and marketplaces, the chat twin of `coddy plugin`: adding a marketplace installs nothing, `install <plugin>@<marketplace>` installs one plugin of it. Approving a project marketplace (`marketplace trust`) is left to the terminal and Settings. | [Skills](../features/skills.md#the-plugin-command-cli-and-plugin-in-chat) |
 | `/worktree <branch> [--from-head]`, `/worktree <path>`, `/worktree exit [--keep \| --remove [--force]]`, `/worktree` | console, web UI, ACP editors, `POST /v1/responses` | Moves the chat into the git worktree of a branch (opening one when there is none) or into an existing worktree by its folder, or back to the main checkout, the operator's twin of `worktree_open` and `worktree_exit`. `exit` removes a worktree that holds nothing of its own and keeps one with work in it; `--keep` keeps it anyway, `--remove` removes it or refuses, and `--force` discards uncommitted changes, kept as a snapshot. Alone it says where the chat works and where every worktree of the repository stands. The answers of the web UI plate's dialog are these commands. | [Git worktrees](../features/worktrees.md) |
@@ -23626,6 +23768,8 @@ A session can carry a goal (`/goal <objective>`, **`docs/features/session-superv
 - **Contents**: the objective whole, in its own box that scrolls past nine lines; the status as a badge in its tone and the reason the supervisor gave (paused, blocked, limited); the **last check** - its verdict, a **verified** badge when the verifier confirmed a met verdict in the workspace, its reason and the items it left open; the **checklist**, one row per requirement with a drawn status mark (a ticked circle in the done green, an open circle, a dashed circle for unverified) and its evidence folding out under the row on a tap (a disclosure with the app's chevron, never a hover); the **numbers** - continuations *N of M*, checks, the time worked (**`formatElapsedSeconds`**, the turn clock's format) and the tokens, against the budget when one is set (**`formatTurnTokens`**) - and closing the same grid, **Checked by** and **Reasoning**: six cells, each one column wide, three to a row on a desktop and a tablet (**`repeat(3, minmax(0, 1fr))`**) and two on a phone (**`repeat(2, minmax(0, 1fr))`** under **`max-width: 599px`**), so the rows come out full and every label stands on the grid's column lines; a model id wraps inside its cell, after the provider first (**`ModelId`** puts a **`<wbr>`** after the slash). **Checked by** (**`goal-checker`**) is the model the next check runs on, the server's **`checkModel`**; **Reasoning** (**`goal-reasoning`**) is the level alone, the one **`/goal -r`** chose, else the model's default level as it is, **default** when the model configures none, and absent for a model without levels (**`checkerLevel`**).
 - **Actions** (**`.goal-popover-actions`**): icons, rounded squares of **36px** with **10px** corners (**`.goal-icon-btn`**, glyphs in **`chat/goalActionIcons.tsx`**), each named in its **`title`** tip and its **`aria-label`** - Resume a filled play triangle on the accent ground (**`--primary`**), Pause two bars, Edit a pencil, Clear a bin in the danger tone (**`--danger`**). The edit and set forms keep worded buttons. **Pause** while active (**`PATCH .../goal {"status":"paused"}`**); **Resume** while paused, blocked or limited, which sends **`/goal resume`** as a prompt of the chat, since resuming starts a turn; **Edit**, an inline field filled with the objective whose **Save and start** sends **`/goal <objective>`** (it replaces the goal and starts working on it at once) and **Cancel** goes back; **Clear**, in the danger tone, asks through **`useConfirm`** and then **`DELETE .../goal`**. Without a goal the popover is the set form: a line on what a goal does, the field and **Set goal**. The field counts the objective in runes against the server's **4000** and refuses more. A prompt waits while a turn runs - Resume and the form's button are disabled and a note says why - and goes the way a typed message goes (**`sendGoalPrompt`** in **`App.tsx`**, like the plan card's Run plan), without touching the draft or an edit in progress. A refused Pause or Clear says so in the popover.
 - **`/goal` in the composer**: a bare **`/goal`** (Send, Enter or the queue key) opens the popover and sends nothing, like **`/docs`** and **`/mcp`** (**`runLocalCommandFromDraft`**); **`/goal`** with anything after it - an objective, **pause**, **resume**, **clear** - is the server's and goes as typed. The **`/`** menu row is the server's (**`GET /coddy/commands`**).
+- **Length of a typed goal** (**`.composer-goal-validation`**, **`data-testid="composer-goal-count"`**, under the field): while the draft is a **`/goal`** that sets a goal, **`N / 4000`** counts its objective the way the server does - without the leading options, trimmed, in code points (**`goalDraftObjective`** and **`objectiveLength`** in **`chat/goal.ts`**, shared with the popover). Attached files change nothing: the server sets the goal and the files ride with its first turn. Over the limit the count takes the danger tone, the popover's length alert (**`goal.objectiveTooLong`**) stands under it, Send is disabled and Enter sends nothing, so the draft stays to be shortened.
+- **A refused goal comes back**: setting a goal starts a turn, so a settings-only answer to a **`/goal`** that sets one is a refusal, and the draft returns to the composer with its files, ahead of anything typed since (**`giveBack`** in **`App.tsx`**).
 - **Goal rows** (**`GoalTurnMessage`**, **`data-testid="goal-turn-row"`**): the first message of a turn the supervisor started is the instruction the model reads, and nobody typed it, so it is never a user bubble. A compact row stands in its place, on the thinking row's frame: the target and one line mirroring the server's note - *Goal set: <objective>*, *Goal resumed: <objective>*, *Goal continuation N of M: <reason>*, *Goal recovery N of M: <reason>*, *Goal budget used up, wrapping up: <reason>* - cut at two lines. When the check left items open the row says how many and folds them out (the chevron at its start, like a thinking row); a line the two lines cut at the row's width (measured, so a phone folds what a desktop shows whole) folds out whole. Live the row comes from the **`goal_turn`** frame (**`applyGoalTurnToItems`**: it takes the place of the **`/goal`** prompt this tab sent for a kickoff or a resume, since the server stores no such message, and a frame for the row already there changes nothing); after a reload from the message's **`goal_turn`** field (**`chat/transcriptFromMessages.ts`**), the instruction text never shown.
 - **A goal row opens a turn and counts like one** (**`opensTurn`**): the live status line counts from it, a failed goal turn offers no retry, and the index of a later prompt counts it the way the server counts user-role messages (**`userMsgIndices`**, the rewind and the edit), as a wake does. The row itself has no edit or copy control.
 - Checks: **`chat/goal.test.ts`**, **`chat/ComposerGoal.test.tsx`**, **`App.goal.test.tsx`**, **`chat/consumeComposerSse.goal.test.ts`**, **`chat/transcriptFromMessages.test.ts`**, **`messages/MessageList.test.tsx`**, **`messages/userMsgIndices.test.ts`**, **`chat/serverEvents.test.ts`**.
