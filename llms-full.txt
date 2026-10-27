@@ -8885,6 +8885,9 @@ project's servers run once per workspace, shared with its git worktrees
 
 This page is about keeping that process running and keeping it current.
 
+![How coddy serve runs: the dispatcher, systemd or a terminal keeps one process up, its runtime and supervisor run every enabled subsystem, and a configuration change is applied in place or answered with a fresh process](../assets/diagrams/serve-runtime.png)
+*One process, one session manager, a goroutine per subsystem: a change the supervisor can apply in place is applied there, and a moved listen address ends the worker with status 75 so that a fresh process binds it.*
+
 ## In the foreground
 
 ```bash
@@ -11321,6 +11324,9 @@ Coddy reads standing instructions from two places and injects them into the syst
 
 Nothing has to be configured for either. The `AGENTS.md` and `DESIGN.md` documents come in three layers that are always read and that no setting turns off - yours, the workspace's, and those of the folders the agent works in ([AGENTS.md and DESIGN.md](#agentsmd-and-designmd)). The rules that always apply reach the model through **`{{.Rules}}`**, and a rule scoped to paths arrives with the tool result or the message that first touches a matching path. `instructions.files` is empty by default and only adds files below the documents, in **`{{.Instructions}}`**.
 
+![How rules and AGENTS.md reach the model: one project rule folder plus yours, the header that decides when a rule applies, where each part lands in a request, and the rules generation](../assets/diagrams/rules-context.png)
+*The system message holds only what always applies and stays the same for a rules generation; the rules a path or a mention brings ride in the conversation, once.*
+
 ## Prompt order
 
 From top to bottom in the rendered system message:
@@ -11538,7 +11544,7 @@ $EDITOR ~/.coddy/AGENTS.md
 
 Your pair is read first, so what you want is in front of the model before the checkout starts describing itself, and the project's own `AGENTS.md` and `DESIGN.md` follow below - they join, neither replaces the other. Write one of the two or both; the file that is not there costs nothing.
 
-Your rules are ordinary rule files and follow the same dialects, globs and activation modes as a project's - a `go.mdc` with `globs: **/*.go` under `~/.coddy/rules/` waits for a Go file in whichever project the session opened, because globs are anchored at the workspace, not at the folder the rule came from. `coddy rules list` shows them with source `user`, and names the folder under the table. Your folder is read next to whichever project folder the chain picked, never instead of it. The project still has the last word: when a project file and one of yours share a file name, the project's wins.
+Your rules are ordinary rule files and follow the same dialects, globs and activation modes as a project's - a `go.mdc` with `globs: **/*.go` under `~/.coddy/rules/` waits for a Go file in whichever project the session opened, because globs are anchored at the workspace, not at the folder the rule came from. `coddy rules list` shows them with source `user`, and names the folder under the table. Your folder is read next to whichever project folder the chain picked, never instead of it. The project still has the last word: when a project file and one of yours sit at the same path inside their rule folders, extension included, the project's wins.
 
 Nothing here is trusted differently from a project file: both are text that steers the model, and neither can run anything by itself (see [Security](../operate/security.md)). The difference is who wrote it - your own folder needs no trust receipt because nothing arrives in it with a `git clone`.
 
@@ -12193,6 +12199,9 @@ A long investigation or a parallel fan-out (review three modules, run the test m
 
 A subagent run is a **task in the background task pool** (`docs/features/background-tasks.md`). Nothing about scheduling, timeouts, the Tasks panel, the REST surface, drain on shutdown, or persistence under `<session>/background/<task_id>/` is specific to subagents; what is new is a second kind of task (`kind: agent`), a child session behind it, and a tool that starts one.
 
+![What happens on a spawn_agent call: where the definition comes from, the checks in the order the runtime makes them, how the child's tools narrow, the run in the parent's bundle, the permission relay and resume](../assets/diagrams/subagents-spawn.png)
+*What happens between a `spawn_agent` call and a running child session: every check can refuse with a tool error, and only past the last one does the child start, as a task of the parent's background pool.*
+
 ## When the model delegates
 
 A session that may spawn gets a `## Subagents` section in its system prompt: what `spawn_agent` does, when delegation pays off (work that would flood the context, or independent pieces that can run in parallel with `background: true`), how to collect detached runs, and a catalog of the definitions it may use. The guidance is explicit that a one-step task is done directly, and that a new child starts with an **empty context** - the prompt must carry everything, because the child sees none of the parent's conversation. A resumed child is the exception: it keeps its own transcript, so its prompt says only what to do next ([Resuming a run](#resuming-a-run)). Only the child's final message comes back, and the user never sees it, so the parent is told to restate what matters in its own reply.
@@ -12403,9 +12412,10 @@ How the operator's own settings combine with this. A parent session in `bypass` 
 | Console | the permission modal, titled `[subagent <name>] ...`, between turns too; a prompt that arrives while another modal is open waits for it |
 | Console with `--remote` | the same modal, for the sessions this console opened, announced by the server's events stream |
 | Telegram (`coddy serve` with the gateway) | a message with **Allow** and **Reject** buttons in the chat that owns the parent session |
+| Pachca (`coddy serve` with the gateway) | the same message with **Allow** and **Reject** buttons in the chat that owns the parent session; only the bot's admins can answer it |
 | `coddy acp`, print mode, a scheduled run | nowhere: the child is refused at once with the reason above and reports it |
 
-- **`coddy serve` offers the prompt to every surface at once.** The runner of the shared session manager hands every turn the runtime as its broker, and each surface offers itself as it comes up (`serve.Runtime.AddDetachedPermissionApprover`): the HTTP server, and a Telegram bot for the sessions that are its chats. The first answer settles the prompt and every other copy is withdrawn: the web card leaves the chat, a remote console's modal closes, the Telegram message reads *No longer waiting*. A surface that cannot show a prompt stays out of it; when none can, the child is refused with its reason.
+- **`coddy serve` offers the prompt to every surface at once.** The runner of the shared session manager hands every turn the runtime as its broker, and each surface offers itself as it comes up (`serve.Runtime.AddDetachedPermissionApprover`): the HTTP server, and a Telegram or Pachca bot for the sessions that are its chats. The first answer settles the prompt and every other copy is withdrawn: the web card leaves the chat, a remote console's modal closes, the Telegram message reads *No longer waiting*. A surface that cannot show a prompt stays out of it; when none can, the child is refused with its reason.
 - **A prompt still on the parent's screen when the turn ends moves the same way.** A background child usually starts asking while the parent is still writing its reply, and the answer may not come before that reply ends; the stream that carried the prompt is gone with the turn, so the relay withdraws the copy the parent's client showed - the console takes its modal down, the HTTP bridge stops waiting, the Telegram message reads *No longer waiting* - and raises the prompt through the broker, where it is answered once, as a detached prompt. Only where no broker exists is the child refused, with the reason above. In the web UI the inline card of the finished turn is retired with its stream, and the card at the end of the chat is the one that answers.
 - **The web UI** reads the prompt from the background task row of the run that is blocked (`pending_permission` on `GET /coddy/sessions/{id}/background-tasks`) and re-reads the rows on `event: subagent_permission` of `GET /coddy/events` (phases `asked` and `settled`), the task poll being the fallback. The answer goes to `POST /coddy/sessions/{child}/permission`. No route is new: the permission hub is keyed by `(session id, tool call id)` rather than by a live turn, and the handler consults it before the guard that keeps a child transcript read-only. A console attached over `--remote` reads the same events (the connect-time snapshot repeats the prompts still waiting) and posts to the same route.
 - **Telegram** allows what a chat's own agent asks without a question, but asks about a subagent's request - during the turn and after it - with inline buttons. Only the person whose session asked may answer: in a group with individual sessions another member's tap is ignored.
@@ -12594,6 +12604,9 @@ Hooks run with your permissions, before any permission prompt, on every matching
 
 Definitions use the file shape of Claude Code, and the event names, payload fields and answer fields follow it too, so a hook written for Claude Code (or Codex, which uses the same shape) works in Coddy unchanged for the covered events. The design record with the comparison of six agents is `docs/plans/hooks.md`.
 
+![Hook events on the timeline of a session and a turn, which files run, one hook process with its exit codes, and how several hooks on one event merge](../assets/diagrams/hooks-lifecycle.png)
+*Where each event fires and what its hook can decide, which files Coddy reads hooks from, how one hook process answers, and how the answers of several hooks merge.*
+
 ## Definition files
 
 Coddy reads the files listed in `hooks.files`, lowest priority first. The default list:
@@ -12665,7 +12678,7 @@ Tool events compare the matcher with the tool name. Coddy's own names are the on
 | Event | Fires | Matcher subject | Can block |
 |---|---|---|---|
 | `SessionStart` | `session/new` (`startup`), `session/load` or a reopen (`resume`), and a workspace switch — `POST /coddy/sessions/{id}/workspace`, folder pick, worktree jump or in-place branch checkout — (`workspace`), synchronously, before the session is returned | source | no; context only |
-| `UserPromptSubmit` | when the user submits a prompt, after the built-in `/compact` and `/plugin` commands are recognised and before the prompt becomes a message | none | yes: the prompt is rejected |
+| `UserPromptSubmit` | when the user submits a prompt, after the built-in `/compact`, `/plugin`, `/export` and `/worktree` commands are recognised and before the prompt becomes a message | none | yes: the prompt is rejected |
 | `PreToolUse` | before a tool call runs, after the mode and subagent checks and before the permission prompt, whatever the permission mode; it runs again when a permission that was persisted over HTTP is resumed, on the arguments the prompt showed (a deny still denies; a hook that changes those arguments again cancels the call, because the answer covered what the user saw). The arguments the prompt shows are persisted first, and a write that fails cancels the call instead of prompting; a resume whose persisted arguments are missing or unreadable fails and keeps the pending prompt for a retry, while a refusal needs nothing from the bundle | tool name | yes: deny, or force or skip the prompt |
 | `PostToolUse` | after a tool returned without error | tool name | no; feedback and context only |
 | `PostToolUseFailure` | after a tool returned an error (not after a permission denial or a hook denial) | tool name | no; context only |
@@ -12996,6 +13009,9 @@ config.yaml](#moving-from-configyaml)).
 
 Tools from all connected MCP servers are merged into the tool list passed to the LLM during
 the ReAct loop (in **`agent`** and **`plan`** modes).
+
+![The life of a configured MCP server: where it is declared, the trust gate for project declarations, the shared server pool, the dial and its retries, and what reaches the model](../assets/diagrams/mcp-servers.png)
+*One running server serves every session that resolves its declaration the same way, and a project declaration starts only once the trust gate admits it.*
 
 ## mcp.json (global and local)
 
@@ -15098,6 +15114,9 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/fe
 
 `run_command` normally blocks the whole turn until the command exits, which makes the agent sit idle through builds, test suites, installs and batch downloads. A backgrounded call hands the command to a **session-scoped task pool** and returns a task id immediately, so the agent keeps working and collects the result later.
 
+![The background task pool: three ways a task starts, the task kinds and statuses, the tools the model follows it with, and how a finished task wakes the agent through the surface that owns the session](../assets/diagrams/background-tasks.png)
+*`Pool.Start`, `Pool.Adopt` and `Pool.Launch` share one scheduling path, and a task that ends with `notify_on_finish` starts the next turn unless the model has already collected its result.*
+
 ## Model-facing surface
 
 | Tool | Purpose |
@@ -15133,7 +15152,7 @@ Every process that runs turns attaches one waker to its task pool, under one **k
 |---|---|
 | bare `coddy` (the console) | in the console, on its own UI goroutine, like a typed prompt: a gated tool opens the permission modal |
 | `coddy acp` | through the manager, with the editor as the sender: the updates land in the thread the editor has open, and a gated tool is asked there |
-| `coddy serve` | the surface that owns the session - the Telegram chat bound to it - or else the HTTP server, or, with neither up, the manager itself (see below) |
+| `coddy serve` | the surface that owns the session - the Telegram or Pachca chat bound to it - or else the HTTP server, or, with neither up, the manager itself (see below) |
 | `coddy -p`, a subagent, a scheduled run | nowhere: nothing will start the turn |
 
 **The tool only promises what will happen.** `run_command` and `spawn_agent` ask the pool whether a waker is subscribed (`Pool.CanWake`) and whether the session can take a turn at all. Where it can, the result says *You will be woken with the outcome when it finishes* and the task records `notify_on_finish`; where it cannot, the result says that nothing will wake the model and names `background_list`, `background_wait` and `background_output` instead, and the task records no wake it would not get. A child's or a scheduled run's transcript is sealed when its turn returns, so a task started there never wakes anything.
@@ -15158,7 +15177,7 @@ The text-only surfaces have no task list beside the chat, so a line says what wo
 
 The process owns the waker (`serve.Runtime`), whichever surfaces are enabled, and a woken turn goes to the surface that should run it:
 
-1. **The Telegram chat bound to the session.** The turn runs exactly like a message the person sent: the chat's own sender, mirrored into the HTTP relay so a browser watching the session follows it. The chat receives the line about the wake and then the answer, whether or not the HTTP server is running. Permission semantics are the chat's: the chat's agent is allowed what it asks, a subagent is asked about in the chat.
+1. **The Telegram or Pachca chat bound to the session.** The turn runs exactly like a message the person sent: the chat's own sender, mirrored into the HTTP relay so a browser watching the session follows it. The chat receives the line about the wake and then the answer, whether or not the HTTP server is running. Permission semantics are the chat's: the chat's agent is allowed what it asks, a subagent is asked about in the chat.
 2. **The HTTP server.** The turn runs through the session's composer relay, so the web UI and a console attached over `--remote` follow it. Its permission prompts are **asked**, not refused: the prompt goes to the relay and is persisted as the session's pending prompt, the web UI shows it (and restores it after a reload), a following console shows it in its modal, and the first answer through `POST /coddy/sessions/{id}/permission` settles it. It waits the way the prompt of a browser turn whose tab was closed waits. A question inside a woken turn is still refused: nothing persists one for a client that arrives later.
 3. **Nobody.** With neither surface up - a `coddy serve` running only its scheduler, or a bot whose chat has moved to another session - the runtime still runs the turn it promised, through the manager, and the transcript keeps the outcome for whoever opens the session next. A gated tool call inside it is **denied** unless the session runs in `bypass`: no surface can answer.
 
@@ -15353,7 +15372,7 @@ It is also the one kind of task with no hard limit. A page the operator asked to
 
 ## System tasks
 
-A task the runtime starts on its own behalf, today the memory subagent of a user turn ([Long-term memory](memory.md)), is a `kind: agent` task whose `agent` object carries `system: true`. It is admitted past `tools.background.max_concurrent` and never counted toward it, because that cap bounds the work the model starts and a run per turn would refuse the model's next command; the model-facing tools (`background_list`, `background_output`, `background_wait`, `background_stop`) omit it and refuse its id, while the REST rows and the Tasks panel show it, its card tagged `memory`. Drain stops it like any task, after a grace for a run that is still persisting.
+A task the runtime starts on its own behalf, the memory subagent of a user turn ([Long-term memory](memory.md)) or the verifier of the [session supervisor](session-supervisor.md), is a `kind: agent` task whose `agent` object carries `system: true`. It is admitted past `tools.background.max_concurrent` and never counted toward it, because that cap bounds the work the model starts and a run per turn would refuse the model's next command; the model-facing tools (`background_list`, `background_output`, `background_wait`, `background_stop`) omit it and refuse its id, while the REST rows and the Tasks panel show it, its card tagged `memory`. Drain stops it like any task, after a grace for a run that is still persisting.
 
 ## Subagent runs
 
@@ -15618,6 +15637,9 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/fe
 
 A model reads a bounded context window, and a working session outgrows it: every exchange, every tool result and every file page stays in the transcript. Compaction keeps long sessions inside the window without losing the record. Older history is folded into a generated summary that the model reads in place of the original rows, the most recent turns stay verbatim, and a second, cheaper mechanism collapses the file pages and search results the model has moved past. Both are projections built when a request goes to the model: the transcript on disk keeps every original message and every full result.
 
+![How one compaction runs: what starts it, the steps of CompactSession, where the cut goes, what the summarizer reads, the summarizer chain and its passes, and what follows](../assets/diagrams/compaction-flow.png)
+*Every trigger ends in `CompactSession`: it cuts at a boundary, lets the `PreCompact` hooks veto, folds the history before the boundary through the chain of summarizers in passes and inserts one summary row there. The chain of rows and its merge are drawn in [Summaries form a chain](#summaries-form-a-chain).*
+
 ## The /compact command
 
 ```text
@@ -15720,7 +15742,7 @@ compaction LLM call: 400 Bad Request: this model's maximum context length is exc
 
 That left the session stuck: too large to send, and the only thing that could shrink it was the call that would not go out.
 
-A summariser that refuses is not the end of it either. `compaction.fallback_models` lists the models tried, in order, when the one before them fails, and the session's own model is the last resort whether or not it is listed - so a `compaction.model` pointing at a deployment that is down, overloaded or gone no longer leaves a full session with no way out (issue #247).
+A summariser that refuses is not the end of it either. `compaction.fallback_models` lists the models tried, in order, when the one before them fails, and the session's own model is always in the chain, once: last, unless `compaction.model` or the list already gives it an earlier place - so a `compaction.model` pointing at a deployment that is down, overloaded or gone no longer leaves a full session with no way out (issue #247).
 
 Such a history is now folded in passes. Each pass carries the summary of everything folded so far plus the next run of transcript, both sized against the summariser's own context window (`compaction.model`'s, when it names another model), and answers with one summary covering both. The last pass's answer is what goes into the transcript, so a compaction that took seven calls leaves the session looking exactly like one that took a single call. A pass the provider refuses as too large is retried with half of its transcript, at most three times per summariser. A single entry too large even on its own is sent with its middle elided, head and tail kept - the fold makes progress rather than stopping on the one message it exists to fold away. A 400 or a 413 that no phrase recognises is cut once before the pass moves on, because a server worded in a way Coddy has not seen must not leave a full session with no way out. Any other refusal - a rejected key, an outage, a limit - is not about size and fails the same way at half the size, so the pass goes to the next summariser of the chain at once. Passes are sized with the estimate the automatic trigger uses (three ASCII characters to a token, one token for every other character), and each retry is logged at warn level as `compaction pass refused as too large` (`compaction pass refused with a status that can mean too large` for the single cut of an unrecognised refusal) with the tokens the fold estimated and the tokens the provider reported, which tells a window set too high from an estimate that fell short. `POST /coddy/sessions/{id}/compact` reports the passes as `steps`.
 
@@ -15743,7 +15765,10 @@ The project rules a tool result or a message carried are not summarised: a rule 
 
 ### Summaries form a chain
 
-A compaction folds only what came after the last summary row and adds its row after it; the rows written before stay exactly as they were. The model reads them all, oldest first, then the turns kept verbatim. The summariser reads the earlier rows too, in a section of their own ahead of the transcript, as context it must not repeat, and their size comes off what one summarization request may carry. They take at most half of it: when they do not fit, the oldest of them are left out of that request, and the chain itself stays as it is.
+A compaction folds only what came after the last summary row and adds its row after it; the rows written before stay exactly as they were. The model reads them all after the system prompt ([System prompt structure](../contributing/react-agent.md#system-prompt-structure)), oldest first, then the turns kept verbatim. The summariser reads the earlier rows too, in a section of their own ahead of the transcript, as context it must not repeat, and their size comes off what one summarization request may carry. They take at most half of it: when they do not fit, the oldest of them are left out of that request, and the chain itself stays as it is.
+
+![The compaction summary chain: the transcript on disk, what the model reads, how the next block is written and how the earliest blocks are merged](../assets/diagrams/compaction-chain.png)
+*Each compaction appends one summary block and never rewrites the earlier ones: the model reads the system prompt, the blocks oldest first, then the verbatim tail, and a chain that outgrows a third of the window has its earliest blocks merged into one row.*
 
 Retelling the previous summary at every compaction, as Coddy did before, wore away the details of the earliest turns, one retelling after another, and changed the opening of every request, so the provider's prompt cache was lost from the first message on. With the chain, the requests between two compactions open with the same bytes up to the end of the last summary row, and a compaction only adds after it.
 
@@ -15806,6 +15831,7 @@ compaction:
   threshold_percent: 80    # auto-compact at this percent of the model's context window (1..100)
   keep_recent_turns: 2     # user turns kept verbatim; 0 summarises everything
   model: ""                # models[].model for the summariser; empty = the session's model
+  fallback_models: []      # summarisers tried in order when the one before fails; the session's model is always in the chain
   result_eviction:
     enable: true           # read, grep and the listings of glob, print_tree, websearch and webfetch
     keep_recent: 2         # most recent read/grep results kept intact
@@ -15820,6 +15846,7 @@ compaction:
 | `threshold_percent` | `80` | the automatic trigger, as a percent of the model's [context window](#the-context-window) |
 | `keep_recent_turns` | `2` | user turns (with the activity after each) that stay verbatim |
 | `model` | `""` | a `models[].model` for the summariser when the session's model should not summarise its own history |
+| `fallback_models` | `[]` | the summarisers tried, in order, when the one before them fails; the session's model is always in the chain, last unless it already has an earlier place in it ([A history larger than one summarization request](#a-history-larger-than-one-summarization-request)) |
 | `result_eviction.enable` | `true` | collapse superseded `read`, `grep` and listing results |
 | `result_eviction.keep_recent` | `2` | most recent `read` and `grep` results kept as the working window |
 | `result_eviction.min_result_bytes` | `2000` | results at or below this size are left alone |
@@ -20746,7 +20773,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/co
 
 # Writing documentation
 
-How the documentation under `docs/` is organised, what a change to Coddy must carry into it, how screenshots and videos get onto a page, and which checks guard all of that. The rule in one sentence: a capability a user will notice, or a change to anything a page describes, is finished when the page says so, in the same pull request.
+How the documentation under `docs/` is organised, what a change to Coddy must carry into it, how screenshots, diagrams and videos get onto a page, and which checks guard all of that. The rule in one sentence: a capability a user will notice, or a change to anything a page describes, is finished when the page says so, in the same pull request.
 
 ## Layout
 
@@ -20788,6 +20815,7 @@ Every page starts with `# <title>` (the title from `nav.yaml`), then one lead pa
 - **A new capability** gets a page under `features/`, `surfaces/` or `operate/` (or a section of the page that owns the area), an entry in `nav.yaml`, a row in the reference that lists things of its kind (`tools.md` for a tool, `slash-commands.md` for a command, `environment-variables.md` for a variable, `keyboard.md` for a key, the generated `config.md` for a key through the schema description), and a line in the README "What it does" list when it is something a newcomer chooses Coddy for.
 - **A changed behaviour** updates the page that describes it. Find it with `git grep -n '<key or command>' docs/`; the old text keeps teaching itself to the next reader, human or agent, until it is gone.
 - **A web UI or console feature** is shown, not only described: a screenshot embedded next to the explaining paragraph, following the capture recipes below. A change that alters what a screenshot shows re-captures it.
+- **A module whose work spans several parts** - a pipeline of steps, a lifecycle, an invariant such as the provider's prompt cache, data that crosses packages or processes - is shown with a diagram on the page that describes it, and a change to what the diagram shows renders it again ([Diagrams](#diagrams)).
 - **A removed feature** takes its page, its `nav.yaml` entry and its assets with it; no redirect stub remains.
 - **A renamed key, command or flag** is swept through the whole tree, docs included, as step 9 of the paired workflow rule ([Cursor](../../.cursor/rules/workflow.mdc), [Claude Code](../../.claude/rules/workflow.md)) describes.
 
@@ -20826,6 +20854,17 @@ Capture the real surface, never a mockup and never a re-used older image that no
   ```
 
 Screenshots taken as evidence for a pull request (before and after pairs, every theme, every width) belong to the pull request: drag them into the description on GitHub, which stores them under `user-attachments`, or push them to the orphan `screenshots` branch and link the raw file. They never go under `docs/assets/`.
+
+## Diagrams
+
+A page that describes a module whose work spans several parts - a pipeline of steps, a lifecycle, an invariant such as the provider's prompt cache, data that crosses packages or processes - shows it with a diagram next to the prose. [Summaries form a chain](../features/compaction.md#summaries-form-a-chain) and [System prompt structure](react-agent.md#system-prompt-structure) are examples. A reader who sees the parts and the arrows between them follows the prose in one pass, and the same picture goes on a slide.
+
+- **Source and picture.** A diagram is an HTML page under `docs/assets/diagrams/` that links the shared `diagram.css` and `diagram.js`, and the PNG of the same name rendered from it. The documentation page embeds the PNG. A change edits the HTML and runs `make diagrams`, which needs headless Chromium and the Noto Sans font (`NAMES="compaction-chain"` renders one diagram), and commits both files. `make docs-check` fails on a picture without its source and on a source without its picture; it cannot tell a picture older than its source, so render after every edit.
+- **Look.** Every diagram follows `compaction-chain.html`: a title, one line that says what the picture shows, numbered panels, the real names (config keys, files, functions, routes) where they help, and short notes that say why. `diagram.css` fixes what each colour means in every diagram, and `diagram.js` draws the arrows between boxes. The picture is rendered at twice its CSS size and stays under 1 MB.
+- **Language.** Labels are English. A Russian page embeds the same PNG and translates its alt text and caption.
+- **Accuracy.** A diagram makes claims the way prose does. Each one is checked against the code, not only against the page, and a change to the behaviour a diagram shows edits its source and renders it again in the same pull request.
+- **No Mermaid.** Documentation diagrams are not written as Mermaid fences: Mermaid lays the picture out by itself, leaves no room for notes beside the boxes, and a fence does not go on a slide.
+- **On the page.** The image goes next to the paragraph that explains the same thing, with alt text and a one-line italic caption, as a screenshot does.
 
 ## Videos
 
@@ -22459,31 +22498,37 @@ Reference: https://arxiv.org/abs/2210.03629
 
 Templates are **`internal/prompts/agent.md`**, **`plan.md`**, and **`ask.md`** (embedded by default or overridden via **`prompts.dir`**). They use Go **`text/template`**.
 
+![The request Coddy sends the model, top to bottom: the tool definitions, the blocks of the system message, the history and the turn context, each marked with what changes it](../assets/diagrams/system-prompt.png)
+*Every block of the request with the events that render it again: when none of them happens, the system message is the same bytes on every request of the session, and only the turn context after the history changes on every step.*
+
 Rendered order matches the markdown files roughly as follows:
 
 ```
-[Identity line — see "Agent identity" below; absent when the template opens with it]
-[Intro + Mode + How to work / How to plan]
+You are Coddy, an AI coding agent ...   identity line, see "Agent identity" below
 Working directory: {{.CWD}}
-
-{{if .Tools}}
+{{.SubagentRole}}                       ## Your role as a subagent, in a child session only
+## Mode: Agent | Plan | Ask             capabilities, how to work, how to plan
+                                        (plan mode lists {{.DiscardedPlans}} here)
+{{.Subagents}}                          the subagent catalog, when the session may spawn
 ## Available tools
-{{.Tools}}
-{{end}}
-
-{{if .Skills}} ... skill catalog + always-active/glob-matched bodies
-          (invoked /name bodies are injected into the user message instead) ... {{end}}
-
-{{if .Memory}}
+{{.Tools}}                              MCP tools among them, as server__tool
+{{.Skills}}                             ## Slash commands: the skill catalog and the load_skill hint;
+                                        a /name body rides in the user message, load_skill returns one
+{{.PlanContext}}                        agent mode: the plan an approved turn implements
+{{.Rules}}                              AGENTS.md and DESIGN.md of the agent home, then of the
+                                        workspace, then the rules that always apply
+## Project instructions
+{{.Instructions}}                       the files of instructions.files
 ## Session memory
-{{.Memory}}
-{{end}}
+{{.Memory}}                             the session's notes
 
-<environment_context>
+<environment_context>                   appended outside the template
 <os>...</os>
 <arch>...</arch>
 <shell>...</shell>
 </environment_context>
+## Hook context                         appended: SessionStart and this turn's UserPromptSubmit
+...                                     appended: the surface block of the web UI or a messenger
 ```
 
 The environment block is appended outside the configurable template so OS and shell facts cannot be accidentally omitted by a custom prompt.
@@ -25143,7 +25188,7 @@ A git **`pre-commit`** hook runs the linter before every commit, so nothing land
 
 The documentation is the tree under **`docs/`**, mapped by **`docs/nav.yaml`**: `getting-started/`, `surfaces/`, `operate/`, `features/`, `reference/`, `contributing/`, `tutorials/`, and `docs/assets/` for everything a page embeds. **`docs/plans/`** (design records, never rewritten to match a later rename) is internal and stays out of the map, so the hub and the llms files do not carry it. Anything git ignores under **`docs/`** is not documentation at all and is not walked. **`docs/README.md`** (the hub), the field tables of **`docs/reference/config.md`**, the help screens of **`docs/reference/cli.md`** and the inventory of **`docs/assets/INDEX.md`** are generated by **`internal/docsgen`** (`make docs`), which also builds **`llms.txt`** and **`llms-full.txt`** straight into the site layer - they are a concatenation of every page, so a copy in this index conflicted in every branch that touched any page, and `.gitignore` keeps them out; **`make docs-check`** (the CI job **Documentation**, and the pre-commit hook for commits that touch the docs) fails on a stale generated block, a page missing from the map, a broken relative link or anchor, and an asset no page uses. **`make docs-changelog`** refreshes **`docs/getting-started/changelog.md`** from the GitHub Releases. The documentation is also in Russian: **`docs/ru/<group>/<page>.md`** translates **`docs/<group>/<page>.md`** under the same path, **`docs/ru/nav.yaml`** and **`docs/ru/config-descriptions.yaml`** translate the map and the schema descriptions, and the binary carries both languages (every surface shows the one it knows the reader uses). A change to an English page carries into its translation in the same pull request and is restamped with **`make docs-stamp PAGES=...`**; **`make docs-check`** fails on a missing or stale translation and on headings that differ from the source. The conventions and the writing rules for both languages are the paired **documentation translation rule** ([Cursor](.cursor/rules/docs-translation.mdc), [Claude Code](.claude/rules/docs-translation.md)). The full guide, page types included, is **`docs/contributing/documentation.md`**.
 
-A change to Coddy carries its documentation in the same pull request (step 10 of the **paired workflow rule** - [Cursor](.cursor/rules/workflow.mdc), [Claude Code](.claude/rules/workflow.md)): a new capability gets its page, its `nav.yaml` entry and its row in the reference of its kind (`tools.md`, `slash-commands.md`, `environment-variables.md`, `keyboard.md`); a changed behaviour updates the page that describes it (`git grep -n '<key or command>' docs/`); a web UI or console feature is shown with a screenshot of the real surface embedded on its page, Dark 1280 wide, named `<feature>-<state>-<theme>-<width>.png` under `docs/assets/<page>/`; a demo video goes to `docs/assets/video/` and is embedded on the page as a GitHub attachment URL with the repository copy linked under it (Videos in `docs/contributing/documentation.md`). Add screenshots under `docs/assets/` only when they document a new UI/UX feature or a changed existing UI/UX feature, and embed every such asset on its documentation page. Keep pull-request-only evidence out of `docs/assets`: publish it on the `screenshots` branch of this repository (`coddy-project/coddy-agent`, never a personal fork) under a pull-request-specific directory, then embed its raw GitHub URLs in the pull request description. `make docs-check` governs every asset committed under `docs/assets/`. A page that moves takes its address with it: there are no redirect stubs. Every page of the map also has a stable address on **coddy.dev**: `coddy.dev/docs/<slug>` sends a person to the page on GitHub and `coddy.dev/docs/<slug>.md` to its raw Markdown (one generated script behind the site's `404.html`, nothing duplicated), while `llms.txt` and `llms-full.txt` at the site root index the raw Markdown on `main`; the binary, the schema and the bundled skill print those addresses and nothing else. **`make site-docs`** renders the layer into the site checkout and **`make site-docs-check`** reports drift - a change to a page, to `nav.yaml` or to the schema is published to the site with the same pull request (workflow step 8).
+A change to Coddy carries its documentation in the same pull request (step 10 of the **paired workflow rule** - [Cursor](.cursor/rules/workflow.mdc), [Claude Code](.claude/rules/workflow.md)): a new capability gets its page, its `nav.yaml` entry and its row in the reference of its kind (`tools.md`, `slash-commands.md`, `environment-variables.md`, `keyboard.md`); a changed behaviour updates the page that describes it (`git grep -n '<key or command>' docs/`); a web UI or console feature is shown with a screenshot of the real surface embedded on its page, Dark 1280 wide, named `<feature>-<state>-<theme>-<width>.png` under `docs/assets/<page>/`; a module whose work spans several parts (a pipeline, a lifecycle, a cache invariant, data crossing packages or processes) is shown with a diagram on its page: an HTML source under `docs/assets/diagrams/` on the shared `diagram.css` and `diagram.js`, rendered by **`make diagrams`** into the PNG the page embeds, English labels, both files committed and rendered again when the behaviour it shows changes (Diagrams in `docs/contributing/documentation.md`); a demo video goes to `docs/assets/video/` and is embedded on the page as a GitHub attachment URL with the repository copy linked under it (Videos in `docs/contributing/documentation.md`). Add screenshots under `docs/assets/` only when they document a new UI/UX feature or a changed existing UI/UX feature, and embed every such asset on its documentation page. Keep pull-request-only evidence out of `docs/assets`: publish it on the `screenshots` branch of this repository (`coddy-project/coddy-agent`, never a personal fork) under a pull-request-specific directory, then embed its raw GitHub URLs in the pull request description. `make docs-check` governs every asset committed under `docs/assets/`. A page that moves takes its address with it: there are no redirect stubs. Every page of the map also has a stable address on **coddy.dev**: `coddy.dev/docs/<slug>` sends a person to the page on GitHub and `coddy.dev/docs/<slug>.md` to its raw Markdown (one generated script behind the site's `404.html`, nothing duplicated), while `llms.txt` and `llms-full.txt` at the site root index the raw Markdown on `main`; the binary, the schema and the bundled skill print those addresses and nothing else. **`make site-docs`** renders the layer into the site checkout and **`make site-docs-check`** reports drift - a change to a page, to `nav.yaml` or to the schema is published to the site with the same pull request (workflow step 8).
 
 Human prose for HTTP lives in **`docs/reference/http-api.md`**. Visual spec for SPA lives in **`DESIGN.md`** (this repo root). Architectural narrative remains under **`docs/contributing/architecture.md`**.
 
