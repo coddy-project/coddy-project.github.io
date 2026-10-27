@@ -4,7 +4,7 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://coddy.dev/</loc>
-    <lastmod>2026-09-27</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://coddy.dev/" />
     <xhtml:link rel="alternate" hreflang="ru" href="https://coddy.dev/ru/" />
     <image:image>
@@ -27,6 +27,10 @@
       <image:loc>https://coddy.dev/assets/demo/poster-android.jpg</image:loc>
       <image:title>Coddy on an Android phone in a swarm</image:title>
     </image:image>
+    <image:image>
+      <image:loc>https://coddy.dev/assets/demo/poster-browser.jpg</image:loc>
+      <image:title>Coddy for Browser in Chrome</image:title>
+    </image:image>
   </url>
   <url>
     <loc>https://coddy.dev/compare/</loc>
@@ -40,7 +44,7 @@
   </url>
   <url>
     <loc>https://coddy.dev/ru/</loc>
-    <lastmod>2026-09-27</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://coddy.dev/" />
     <xhtml:link rel="alternate" hreflang="ru" href="https://coddy.dev/ru/" />
     <image:image>

@@ -54,6 +54,8 @@ ATTRIBUTE_TRANSLATIONS = {
     "Play demo: Coddy on an Android phone in a swarm, 2:00": "Воспроизвести демо Coddy на телефоне с Android в рое узлов, 2:00",
     "Play demo: Coddy inside Zed over ACP, 2:17": "Воспроизвести демо Coddy в Zed через ACP, 2:17",
     "Play demo: Coddy web UI, 1:50": "Воспроизвести демо веб-интерфейса Coddy, 1:50",
+    "Play demo: Coddy for Browser in Chrome, 1:38": "Воспроизвести демо Coddy for Browser в Chrome, 1:38",
+    "Chrome with the Coddy web UI in the side panel asking whether Coddy may use a website": "Chrome с веб-интерфейсом Coddy в боковой панели, где расширение спрашивает, можно ли Coddy работать на сайте",
     "Site menu": "Меню сайта",
     "macOS install method": "Способ установки в macOS",
     "Latest release on GitHub": "Последний релиз на GitHub",

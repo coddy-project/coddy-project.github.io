@@ -31,7 +31,7 @@
   <link rel="icon" href="assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
-  <link rel="stylesheet" href="styles.css?v=28" />
+  <link rel="stylesheet" href="styles.css?v=29" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -107,13 +107,15 @@
           "https://coddy.dev/assets/demo/poster-webui.jpg",
           "https://coddy.dev/assets/demo/poster-tui.jpg",
           "https://coddy.dev/assets/demo/poster-zed.jpg",
-          "https://coddy.dev/assets/demo/poster-android.jpg"
+          "https://coddy.dev/assets/demo/poster-android.jpg",
+          "https://coddy.dev/assets/demo/poster-browser.jpg"
         ],
         "featureList": [
           "ReAct loop with filesystem and shell tools",
           "Terminal console TUI, embedded web UI, OpenAI-compatible HTTP API",
           "Agent Client Protocol (ACP) server for Zed, Obsidian, VS Code",
           "Telegram gateway",
+          "Coddy for Browser, an extension for Chrome, Yandex Browser and Firefox: the web UI in the side panel and any chat working in your tabs",
           "MCP servers, Cursor-style rules, skills, hooks, AGENTS.md",
           "Subagents, background tasks, cron scheduler, long-term memory, context compaction",
           "Swarm relay for a fleet of nodes, Android phones in Termux included, remote control of a running server, coddy serve as a systemd user service or a daemon",
@@ -121,7 +123,7 @@
           "Any OpenAI-compatible provider or Anthropic, local models via Ollama, llama.cpp, vLLM",
           "Single static binary, Docker images for amd64 and arm64, distroless and scratch images"
         ],
-        "keywords": "AI agent, coding agent, agent harness, Go, single binary, ACP, MCP, self-hosted, Ollama, OpenAI-compatible, Telegram bot, distroless",
+        "keywords": "AI agent, coding agent, agent harness, Go, single binary, ACP, MCP, self-hosted, Ollama, OpenAI-compatible, Telegram bot, browser extension, distroless",
         "author": {
           "@id": "https://coddy.dev/#organization"
         },
@@ -444,6 +446,7 @@
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-terminal" id="tab-terminal" data-shot="shot-terminal">Terminal</button>
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-acp" id="tab-acp" data-shot="shot-acp">Editor (ACP)</button>
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-android" id="tab-android" data-shot="shot-android">Android</button>
+          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-browser" id="tab-browser" data-shot="shot-browser">Browser</button>
         </div>
 
         <div class="showcase-panel" id="shot-webui" role="tabpanel" aria-labelledby="tab-webui" tabindex="0">
@@ -520,6 +523,25 @@
             no open port on the phone. The laptop connects to the relay from its environment menu, opens the phone from the
             map canvas, runs <code>getprop</code> there and reads the note the agent wrote in the Files window.
             <a href="https://coddy.dev/docs/tutorials/swarm-android-nodes" target="_blank" rel="noopener noreferrer">The tutorial</a>
+          </p>
+        </div>
+
+        <div class="showcase-panel" id="shot-browser" role="tabpanel" aria-labelledby="tab-browser" tabindex="0" hidden>
+          <button
+            type="button"
+            class="demo-player"
+            data-video="assets/demo/coddy-browser-demo.mp4"
+            aria-label="Play demo: Coddy for Browser in Chrome, 1:38"
+          >
+            <img src="assets/demo/poster-browser.jpg" width="1280" height="720" alt="Chrome with the Coddy web UI in the side panel asking whether Coddy may use a website" loading="lazy" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">1:38</span>
+          </button>
+          <p class="showcase-caption">
+            <a href="https://github.com/coddy-project/coddy-for-browser" target="_blank" rel="noopener noreferrer">Coddy for Browser</a>
+            shows the web UI of your <code>coddy serve</code> in Chrome's side panel. Asked to search, a chat types into
+            the page, opens a result and answers in the panel, and the extension asks before Coddy acts on each new
+            website. A chat of the console, an editor or another machine of the swarm drives the browser the same way.
           </p>
         </div>
       </div>
@@ -599,6 +621,10 @@
           <a class="glass feature feature-link" href="https://coddy.dev/docs/features/sessions" target="_blank" rel="noopener noreferrer">
             <h4>Sessions</h4>
             <p>Bundles on disk under <code>$CODDY_HOME</code>, resumed from any surface. Editing a sent message rewinds the conversation to it, and <code>/export</code> writes Markdown, HTML or JSON.</p>
+          </a>
+          <a class="glass feature feature-link feature-wide" href="https://github.com/coddy-project/coddy-for-browser" target="_blank" rel="noopener noreferrer">
+            <h4>Coddy for Browser</h4>
+            <p>An extension for Chrome, Yandex Browser and Firefox. Its side panel is the web UI of your Coddy, any chat opens, reads and works in your tabs, and the extension asks you before each new website.</p>
           </a>
         </div>
       </div>

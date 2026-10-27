@@ -31,7 +31,7 @@
   <link rel="icon" href="/assets/favicon.ico" sizes="any" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="sitemap" type="application/xml" title="Карта сайта" href="/sitemap.xml" />
-  <link rel="stylesheet" href="/styles.css?v=28" />
+  <link rel="stylesheet" href="/styles.css?v=29" />
   <script type="application/ld+json">
   {
   "@context": "https://schema.org",
@@ -182,7 +182,7 @@
               <button type="button" class="method-tab" data-method="mac-brew" role="tab" aria-selected="false">Homebrew</button>
             </div>
             <a class="install-view method active" data-method="mac-script" href="https://github.com/coddy-project/coddy-project.github.io/blob/main/install.sh" target="_blank" rel="noopener noreferrer">Посмотреть скрипт установки <span aria-hidden="true">&#8599;</span></a>
-            <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/ru/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">О Homebrew-пакете <span aria-hidden="true">&#8599;</span></a>
+            <a class="install-view method" data-method="mac-brew" href="https://coddy.dev/ru/docs/getting-started/homebrew" target="_blank" rel="noopener noreferrer">О тапе Homebrew <span aria-hidden="true">&#8599;</span></a>
           </div>
           <p class="install-note method active" data-method="mac-script">
             Кладёт бинарник последнего релиза в PATH, ставит справку man и автодополнение команд и создаёт <code>~/.coddy/config.yaml</code> из примера, если его ещё нет.
@@ -292,6 +292,7 @@
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-terminal" id="tab-terminal" data-shot="shot-terminal">Терминал</button>
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-acp" id="tab-acp" data-shot="shot-acp">Редактор (ACP)</button>
           <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-android" id="tab-android" data-shot="shot-android">Android</button>
+          <button type="button" class="showcase-tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="shot-browser" id="tab-browser" data-shot="shot-browser">Браузер</button>
         </div>
 
         <div class="showcase-panel" id="shot-webui" role="tabpanel" aria-labelledby="tab-webui" tabindex="0">
@@ -361,6 +362,23 @@
           <p class="showcase-caption">
             <code>coddy serve</code> в Termux подключается к ретранслятору на ноутбуке одной записью <code>swarm.join</code>, и открытый порт на телефоне для этого не нужен. Ноутбук подключается к ретранслятору из меню окружения, открывает телефон с холста карты и запускает там <code>getprop</code>, а затем в окне "Файлы" читает заметку, которую записал агент.
             <a href="https://coddy.dev/ru/docs/tutorials/swarm-android-nodes" target="_blank" rel="noopener noreferrer">Пошаговая инструкция</a>
+          </p>
+        </div>
+
+        <div class="showcase-panel" id="shot-browser" role="tabpanel" aria-labelledby="tab-browser" tabindex="0" hidden>
+          <button
+            type="button"
+            class="demo-player"
+            data-video="/assets/demo/coddy-browser-demo.mp4"
+            aria-label="Воспроизвести демо Coddy for Browser в Chrome, 1:38"
+          >
+            <img src="/assets/demo/poster-browser.jpg" width="1280" height="720" alt="Chrome с веб-интерфейсом Coddy в боковой панели, где расширение спрашивает, можно ли Coddy работать на сайте" loading="lazy" />
+            <span class="demo-play" aria-hidden="true"></span>
+            <span class="demo-duration" aria-hidden="true">1:38</span>
+          </button>
+          <p class="showcase-caption">
+            <a href="https://github.com/coddy-project/coddy-for-browser" target="_blank" rel="noopener noreferrer">Coddy for Browser</a>
+            показывает в боковой панели Chrome веб-интерфейс вашего <code>coddy serve</code>. По просьбе поискать чат вводит запрос на странице, открывает результат и отвечает в панели, а перед первым действием Coddy на каждом новом сайте расширение спрашивает разрешения. Чат консоли, редактора или другой машины роя управляет браузером так же.
           </p>
         </div>
       </div>
@@ -436,6 +454,10 @@
           <a class="glass feature feature-link" href="https://coddy.dev/ru/docs/features/sessions" target="_blank" rel="noopener noreferrer">
             <h4>Сессии</h4>
             <p>Каталоги сессий лежат на диске в <code>$CODDY_HOME</code> и открываются из любого интерфейса. Правка отправленного сообщения откатывает диалог к нему, а <code>/export</code> выгружает сессию в Markdown, HTML или JSON.</p>
+          </a>
+          <a class="glass feature feature-link feature-wide" href="https://github.com/coddy-project/coddy-for-browser" target="_blank" rel="noopener noreferrer">
+            <h4>Coddy for Browser</h4>
+            <p>Расширение для Chrome, Яндекс Браузера и Firefox. В его боковой панели открыт веб-интерфейс вашего Coddy, любой чат открывает ваши вкладки, читает их и работает в них, а перед каждым новым сайтом расширение спрашивает вас.</p>
           </a>
         </div>
       </div>

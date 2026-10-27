@@ -67,11 +67,9 @@ latest release	последнем релизе
 defers to the package manager.	передаёт обновление пакетному менеджеру.
 openSUSE takes the same file with	В openSUSE тот же файл ставится через
 . Swap	. Замените
-About the cask	О Homebrew-пакете
-Every release publishes the cask beside its archives. It adds	Homebrew-пакет выходит с каждым релизом рядом с архивами. Он добавляет
-and the shell completions, and	и автодополнение команд, а
+About the tap	О тапе Homebrew
+The cask lives in Coddy's own tap, and every release updates it. It adds	Homebrew-пакет лежит в собственном тапе Coddy, и каждый релиз его обновляет. Он добавляет
 hands over to	передаёт обновление команде
-. If macOS blocks the first run, clear the quarantine flag with	. Если macOS блокирует первый запуск, снимите флаг карантина командой
 Run it in PowerShell. Puts the latest release binary on your PATH and creates	Запустите команду в PowerShell. Она положит бинарник последнего релиза в PATH и создаст
 Docker guide	Руководство по Docker
 Compose file in the repo	Compose-файл в репозитории
@@ -92,7 +90,7 @@ the web UI	веб-интерфейс
 an editor client over ACP	редактор по ACP
 upgrade later	будущие обновления
 Other install methods and details:	Другие способы установки и подробности описаны в
-· Homebrew by name is still on its way, see	· Установка через Homebrew по имени пакета ещё в работе, см.
+· Homebrew without the tap name is still on its way, see	· Установка через Homebrew без имени тапа ещё в работе, см.
 See it in action	Coddy в работе
 Web UI	Веб-интерфейс
 Terminal	Терминал
@@ -210,7 +208,7 @@ Linux and macOS:	Linux и macOS:
 . Windows:	. Windows:
 . The script downloads the latest release binary, puts it on your PATH, and creates	. Скрипт скачивает бинарник последнего релиза, кладёт его в PATH и создаёт
 published with every release (	, который выходит с каждым релизом (
-), and on macOS the Homebrew cask straight from the release (	), а в macOS есть Homebrew-пакет прямо из релиза (
+), and on macOS the Homebrew cask from Coddy's own tap (	), а в macOS есть Homebrew-пакет из собственного тапа Coddy (
 ); both register Coddy with your package manager and add the man page and shell completions. Docker:	). Оба способа регистрируют Coddy в пакетном менеджере и ставят man-страницу и автодополнение. Docker:
 opens the web UI on	открывает веб-интерфейс по адресу
 , and the Docker tab of the install block also carries a	, а на вкладке Docker в блоке установки есть ещё
@@ -597,3 +595,8 @@ for the workspace, and coddy's own modes, models and permission policy show up i
 runs in a fresh worktree, and a shell command the safety check calls safe runs without a prompt. One entry in Zed's	работает в свежем worktree, а команда оболочки, которую пропустила проверка безопасности, выполняется без запроса. Хватит одной записи в
 entry and no open port on the phone. The laptop connects to the relay from its environment menu, opens the phone from the map canvas, runs	, и открытый порт на телефоне для этого не нужен. Ноутбук подключается к ретранслятору из меню окружения, открывает телефон с холста карты и запускает там
 there and reads the note the agent wrote in the Files window.	, а затем в окне "Файлы" читает заметку, которую записал агент.
+and the shell completions, clears the quarantine flag for you, and	и автодополнение команд, сам снимает флаг карантина, а
+Browser	Браузер
+shows the web UI of your	показывает в боковой панели Chrome веб-интерфейс вашего
+in Chrome's side panel. Asked to search, a chat types into the page, opens a result and answers in the panel, and the extension asks before Coddy acts on each new website. A chat of the console, an editor or another machine of the swarm drives the browser the same way.	. По просьбе поискать чат вводит запрос на странице, открывает результат и отвечает в панели, а перед первым действием Coddy на каждом новом сайте расширение спрашивает разрешения. Чат консоли, редактора или другой машины роя управляет браузером так же.
+An extension for Chrome, Yandex Browser and Firefox. Its side panel is the web UI of your Coddy, any chat opens, reads and works in your tabs, and the extension asks you before each new website.	Расширение для Chrome, Яндекс Браузера и Firefox. В его боковой панели открыт веб-интерфейс вашего Coddy, любой чат открывает ваши вкладки, читает их и работает в них, а перед каждым новым сайтом расширение спрашивает вас.

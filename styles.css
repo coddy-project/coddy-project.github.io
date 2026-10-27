@@ -673,6 +673,12 @@ section h2 {
   gap: 12px;
 }
 
+/* A card of its own across the row, so a group of seven ends without a lone
+   card under two empty cells. */
+.feature-wide {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 900px) {
   .features {
     grid-template-columns: repeat(2, minmax(0, 1fr));
