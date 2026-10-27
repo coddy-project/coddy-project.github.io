@@ -1306,7 +1306,7 @@ CI publishes one archive per platform on each SemVer tag **`X.Y.Z`**, plus Linux
 
 The Linux, Android and macOS archives carry the man page and the bash and zsh completions beside the binary; the packages install the same files where the system expects them - see [Install](install.md#linux-packages-deb-rpm). Every release also publishes **`coddy.rb`**, the Homebrew cask for the two macOS archives of that tag, and commits the same file to the tap [coddy-project/homebrew-coddy-agent](https://github.com/coddy-project/homebrew-coddy-agent), which is where **`brew install coddy-project/coddy-agent/coddy`** and **`brew upgrade`** read it.
 
-Each binary is built with the whole tag set - **`http`**, **`ui`**, **`scheduler`**, **`memory`**, **`cli`**, **`gateway`**, **`swarm`** and **`metrics`** - the same as **`make build TAGS="http ui scheduler memory cli gateway swarm metrics"`** and the default Docker image. See [Build from source](../contributing/build.md#release-binaries-ci) for the release pipeline.
+Each binary is built with the whole tag set - **`http`**, **`ui`**, **`scheduler`**, **`memory`**, **`cli`**, **`gateway`**, **`swarm`**, **`metrics`** and **`browser`** - the same as **`make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"`** and the default Docker image. See [Build from source](../contributing/build.md#release-binaries-ci) for the release pipeline.
 
 ## Which file is replaced
 
@@ -1617,7 +1617,7 @@ The bot and the web UI then share one session manager, so a Telegram conversatio
 
 Notes:
 
-- The **published GHCR image carries the `gateway` tag** (CI [`docker-build-push.yaml`](../../.github/workflows/docker-build-push.yaml) sets **`BUILD_TAGS=http,scheduler,ui,memory,cli,gateway,swarm,metrics`**), so **`docker-compose.yml`** with **`CODDY_COMMAND=gateway`** runs on the stock image; no custom **`CODDY_IMAGE`** is needed.
+- The **published GHCR image carries the `gateway` tag** (CI [`docker-build-push.yaml`](../../.github/workflows/docker-build-push.yaml) sets **`BUILD_TAGS=http,scheduler,ui,memory,cli,gateway,swarm,metrics,browser`**), so **`docker-compose.yml`** with **`CODDY_COMMAND=gateway`** runs on the stock image; no custom **`CODDY_IMAGE`** is needed.
 - The bot token is read from **`TELEGRAM_BOT_TOKEN`** (passed through by both compose files) or **`$CODDY_HOME/.env`**; keep it out of git.
 - If your **`gateways.telegram.proxy`** points at a host-local proxy (e.g. **`socks5://127.0.0.1:7890`**), it is unreachable from inside the container - use **`host.docker.internal`** or add **`network_mode: host`** in a **`docker-compose.override.yml`**.
 - Gateway mode uses no inbound port (Telegram long-polling); the mapped **`12345`** is simply unused.
@@ -1710,7 +1710,7 @@ For a local **`Dockerfile`** build, use **`docker-compose.dev.yml`** - see [Dock
 
 ## What the image contains by default
 
-**`Dockerfile`** **`ARG BUILD_TAGS`** defaults to **`http,scheduler,ui,memory,gateway,cli,swarm,metrics`** (comma-separated, same meaning as **`go build -tags=`**), the set the release binaries carry.
+**`Dockerfile`** **`ARG BUILD_TAGS`** defaults to **`http,scheduler,ui,memory,gateway,cli,swarm,metrics,browser`** (comma-separated, same meaning as **`go build -tags=`**), the set the release binaries carry.
 
 - **`http`** - **`coddy serve`** and REST gateway (see **[docs/reference/http-api.md](../reference/http-api.md)**).
 - **`ui`** - embedded SPA on **`/`** (needs **`http`**).
@@ -1720,6 +1720,7 @@ For a local **`Dockerfile`** build, use **`docker-compose.dev.yml`** - see [Dock
 - **`cli`** - the interactive console (**[docs/surfaces/console.md](../surfaces/console.md)**), for **`docker run -it ... coddy`**.
 - **`swarm`** - the relay that aggregates nodes (**[docs/operate/swarm.md](../operate/swarm.md)**), under **`swarm.enable`**.
 - **`metrics`** - the Prometheus exporter (**[docs/operate/monitoring.md](../operate/monitoring.md)**), off until **`metrics.enable`** is set. It listens on loopback, which a published container port cannot reach: to scrape it from outside the container, set **`metrics.host`** to **`0.0.0.0`** together with **`metrics.token`**, and publish **`metrics.port`** (12347 by default).
+- **`browser`** - the endpoint of the [Coddy for Browser](../features/browser.md) extension on the HTTP server and the `browser` tool, off until **`browser.enable`** is set with a **`browser.token`**. The extension connects to the published HTTP port, the address of the web UI; a browser outside the container's machine needs HTTPS in front of it, since the extension uses plain HTTP only for a server on its own machine.
 
 To build an image **without** memory or the embedded UI, override **`BUILD_TAGS`** (for example **`http,scheduler,ui`** or **`http,scheduler`**) via **`docker compose` `args`** or **`docker build --build-arg`**.
 
@@ -1855,7 +1856,7 @@ make brew-formula VERSION=1.0.13
 version and the SHA-256 of that tag's source archive and writes **`dist/formula/coddy.rb`**. It
 downloads the archive to hash it, so the version has to be a published tag.
 
-The formula builds what the release binaries carry - **`http ui scheduler memory cli gateway swarm metrics`** - so a
+The formula builds what the release binaries carry - **`http ui scheduler memory cli gateway swarm metrics browser`** - so a
 `brew install` and a release archive are the same feature set. That is why **`node`** is a build
 dependency beside **`go`**: the embedded SPA is generated rather than committed, and **`go:embed`**
 needs those files to exist before the binary that carries them is linked. It runs **`npm ci`**, not
@@ -2178,7 +2179,7 @@ For access from other machines bind wider and require a token: `coddy serve -H 0
 **Fix.** Use a release build - the GitHub Release archives, the `.deb` and `.rpm` packages and the Homebrew cask are built with every tag, and the Docker image ships the API, the web UI, the scheduler, the memory subagent, the console and the gateway - or build it yourself:
 
 ```bash
-make build TAGS="http ui scheduler memory cli gateway swarm metrics"
+make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"
 ```
 
 `ui` needs Node.js and npm (the Makefile runs `ui-build` first). `coddy serve --dry-run` reports a surface this binary was not built with without starting anything. Tag reference: [Build from source](../contributing/build.md#build-tags-reference).
@@ -2467,7 +2468,7 @@ A build from source that stops at the first `FROM` with `failed to parse platfor
 
   ```bash
   (cd external/ui && npm install && npm run build:go)
-  make build TAGS="http ui scheduler memory cli gateway swarm metrics"
+  make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"
   ```
 
 - **Updates from scripts.** `coddy update -y --no-restart` installs without starting Coddy again, for a CI step with no console to run in.
@@ -4017,7 +4018,7 @@ Nothing agent-side is console-specific — the TUI is a fourth `UpdateSender`
 next to ACP, HTTP, and the Telegram gateway.
 
 Build: `make build TAGS=cli` (or any tag set including `cli`; the recommended
-full binary is `make build TAGS="http ui scheduler memory cli gateway swarm metrics"`). In builds
+full binary is `make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"`). In builds
 without the tag, `coddy cli` explains how to rebuild and bare `coddy` keeps
 printing usage.
 
@@ -5362,6 +5363,7 @@ Off unless the server has an account, and a server without one renders exactly a
 - **After a successful sign-in** the page reloads: every list, stream and cached response on it was fetched by a browser with no session.
 - **A session that ends while the page is open** - expired, rotated, signed out in another tab - brings the screen back: the local-origin **`fetch`** shim reports a **401** from any **`/v1/*`** or **`/coddy/*`** call (the **`/coddy/auth/*`** routes excepted) and the gate re-reads the state.
 - **Signing out** is the last entry of the nav rail (**`data-testid="nav-sign-out"`**), shown only while a form is configured and this browser has passed it; its tooltip names the account. It posts **`/coddy/auth/logout`** and reloads **only when the server actually dropped the session** - the cookie is HttpOnly, so a page that cleared its own state after a refusal would be signed straight back in by the reload and the button would look broken rather than refused.
+- **The side panel of Coddy for Browser signs itself in.** A page opened in the extension's frame with a ticket (**`?coddy_panel=`**) posts it to **`POST /coddy/auth/browser`** before the screen is drawn, once per page, and gets a session cookie of its own ([Coddy for Browser](../features/browser.md#the-side-panel)).
 - **Remote environments are not gated here.** A remote is reached cross-origin with the bearer token from the environment selector, and a cookie of this origin would not travel with those calls; **`AuthGate`** passes straight through in remote mode.
 
 Server behaviour, the cookie and the CSRF rule: [HTTP API](../reference/http-api.md#web-ui-sign-in-optional). Visual contract: [DESIGN.md](../../DESIGN.md).
@@ -7802,7 +7804,7 @@ make build TAGS="gateway.pachca"
 make build TAGS="gateway"
 
 # The full set (what a release ships)
-make build TAGS="http ui scheduler memory cli gateway swarm metrics"
+make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"
 ```
 
 A bot enabled in `config.yaml` but not compiled into the binary is a startup error of `coddy serve` naming the tag; all other subcommands are unaffected.
@@ -8862,11 +8864,11 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/op
 # Running Coddy as a daemon
 
 `coddy serve` runs every subsystem the configuration enables - the HTTP API and the
-embedded web UI, the messenger gateway, the swarm relay, the cron scheduler - in one
-process over one session manager. Which of them start is decided by `config.yaml`; see
-the [configuration reference](../reference/config.md) and the per-surface guides
-([HTTP API](../reference/http-api.md), [gateway](../surfaces/gateway.md), [swarm](swarm.md),
-[scheduler](scheduler.md)).
+embedded web UI, the messenger gateway, the swarm relay, the cron scheduler, the endpoint of
+the browser extension - in one process over one session manager. Which of them start is
+decided by `config.yaml`; see the [configuration reference](../reference/config.md) and the
+per-surface guides ([HTTP API](../reference/http-api.md), [gateway](../surfaces/gateway.md),
+[swarm](swarm.md), [scheduler](scheduler.md), [Coddy for Browser](../features/browser.md)).
 
 One more subsystem serves beside them: the Prometheus exporter, under `metrics.enable`
 ([Monitoring](monitoring.md)). It is auxiliary. It never counts as the surface that keeps the
@@ -9621,7 +9623,7 @@ live view of what the nodes told it.
 
 Built with `-tags swarm`, which is part of the shipped set (`FULL_TAGS` in the **Makefile**), so
 the release binaries, the Docker image, the Linux packages and the Homebrew formula all carry the
-relay. Build it yourself with `make build TAGS="http ui scheduler memory cli gateway swarm metrics"`.
+relay. Build it yourself with `make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"`.
 
 The relay is not a command of its own: `coddy serve` runs it when `swarm.enable` is true, next to
 whatever else the configuration enables. A binary built without the tag refuses `swarm.enable` at
@@ -9763,6 +9765,11 @@ origin twice. The same rule keeps a node's policy from opening a relay whose own
 Since the relay's answer is the only one, it carries what the web UI's Files window needs from
 another origin: `HEAD` among the methods, `Range` and `If-None-Match` among the request headers,
 and `ETag`, `Content-Range`, `Accept-Ranges` and `Content-Disposition` exposed to the page.
+
+The WebSocket of the [Coddy for Browser](../features/browser.md) extension (`/browser/v1/`) is not carried: a
+browser connects to the node on its own machine. A chat of another node reaches that browser through `/coddy/browser/v1`
+of the node's mount, which the prefix list carries like any other route
+([Chats of other Coddy processes](../features/browser.md#chats-of-other-coddy-processes)).
 
 A hand-written path is capped at the same hop budget the fan-out uses, so a client cannot
 walk a ring indefinitely by writing hops out one after another.
@@ -14525,6 +14532,285 @@ It needs no permission because none of that can be steered by the model beyond t
 [config.yaml reference](../reference/config.md) - `tools.http_request.allowlist`, `tools.http_request.default_headers` and `tools.output_limits`.
 
 
+# Features / Coddy for Browser
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/browser.md
+
+# Coddy for Browser
+
+Coddy for Browser lets the chats of your Coddy work in your own browser - Chrome, Yandex Browser or Firefox: open a
+tab, read a page, click, type, take a screenshot, move a file between the page and the workspace. The model runs on your server, and the
+[Coddy for Browser](https://github.com/coddy-project/coddy-for-browser) extension carries out its actions in the tabs
+you share. The extension's side panel shows the web UI of your Coddy next to the page you look at, and any other
+surface can drive the browser too: the web UI, the console, an editor, a Telegram chat, a scheduled job, a node of
+your [swarm](../operate/swarm.md) on another machine.
+
+## How it works
+
+The extension connects to the HTTP server of `coddy serve`, its home server, and keeps one WebSocket open. Coddy sends
+every action of a chat down that socket as a JSON-RPC request, and the extension answers it. The server never connects
+to the browser, so a browser on a laptop behind NAT works the same as one on the server itself. A chat of another Coddy
+process - a console or an editor on the same machine, a node of the swarm - reaches the browser through the home
+server's HTTP API. The wire is described in [Browser protocol](../reference/browser-protocol.md).
+
+![Coddy for Browser: the extension's socket to its home server, the routes of that server, the chats of other processes, and the path of one action](../assets/diagrams/browser-flow.png)
+
+*How the browser, its home server and the chats of other processes connect, and what one action passes through.*
+
+Coddy reaches only the tabs in its tab groups of the browser:
+
+- the shared **Coddy** group holds the tabs you share; any chat may take one;
+- every chat that works in the browser has a group of its own. A chat moves a shared tab into its group with its first
+  action there, and a tab it opens starts there. Another chat cannot act in that group;
+- you take a tab back by dragging it out of a group.
+
+Every one of these groups is titled **Coddy** and coloured purple, so the tabs Coddy reaches stand out in the tab strip.
+The side panel names the chat that holds the tab in front of you.
+
+Page contents travel to the model provider your Coddy uses, like any tool result.
+
+## Set up the server
+
+The extension's endpoint and the `browser` tool are a module of the `browser` build tag. The release binaries, the
+Docker image and the packages carry it; a binary built without it refuses `browser.enable` and names the tag. The
+side panel shows the web UI, so the binary needs the `ui` tag too, which the same builds carry.
+
+Generate a key of at least 32 characters, for example with `openssl rand -hex 32`, keep it in `<home>/.env` as
+`CODDY_BROWSER_KEY` and turn the module on in `config.yaml`.
+
+```yaml
+browser:
+  enable: true
+  token: ${CODDY_BROWSER_KEY}
+```
+
+The extension connects to the HTTP server (`httpserver.enable`), at the address the web UI has. Save the block from
+**Settings** or restart `coddy serve`; a new key disconnects the extensions that held the old one. The `browser` tool
+is offered to the chats while `browser.enable` is true.
+
+Run `coddy serve` on the machine of the browser. A server on another machine needs HTTPS in front of it, a reverse
+proxy that passes WebSocket upgrades: the extension uses plain HTTP only for `localhost`, `127.0.0.1` and `[::1]`.
+A machine that accepts no inbound connection joins your swarm with `swarm.join`, and the other nodes reach its
+browser through the relay ([Chats of other Coddy processes](#chats-of-other-coddy-processes)).
+
+The key is independent of `httpserver.auth_token`. It opens the extension's socket and its file transfers, and the
+side panel's web UI is signed in with a one-time ticket the socket hands out, so whoever holds the key has the web UI
+of the server. Keep it as secret as the HTTP API's token.
+
+## Install the extension
+
+Every [release](https://github.com/coddy-project/coddy-for-browser/releases) of the extension carries its packages,
+and the extension itself goes to the Chrome Web Store and addons.mozilla.org, which publish a version once their
+review passes. Every run of the extension's CI keeps the packages as artifacts:
+
+| Package | Browsers |
+| --- | --- |
+| `coddy-for-browser-chrome-<version>.zip` | Chrome 116 and later, Yandex Browser and other Chromium browsers |
+| `coddy-for-browser-firefox-<version>.zip` | Firefox 139 and later, unsigned |
+
+- **Chrome**: install it from the Chrome Web Store once the version is published there, or unpack the archive into a
+  folder you keep, open `chrome://extensions`, turn on **Developer mode**, press **Load unpacked** and choose the
+  folder.
+- **Yandex Browser**: the Chrome Web Store as well, or the same archive and the same steps on `browser://extensions`.
+- **Firefox**: install it from addons.mozilla.org once the version is published there. Release Firefox installs only
+  add-ons Mozilla signed, so the unsigned archive is loaded as a temporary add-on from
+  `about:debugging#/runtime/this-firefox` (**Load Temporary Add-on**), which Firefox removes when it closes; Firefox
+  Developer Edition and Nightly keep it installed once `xpinstall.signatures.required` is `false` in `about:config`.
+
+To build it from source instead, run `npm run build` in a checkout of the extension and load `dist/chrome` or
+`dist/firefox`. The README of the extension has the details for each browser.
+
+## Connect the browser
+
+The settings page of the extension opens after the install, and later from the settings button of the side panel.
+Enter the server address - the address of its web UI, `http://127.0.0.1:12345` for a local server - the key and a name
+for this browser, then press **Save and connect**.
+
+![The settings page of the extension, connected to Coddy](../assets/browser/browser-settings-dark-1280.png)
+
+*The settings page of Coddy for Browser connected to a local Coddy.*
+
+Several browsers can connect to one server, each under its own name. A chat lists them and selects one; with a single
+browser connected, it is used without asking.
+
+## The side panel
+
+The toolbar button of the extension opens its side panel: the web UI of the home server, with everything the web UI
+has - the models, attachments, approval modes, history and the questions Coddy asks. Firefox shows it in its sidebar.
+Yandex Browser has no side panel for extensions, so there the button opens the same page in a window of its own at
+the right edge of the browser's window. The panel signs it in with a
+one-time ticket it gets over its socket, so no password is typed there.
+
+*A recording of the side panel in Chrome: asked to search, a chat types into DuckDuckGo, opens the Go release history on go.dev and answers, and the extension asks before each new website. The file is in the repository as [browser-panel.mp4](../assets/video/browser-panel.mp4).*
+
+Before a message is sent, the web UI asks the panel for the tab you look at, and the panel moves that tab into the
+chat's tab group. A request about "this page" works on the page in front of you, and a `browser` call of the chat
+that names no tab acts on it.
+
+![Chrome with a chat of Coddy in the side panel, next to the page it worked on](../assets/browser/browser-panel-chrome-dark-1280.png)
+
+*The side panel in Chrome: the extension's strip shows the current tab and the chat that holds it, the web UI is under it. The tab sits in the purple Coddy group, and the extension's icon in the toolbar opens the panel.*
+
+The strip over the web UI is the extension's own. It names the current tab and whose it is, with **Share** and
+**Take back** and a button that opens the extension's settings, and it takes the theme of the web UI. The connection
+is shown on the settings page; while there is none, the panel shows a card that leads there instead of the web UI. A
+chat of the panel is an ordinary Coddy session, listed in the web UI everywhere. A chat of another environment the web
+UI switches to gets no tab: the tab is in the browser of the panel's own server.
+
+Opened on a tab that a chat of the home server holds, the panel shows that chat. A turn that a console, an editor, a
+scheduled job or the API started there streams in the panel as in any chat, and the chat's name in the strip shows it
+again after you went elsewhere in the web UI. A chat of another Coddy process lives on its own server, so the panel
+names it and cannot show it.
+
+A question of the extension - a website, a chat of another machine - comes up at the top of the panel, over the web
+UI, and the chat stays in view around it.
+
+## Share a tab
+
+A chat outside the panel reaches a tab you share. Press **Share** in the strip of the side panel, or drag the tab into
+the **Coddy** group; **Take back** ungroups it. **Disconnect** on the extension's settings page cancels every action
+and ungroups every tab; the tabs stay open. The Stop button on a page Coddy works in does the same and keeps the
+connection.
+
+## Work from a chat
+
+Ask for it in words, for example "open the release page of coddy-project/coddy-agent and summarize the latest
+release". The chat calls the [`browser`](../reference/tools.md) tool:
+
+- `list` shows the browsers the chat reaches and the tabs it may use, marked `yours` or `busy` (another chat's);
+- `select` remembers a browser for the chat when several are connected;
+- `open_tab`, `close_tab` and `release` open a tab in the chat's group, close one of its tabs and hand its tabs back
+  to the shared group;
+- `snapshot` reads a page as text plus up to 500 elements with references, and `screenshot` attaches an image of the
+  visible part of the tab for a model that reads images;
+- `navigate`, `click`, `type`, `press`, `hover`, `scroll` and `drag` act on the page. In Chrome and Yandex Browser
+  clicks and keys go through the browser's debugger, so a page receives them as trusted input, the same as from a
+  person. Firefox gives extensions no debugger, so there the extension dispatches the events in the page itself, and
+  the result of the call says `"trusted": false`;
+- `upload_file` and `download_file` move files between the page and the workspace.
+
+A reference from `snapshot` lasts until the page changes, so the chat reads the page again after a navigation. The
+`browser` tool asks for permission like other tools with side effects: the chat confirms each call unless the session
+runs in the `bypass` permission mode.
+
+Before the first action on a website, the extension asks you in a window of its own, or in the side panel when it is
+open, whether to allow it for this chat, allow it always, or decline. The answer stays in the browser; a page cannot
+answer it, and neither can Coddy. The settings page lists the sites allowed always and revokes them.
+
+The list of sites allowed always starts with this machine - `localhost`, `127.0.0.1` and `[::1]`, any port - so a
+chat works with a local dev server without a question; revoke an entry on the settings page like any other site.
+These entries leave out the Coddy server itself under every local name of its port: its web UI is where a chat's own
+requests are approved, so a chat acts there only after you allow that address. A chat of another machine asks about
+local pages like any other site.
+
+The settings page also takes addresses before the extension asks about them: an origin (`https://example.com`), one
+port of a host (`localhost:3000`), a range of ports (`10.0.0.5:8000-8100`) or every port (`example.com:*`). A switch
+there allows every website for the chats of the home server. Neither the switch nor an entry for every port or a
+range covers the Coddy server; an entry with its one port does.
+
+![The extension asks whether Coddy may act on a website](../assets/browser/browser-approval-dark-420.png)
+
+*The question the extension asks before Coddy acts on a new website.*
+
+While a chat works in a tab, the tab glows and shows a Stop button, and the title of the chat's group starts with an
+hourglass. Both go away when the chat's turn ends.
+
+![A tab Coddy works in, with the glow and the Stop button](../assets/browser/browser-working-dark-1280.png)
+
+*A tab while Coddy works in it.*
+
+*A recording of a chat of the web UI, in a window of its own, working in Chrome next to it: the extension asks about the website in a window of its own, the tab opens in the purple Coddy group, and the side panel opened on that tab follows the same chat. The file is in the repository as [browser-remote.mp4](../assets/video/browser-remote.mp4).*
+
+## Chats of other Coddy processes
+
+A browser has one home server, the one its extension connects to. A chat that runs anywhere else reaches it through
+that server's HTTP API, `/coddy/browser/v1`, with that server's ordinary API credential. The home server opts in.
+
+```yaml
+browser:
+  enable: true
+  token: ${CODDY_BROWSER_KEY}
+  serve_remote: true
+```
+
+- **A console or an editor on the same machine.** `coddy` and `coddy acp` read the same `config.yaml` as the
+  `coddy serve` beside them, and with `serve_remote` on, their `browser` tool reaches the server at its
+  `httpserver.host` and `port` with `httpserver.auth_token`. A server started with other `-H`, `-P` or
+  `--auth-token` flags is named in `browser.remotes` instead.
+- **Another machine.** List the home server in `browser.remotes` of the process that runs the chat: a name of
+  `httpserver.remotes`, or an address. A node of the swarm is reached through the relay's mount of it, and the token
+  of the relay's entry in `httpserver.remotes` is used for it, as for [`--remote`](../operate/remote.md).
+
+```yaml
+httpserver:
+  remotes:
+    - name: relay
+      url: https://relay.example:8443
+      token: ${CODDY_RELAY_TOKEN}
+browser:
+  enable: true
+  remotes:
+    - https://relay.example:8443/swarm/nodes/home
+```
+
+The machine of the browser runs `coddy serve` with the key, `serve_remote` and `swarm.join` naming it `home`; the
+chats of the other machine then list its browser as `<browser id>@home` and select it by that name. A process that
+only uses the browsers of other servers needs no key of its own.
+
+The person at the browser decides. The first action of a chat that came through the API asks in the extension, naming
+the chat and the machine it runs on: allow this chat, or decline. "Always allow" of a website covers the chats of the
+home server only, so a chat from another machine asks about every new website, and the side panel names the machine
+next to the chat. Stop and Disconnect take back everything the chats from other machines were allowed.
+
+![The extension asks whether a chat of another Coddy may use the browser](../assets/browser/browser-panel-remote-dark-420.png)
+
+*A chat running on another machine asks before its first action.*
+
+Whoever holds a credential of the home server's API can already run turns there, through a relay too, so the API
+adds no authority beyond what that credential has. The home server cannot see where a remote chat's turn ends: the
+working marks of its tabs go away 45 s after its last action.
+
+## Files
+
+`upload_file` reads a file of the workspace (`path`, relative) and sets it on the file input `params.ref` names.
+`download_file` fetches `params.url` in the browser, with its cookies, and writes the bytes to a new file of the
+workspace; an existing path is refused. A file is at most 32 MiB. A download does not follow redirects, so the chat
+passes the final address. The bytes move between the extension and its home server through one-time tickets, never
+through a server path the extension names, and a chat of another process carries them inside its call to the home
+server.
+
+## Limits
+
+- Chrome, Yandex Browser and Firefox are tested. Other Chromium browsers load the Chrome package;
+- the top frame of a page only: elements inside frames are reached through a screenshot and coordinates;
+- Chrome and Yandex Browser show their "started debugging this browser" bar while the extension acts; it detaches
+  20 s after the last action;
+- in Firefox a page can tell Coddy's input from a person's, and a site that checks for it (some editors and sign-in
+  forms) ignores it. A step back or forward there moves first, and the next action on the new website asks about it;
+- a closed browser, a restarted extension or a lost connection leaves the outcome of an action unknown. Coddy never
+  repeats an action by itself; the chat inspects the page first;
+- one key for every browser of a server: a holder of the key could connect under the name of another browser;
+- the extension does not enter passwords, solve CAPTCHAs or sign in for you.
+
+## Verify a build
+
+```bash
+go test -tags=browser ./external/browser/...
+go test -tags=http,browser ./external/httpserver -run Browser
+```
+
+The tests drive the real endpoint over a real WebSocket with a fake extension (`external/browser/browsertest`).
+`features/browser.feature` holds the happy paths of the tool, a chat of another process through the home server's
+API among them, and `features/browser_panel.feature` the side panel's web UI on the real agent with a scripted model.
+`TestLiveExtension` runs the real extension in a real Chromium against the endpoint and the tool: point
+`CODDY_FOR_BROWSER_DIR` at a built checkout of the extension and make Playwright reachable by Node. The extension's
+own CI runs its Chrome package in Chromium and its Firefox package in Firefox against a mock of the server.
+
+```bash
+CODDY_FOR_BROWSER_DIR=../coddy-for-browser go test -tags=browser ./external/browser/... -run TestLiveExtension -v
+```
+
+
 # Features / Mentions
 
 Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/mentions.md
@@ -16265,7 +16551,7 @@ Commands that only print a one-line usage (`skills`, `mcp`, `rules`, `agents`, `
 ## Help screens
 
 <!-- docsgen:cli:start -->
-Help screens of a binary built with `-tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics`, the set the release binaries carry.
+Help screens of a binary built with `-tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics,browser`, the set the release binaries carry.
 
 ### coddy
 
@@ -17044,6 +17330,17 @@ Messenger bot adapters (used only by binaries built with -tags gateway, or -tags
 | `gateways.pachca.chats[].isolation` | string, one of `individual`, `shared`, `admin` |  | Per-chat session isolation override. |
 | `gateways.pachca.chats[].access` | string |  | Per-chat access override: "all", "admins", or "group:<name>". |
 
+### `browser`
+
+Coddy for Browser: the extension connects to the HTTP server, lets chats work in the user's browser through the browser tool and shows the web UI in its side panel; chats of other Coddy processes and of the swarm reach the browser through this server. Needs a binary built with the browser tag; off by default. See https://coddy.dev/docs/features/browser.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `browser.enable` | boolean | false | Offer the browser tool to the chats of this process. Needs browser.token, browser.remotes or both. |
+| `browser.token` | string | "" | The extension key, at least 32 characters, independent of the HTTP API's credentials. With it the HTTP server accepts the extension (/browser/v1/connect), and it also signs the extension's side panel into the web UI, so keep it as secret as the API's token. Write-only. Use an environment reference to keep it out of YAML. |
+| `browser.serve_remote` | boolean | false | Let other Coddy processes drive the browsers connected here: a console or an editor on this machine, a node of the swarm. They call /coddy/browser/v1 with this server's API credential, and the extension asks the person before the first action of each such chat. Needs browser.token. |
+| `browser.remotes` | list of strings | [] | Coddy servers whose browsers the chats of this process may use, besides its own: a name of httpserver.remotes, or a server address such as a node mount of a swarm relay (https://relay:8443/swarm/nodes/home), whose token is found like --remote's. That server needs browser.serve_remote. |
+
 ### `decisions`
 
 Ask the NeuralDeep decisions API whether a shell command is safe before the permission gate decides: a safe command runs without a prompt, an unsafe one is asked about in every mode, bypass included, and rejected where nobody can answer. See https://coddy.dev/docs/features/decisions.
@@ -17713,6 +18010,12 @@ The Permission column uses the classes the gate in `internal/agent/react.go` app
 
 ## Files
 
+The browser tool is offered in Agent mode when `browser.enable` is true, in a binary built with the `browser` tag. It reaches the browsers connected to this server, to the server of this machine (under its `browser.serve_remote`) and to the servers of `browser.remotes`.
+
+| Tool | Purpose | Arguments (short) | Permission | Modes |
+|---|---|---|---|---|
+| `browser` | Work in the user's browser through the Coddy for Browser extension: list the connected browsers and the tabs in reach, open, read and act on a tab, move files between a page and the workspace ([Coddy for Browser](../features/browser.md)) | `action`, `browser_id`, `tab_id`, `params`, `path` | always, plus the website approval in the extension | agent |
+
 | Tool | Purpose | Arguments (short) | Permission | Modes |
 |---|---|---|---|---|
 | `read` | Read a file as text with an optional 1-based line range, or list a directory; text in another encoding (UTF-16, a legacy code page) is converted to UTF-8. A PNG, JPEG, GIF or WebP file (told by its content) is shown to a model with `models[].multimodal: true` as a picture, up to 3.75 MB and 8000 pixels a side and only a file whole to its end, a GIF as its first frame, and the web UI and a Telegram chat show it too ([Images](../features/images.md)); any other binary file (a PDF, an archive), and a picture for a model without `multimodal`, is refused with its type and size | `path`, `offset`, `limit`, `recursive`, `show_hidden`, `keep` | none | agent, plan, ask |
@@ -17963,6 +18266,7 @@ way through the gate:
 | **`GET /coddy/auth/me`** | `login_required`, `auth_required`, `authenticated`, and `user` / `expires_at` for a signed-in browser. The SPA calls it on boot to choose between the sign-in screen and the app. |
 | **`POST /coddy/auth/login`** | `{user, password}`. On success sets an `HttpOnly`, `SameSite=Strict` `coddy_session_<host digest>` cookie (`Secure` when the request arrived over TLS or through a proxy sending `X-Forwarded-Proto: https`), living for `session_ttl_hours`; with `0` the browser drops it on close and the server expires its own record after 30 days. The name carries a digest of the host the request was addressed to, because cookies are not scoped by port: without it two Coddy servers on one machine - a relay and the node behind it, say - would sign each other out at every login. |
 | **`POST /coddy/auth/telegram`** | `{init_data}`: the launch data of the web UI opened as the Telegram bot's Mini App. The signature is checked against the bot's token (launch data at most an hour old, each launch once), and only a user in `gateways.telegram.admins` is signed in: an HttpOnly, `SameSite=Strict` `coddy_tg_session_<host digest>` cookie that opens what the form's cookie opens, also behind a token-only gate, and ends when the token changes, the bot is disabled or the person stops being an admin. 403 for anybody else. `GET /coddy/auth/me` says `telegram_login: true` when the route is available. |
+| **`POST /coddy/auth/browser`** | `{ticket}`: the one-time ticket the side panel of [Coddy for Browser](../features/browser.md) got over its socket (`panel/open`) and loaded the web UI with. Good for one sign-in within a minute and bound to the extension key it was issued for; on success an HttpOnly, `SameSite=Strict` `coddy_browser_session_<host digest>` cookie that opens what the form's cookie opens, also behind a token-only gate, and ends when `browser.token` changes or `browser.enable` is turned off. 401 for an unknown, used or expired ticket. `GET /coddy/auth/me` says `browser_login: true` while the extension's endpoint is on. |
 | **`POST /coddy/auth/logout`** | Drops the session on the server and expires the cookie (the Mini App's too). Idempotent. |
 
 Once signed in, the cookie opens every `/v1/*` and `/coddy/*` route, the SSE streams included - a
@@ -18055,7 +18359,7 @@ header where the client can set one, since a query token reaches proxy access lo
 - Recommended session URL pattern: **`#/s/<sessionId>`** (client-only history). For **`POST /v1/responses`** and **`POST /v1/chat/completions`**, send **`X-Coddy-Session-ID`** with a **`sess_<hex>`** id that satisfies server-side validation (`internal/session/validate.go`).
 - **`X-Coddy-Session-Origin: print`** on **`POST /v1/responses`** and **`POST /v1/chat/completions`** marks the session the request creates as a run of one-shot print mode (**`origin: print`** in **`session.json`**), which the session listings and pickers leave out unless asked (**`include_print`**, **`origin=print`** on **`GET /coddy/sessions`**). It is what **`coddy --remote <server> -p`** sends with the prompt that creates its session. The server records it only when the request creates the session, never on one that exists already, and answers any other value with **`400`** before anything is created ([Sessions](../features/sessions.md#tags-and-the-archive)).
 - **`GET /coddy/sessions`**, **`PATCH /coddy/sessions/{id}`**, and other **`/coddy/sessions/{id}/...`** routes identify the session **only** by the **`{id}`** path segment (no duplicate header in OpenAPI; clients may still send **`X-Coddy-Session-ID`**, it is not used to pick the resource for those URLs).
-- The bundled UI calls **`POST /v1/responses`** with **`stream: true`**. On session open and reconnect, it reads **`GET /coddy/sessions/{id}/activity`** and **`GET /coddy/sessions/{id}/queue`** without requiring a row in the filtered or paginated **`GET /coddy/sessions`** listing. Server activity drives Stop and queue controls separately from the local stream reader; a lost reader does not prove the turn ended. The existing **`GET /coddy/sessions/{id}/composer-stream`** relay (SSE) lets the UI replay bytes already emitted for a running turn and continue receiving live chunks until **`data: [DONE]`** or an error event. Starting a new **`POST /v1/responses`** cancels that relay subscription client-side. For ReAct (**`model`** **`agent`**, **`plan`**, or **`ask`**), it sends optional **`metadata.model`** with the selected YAML **`models[].model`** **`id`** and optional **`metadata.runPlanSlug`** to implement a saved design plan (**`coddy.dev/runPlanSlug`** on ACP **`session/prompt`**; answered with **`409`** before the turn starts when **`model`** is **`ask`**) (from **`GET /v1/models`**, every row but the **agent**, **plan** and **ask** profiles); default is its remembered pick in **`coddy_llm_model`**, else the alphabetically first row. Every turn also carries **`metadata.surface: "webui"`**, which gives that turn a system prompt block telling the model the web UI draws **`mermaid`** and **`svg`** fences as pictures and typesets LaTeX (**`external/httpserver/webui_prompt.go`**; on **`POST /v1/chat/completions`** too, and only for that value, so an API client or the remote console keeps the plain prompt). It also carries **`metadata.lang`**, the interface's language (**`en`**, **`ru`**): the documentation that the turn's **`@coddy:`** mentions attach and the agent's documentation tools read is in it; the remote console sends its terminal's. When the selected model exposes **`reasoning_levels`**, it also sends optional **`metadata.reasoning`** with the chosen level; default follows the model's **`reasoning_default`**, persisted choice in **`coddy_llm_reasoning`**. It sends the **`@`** mentions of **`input`** as typed: the server resolves them when the turn starts - a file anywhere on disk, a line range (**`@Dockerfile:21-31`**, reaching the model as **`<coddy_attachment ... lines="21-31">`** holding only those lines), a folder listing, another session, a rule, a subagent, a page of the built-in documentation, a web page - the way it resolves every surface's prompt (see **`docs/features/mentions.md`**). **`GET /coddy/mentions`** powers the **`@`** picker, **`POST /coddy/mentions/check`** tells the composer which typed mentions resolve so only those are highlighted, and **`GET /coddy/workspace/file`** powers the line-range picker that opens after the **`:`**. SSE **default** chunks follow **`chat.completion.chunk`** deltas (**`delta.content`** for assistant text, **`delta.reasoning_content`** for streamed model reasoning so the UI can keep the **thinking** foldout separate). Named **`event:`** lines (**`tool_call`**, which carries **`_meta.coddy.agentTool`** for a call the agent behind an **`acp`** model ran on its own side, **`tool_call_update`**, **`plan`**, **`token_usage`**, **`turn_progress`**, **`available_commands`**, **`message_queue`**, **`user_message`**) expose tool progress and incremental token totals between LLM rounds (**`token_usage`** carries **`reasoningTokens`** when the provider reports what the call's reasoning cost); **`message_queue`** carries the whole message queue of the session on every change and **`user_message`** carries a queued follow-up the agent has just read, or an after-turn message whose own prompt starts, at the point it entered the conversation (see **`docs/features/message-queue.md`**); the turn stream reserves **`provider_usage`** for a snapshot emitted mid-turn (nothing emits one today; the account usage of a finished turn is read from **`GET /coddy/providers/{name}/usage`** or arrives on **`GET /coddy/events`**); when **`memory.enable`** is **true**, the server also emits **`memory_run`** for the memory subagent of the turn (**`started`** with the task and child session ids, **`finished`** with the task status, the duration, whether the report was **`delivered`** to the model in this turn and, for a failed run, the error it ended with as **`reason`**, or **`skipped`** with a reason); no text travels on it, and the run's record is the task row with **`agent.system`** true under **`GET /coddy/sessions/{id}/background-tasks`** plus the child transcript it names (see **`docs/features/memory.md`**). A turn the server started on its own because background tasks the model started ended with their wake on (**`notify_on_finish`**, on by default) opens with **`background_wake`**: **`tasks`** names each with **`id`**, **`kind`**, **`label`**, **`agent`**, **`status`**, **`exitCode`**, **`durationMs`** and **`error`**, and the turn's first message is persisted with the same tasks, so no client shows the instruction as a user bubble, live or after a reload; the bundled UI shows nothing in its place, and the task row says **`woke_agent`** (see **`docs/features/background-tasks.md`**). **`coddy_meta`** JSON follows the usual rule immediately before **`data: [DONE]`**; for agent/plan/ask turns it also carries **`stop_reason`** (`end_turn`, `cancelled`, `max_turns`, ...) so remote clients recover the ACP stop reason. A prompt that starts with settings commands has them applied before the turn ([Session settings](../features/session-settings.md)); a prompt of commands only runs no turn, streams the notice of each change as the answer, and ends with **`coddy_meta`** **`settings_only: "true"`**, so a client can drop the rows it drew for the exchange: nothing of it is kept in the transcript, and the change shows in the session's **`settings`**. **`event: session_settings`** carries the settings snapshot whenever the session's settings change during the stream (a command, the permission dialog's session switch, the model's **`switch_model`**), with a **`notice`** only when the agent made the change itself. **`event: session_goal`** carries the session goal (the shape of **`GET /coddy/sessions/{id}/goal`**) whenever it changes during the stream - set by **`/goal`**, checked, continued, paused, cleared - and **`event: goal_turn`** opens every turn the session supervisor starts (**`kind`** kickoff, continue, recover, resume or wrapup, **`index`** of **`limit`**, **`objective`**, **`reason`**, **`remaining`**); that turn's first message is persisted with the same marker as **`goal_turn`**, so the bundled UI shows a one-line goal row instead of the instruction text. **Stop generation** in the composer calls **`POST /coddy/sessions/{id}/cancel`** with **`X-Coddy-Session-ID`** matching **`{id}`**. Right after sending it, the UI triggers **`AbortSignal`** on its own streamed **`fetch`** of that turn (the POST or the relay): a browser keeps six HTTP/1.1 connections per host across all of its tabs, and the cancel could otherwise wait for the one that stream holds. The turn runs on without the stream; a failed cancel shows an error, keeps the running controls available for a retry and rejoins the turn through **`GET /coddy/sessions/{id}/composer-stream`**. Success acknowledges cooperative cancellation, while **`turn_ended`** or a fresh activity snapshot reporting idle confirms completion. That maps to ACP **`session/cancel`** for the agent turn (**`TurnCtx`** propagation for direct **`models[].model`** completions uses the same cancel hook). Cancel mid-stream still **persists** accumulated assistant **`content`** for that turn; **`GET /coddy/sessions/{id}/messages`** can briefly trail that write, so the SPA **merges** fetched rows with its per-session shadow or on-screen transcript (**`mergeTranscriptPreferLocalSuffix`** in **`external/ui/src/ui/chat/transcriptServerSnapshot.ts`**). More than one session may stream in parallel (**`pickStreamMutationBase`** in **`streamMutationBase.ts`** keeps SSE mutations scoped per **`X-Coddy-Session-ID`**).
+- The bundled UI calls **`POST /v1/responses`** with **`stream: true`**. On session open and reconnect, it reads **`GET /coddy/sessions/{id}/activity`** and **`GET /coddy/sessions/{id}/queue`** without requiring a row in the filtered or paginated **`GET /coddy/sessions`** listing. Server activity drives Stop and queue controls separately from the local stream reader; a lost reader does not prove the turn ended. The existing **`GET /coddy/sessions/{id}/composer-stream`** relay (SSE) lets the UI replay bytes already emitted for a running turn and continue receiving live chunks until **`data: [DONE]`** or an error event. Starting a new **`POST /v1/responses`** cancels that relay subscription client-side. For ReAct (**`model`** **`agent`**, **`plan`**, or **`ask`**), it sends optional **`metadata.model`** with the selected YAML **`models[].model`** **`id`** and optional **`metadata.runPlanSlug`** to implement a saved design plan (**`coddy.dev/runPlanSlug`** on ACP **`session/prompt`**; answered with **`409`** before the turn starts when **`model`** is **`ask`**) (from **`GET /v1/models`**, every row but the **agent**, **plan** and **ask** profiles); default is its remembered pick in **`coddy_llm_model`**, else the alphabetically first row. Every turn also carries **`metadata.surface: "webui"`**, which gives that turn a system prompt block telling the model the web UI draws **`mermaid`** and **`svg`** fences as pictures and typesets LaTeX (**`external/httpserver/webui_prompt.go`**; on **`POST /v1/chat/completions`** too, and only for that value, so an API client or the remote console keeps the plain prompt). In the side panel of Coddy for Browser it carries **`metadata.browser`** **`{browser_id, tab_id, url, title}`** too: the tab the person writes from, which the panel moved into the chat's tab group; the server makes it the default tab of the chat's **`browser`** tool and tells the model about it in a system prompt block, the address and title as JSON data. It also carries **`metadata.lang`**, the interface's language (**`en`**, **`ru`**): the documentation that the turn's **`@coddy:`** mentions attach and the agent's documentation tools read is in it; the remote console sends its terminal's. When the selected model exposes **`reasoning_levels`**, it also sends optional **`metadata.reasoning`** with the chosen level; default follows the model's **`reasoning_default`**, persisted choice in **`coddy_llm_reasoning`**. It sends the **`@`** mentions of **`input`** as typed: the server resolves them when the turn starts - a file anywhere on disk, a line range (**`@Dockerfile:21-31`**, reaching the model as **`<coddy_attachment ... lines="21-31">`** holding only those lines), a folder listing, another session, a rule, a subagent, a page of the built-in documentation, a web page - the way it resolves every surface's prompt (see **`docs/features/mentions.md`**). **`GET /coddy/mentions`** powers the **`@`** picker, **`POST /coddy/mentions/check`** tells the composer which typed mentions resolve so only those are highlighted, and **`GET /coddy/workspace/file`** powers the line-range picker that opens after the **`:`**. SSE **default** chunks follow **`chat.completion.chunk`** deltas (**`delta.content`** for assistant text, **`delta.reasoning_content`** for streamed model reasoning so the UI can keep the **thinking** foldout separate). Named **`event:`** lines (**`tool_call`**, which carries **`_meta.coddy.agentTool`** for a call the agent behind an **`acp`** model ran on its own side, **`tool_call_update`**, **`plan`**, **`token_usage`**, **`turn_progress`**, **`available_commands`**, **`message_queue`**, **`user_message`**) expose tool progress and incremental token totals between LLM rounds (**`token_usage`** carries **`reasoningTokens`** when the provider reports what the call's reasoning cost); **`message_queue`** carries the whole message queue of the session on every change and **`user_message`** carries a queued follow-up the agent has just read, or an after-turn message whose own prompt starts, at the point it entered the conversation (see **`docs/features/message-queue.md`**); the turn stream reserves **`provider_usage`** for a snapshot emitted mid-turn (nothing emits one today; the account usage of a finished turn is read from **`GET /coddy/providers/{name}/usage`** or arrives on **`GET /coddy/events`**); when **`memory.enable`** is **true**, the server also emits **`memory_run`** for the memory subagent of the turn (**`started`** with the task and child session ids, **`finished`** with the task status, the duration, whether the report was **`delivered`** to the model in this turn and, for a failed run, the error it ended with as **`reason`**, or **`skipped`** with a reason); no text travels on it, and the run's record is the task row with **`agent.system`** true under **`GET /coddy/sessions/{id}/background-tasks`** plus the child transcript it names (see **`docs/features/memory.md`**). A turn the server started on its own because background tasks the model started ended with their wake on (**`notify_on_finish`**, on by default) opens with **`background_wake`**: **`tasks`** names each with **`id`**, **`kind`**, **`label`**, **`agent`**, **`status`**, **`exitCode`**, **`durationMs`** and **`error`**, and the turn's first message is persisted with the same tasks, so no client shows the instruction as a user bubble, live or after a reload; the bundled UI shows nothing in its place, and the task row says **`woke_agent`** (see **`docs/features/background-tasks.md`**). **`coddy_meta`** JSON follows the usual rule immediately before **`data: [DONE]`**; for agent/plan/ask turns it also carries **`stop_reason`** (`end_turn`, `cancelled`, `max_turns`, ...) so remote clients recover the ACP stop reason. A prompt that starts with settings commands has them applied before the turn ([Session settings](../features/session-settings.md)); a prompt of commands only runs no turn, streams the notice of each change as the answer, and ends with **`coddy_meta`** **`settings_only: "true"`**, so a client can drop the rows it drew for the exchange: nothing of it is kept in the transcript, and the change shows in the session's **`settings`**. **`event: session_settings`** carries the settings snapshot whenever the session's settings change during the stream (a command, the permission dialog's session switch, the model's **`switch_model`**), with a **`notice`** only when the agent made the change itself. **`event: session_goal`** carries the session goal (the shape of **`GET /coddy/sessions/{id}/goal`**) whenever it changes during the stream - set by **`/goal`**, checked, continued, paused, cleared - and **`event: goal_turn`** opens every turn the session supervisor starts (**`kind`** kickoff, continue, recover, resume or wrapup, **`index`** of **`limit`**, **`objective`**, **`reason`**, **`remaining`**); that turn's first message is persisted with the same marker as **`goal_turn`**, so the bundled UI shows a one-line goal row instead of the instruction text. **Stop generation** in the composer calls **`POST /coddy/sessions/{id}/cancel`** with **`X-Coddy-Session-ID`** matching **`{id}`**. Right after sending it, the UI triggers **`AbortSignal`** on its own streamed **`fetch`** of that turn (the POST or the relay): a browser keeps six HTTP/1.1 connections per host across all of its tabs, and the cancel could otherwise wait for the one that stream holds. The turn runs on without the stream; a failed cancel shows an error, keeps the running controls available for a retry and rejoins the turn through **`GET /coddy/sessions/{id}/composer-stream`**. Success acknowledges cooperative cancellation, while **`turn_ended`** or a fresh activity snapshot reporting idle confirms completion. That maps to ACP **`session/cancel`** for the agent turn (**`TurnCtx`** propagation for direct **`models[].model`** completions uses the same cancel hook). Cancel mid-stream still **persists** accumulated assistant **`content`** for that turn; **`GET /coddy/sessions/{id}/messages`** can briefly trail that write, so the SPA **merges** fetched rows with its per-session shadow or on-screen transcript (**`mergeTranscriptPreferLocalSuffix`** in **`external/ui/src/ui/chat/transcriptServerSnapshot.ts`**). More than one session may stream in parallel (**`pickStreamMutationBase`** in **`streamMutationBase.ts`** keeps SSE mutations scoped per **`X-Coddy-Session-ID`**).
 - On the first user message of a brand-new chat (no session in the rail yet), the UI **`POST`**s **`/coddy/describe`** in parallel with **`/v1/responses`**, with the new chat's **`X-Coddy-Session-ID`** and its folder as **`cwd`**, so the slash commands of that workspace are described to the model. Until the call settles (an answer, an empty **`short`**, a failure, or 30 seconds, after which a late name still lands) the header and the chat's History row show a shimmering placeholder instead of the first message. When **`short`** arrives, the header and session list titles update **immediately**; **`PATCH /coddy/sessions/{id}`** still runs once headers expose the canonical session id (**retries PATCH** briefly if persistence lags describe), carrying the **`tags`** the same answer proposed, so naming and filing a new chat cost one model call between them. That PATCH carries **`titleIfUnpinned`**, which makes the title a suggestion: a session already named during the first turn - in the chat header, or by the agent's **`session_describe`** tool - keeps its name, and only the tags land.
 - The bundled UI exposes **Settings** at **`#/settings`**. It loads **`GET /coddy/config/schema`** (JSON Schema for the editor) and **`GET /coddy/config`** (current values, including **API keys**, optional per-provider **`proxy`** URLs, and the **`gateways.telegram.token`** bot token), then **`POST /coddy/config/validate`** and **`PUT /coddy/config`** on save. The provider form's **Models** list and the logical-model form's **Context window** field call **`POST /coddy/providers/models`** with the provider row as the form holds it (an automatic fetch leaves **`api_key_command`** out; only the refresh control sends it), so a provider that has not been saved yet (for example right after an OAuth device sign-in) lists its models too; the logical-model form additionally calls **`GET /coddy/config/reasoning-levels`** behind **Fetch reasoning levels**, which fills **`models[].reasoning_levels`** with the tiers detected for the model id being edited (the type of the provider row it points at is sent as **`provider_type`**, so an unsaved provider is honoured). The **`gateways`** block round-trips through this API, so editing settings in the UI no longer drops the Telegram configuration. There is no separate auth on these routes - expose **`coddy serve`** only on trusted networks.
 
@@ -18115,6 +18419,10 @@ header where the client can set one, since a query token reaches proxy access lo
 | POST | **`/coddy/mentions/check`** | Which **`@`** mentions of a draft a sent prompt would attach, for the composer's highlight. Body **`{"text": "..."}`** (at most 256 KiB, else **`413`**); **`X-Coddy-Session-ID`** names the session it would be sent to, and the optional **`cwd`** query the folder of a new chat, as on **`/coddy/slash-commands`**. The resolver runs dry - a file is looked at and never read, a folder is not listed, a session is found and not summarised, a page is not fetched. JSON **`mentions[]`**, one per **`@`** token in document order (a token in a fenced block, an inline code span or a quoted line is prose and left out): **`token`**, the whole token; **`typed`**, the part that resolves (**`@src/a.go`** of **`@src/a.go b.go`**); **`kind`** (**`file`**, **`directory`**, **`session`**, **`rule`**, **`agent`**, **`plan`**, **`url`**, **`doc`**). **`typed`** and **`kind`** are absent for a token that names nothing, such as **`@google/genai`** in **`npm install @google/genai`**. **`400`** for a broken body. |
 | GET | **`/coddy/info`** | Which build serves this API, and where: **`{"object":"coddy.info","version":...,"hostname":...,"permissionMode":...,"toolsets":[...]}`**. **`toolsets`** names the **`toolsets[]`** presets of the configuration, empty without one: the start screen offers a toolset chip only while there is one and sends a pick with the first message as **`metadata.toolset`** ([Toolsets](../getting-started/configuration.md#toolsets)). **`version`** is the string **`coddy -v`** prints; **`hostname`** is the machine's host name (empty when the system does not say); **`permissionMode`** is the permission mode a new session starts under: the one chosen last on any surface, kept in **`${CODDY_HOME}/permission-mode.json`** (**`ask`**, **`accept_edits`** or **`bypass`**; **`ask`** until one is chosen), the same value every settings snapshot reports as **`configuredPermissionMode`**. The web UI shows the version at the right of the start screen's footer, for the server the page is talking to (the local one, a remote, a node reached through a relay), and names the machine the page runs on by its host name on the swarm map, where the connection to a relay starts. Its start screen, which has no session to read a snapshot from, shows **`permissionMode`** on the permission chip and sends a mode picked there with the first message as **`/permissions <mode>`** whenever it differs from that value; it reads the route again after every **`config_reloaded`** event and every reconnect of **`GET /coddy/events`**, and takes **`configuredPermissionMode`** from every newer **`event: session_settings`**, whichever session it is about. |
 | GET | **`/coddy/status`** | What this `coddy serve` process is and what needs attention, as one document built from the running process on each request: the build, how it was started, the subsystems and their addresses, turns, waiting prompts and background tasks, the sessions disk, **`attention`**, and with the **`metrics`** tag the last hour of the provider series. It backs **Settings → System** ([System](../surfaces/web-ui.md#system-settings-tab)); the members, units and codes are under [System status](#system-status). **`404`** from a server older than the route. |
+| GET | **`/browser/v1/connect`** | The WebSocket of the [Coddy for Browser](../features/browser.md) extension (`-tags=browser`, while `browser.enable` is on with a `browser.token`; **404** otherwise). Outside this API's gate: the socket takes only a `chrome-extension://` origin and the key in its first message ([Browser protocol](browser-protocol.md)). |
+| GET, POST | **`/browser/v1/files/{ticket}`** | One-time file transfers of the extension's `upload_file` and `download_file`, with the extension key as the bearer token; outside this API's gate. |
+| GET | **`/coddy/browser/v1/browsers`** | The browsers connected to this server and their tabs, for a chat of another Coddy process (`node`, `session_id` query: the chat that asks, which sees its own tabs as `yours`). Behind this API's credentials; **404** unless `browser.serve_remote` is on. |
+| POST | **`/coddy/browser/v1/call`** | One action of the `browser` tool for a chat of another Coddy process: `browser_id`, `action`, `tab_id`, `params`, `caller` (`node`, `session_id`, `title`) and, for `upload_file` / `download_file`, `file` (`name`, base64 `data`). Answers `result` and the downloaded `file`; **409** with the extension's message when it refuses or fails the action, **413** past 32 MiB, **404** unless `browser.serve_remote` is on. The call lasts as long as the action; dropping it cancels the action. |
 | GET | **`/coddy/docs`** | The contents of the documentation built into the binary ([Built-in documentation](../features/built-in-docs.md)): **`version`** (the binary's) and **`groups[]`** of **`docs/nav.yaml`**, each with **`id`**, **`title`**, **`summary`** and **`pages[]`** (**`slug`**, **`title`**, **`summary`**). A **`slug`** is the page's path under **`docs/`** without **`.md`**, the same in every language. No site is contacted. Optional **`lang`** on this route and the two below (**`ru`**, any spelling of a locale such as **`ru_RU.UTF-8`**) answers from the Russian translation; none, or a language without a translation, is English, and **`lang`** in the response names the language served. |
 | GET | **`/coddy/docs/page`** | One page. **`ref`** (required) takes a slug, a path with or without **`docs/`** and **`.md`**, a **`coddy:`** link, an **`@coddy:`** mention, a **`coddy.dev/docs`** address, a file name one page has or a title, optionally with **`#section`**. JSON **`slug`**, **`title`**, **`summary`**, **`group`** (**`id`**, **`title`**), **`anchor`** (the section **`ref`** named, else empty), **`markdown`** (links to other pages rewritten to **`coddy:<slug>#<anchor>`**, images and repository files to GitHub at the release tag), **`headings[]`** (**`level`**, **`text`**, **`anchor`**), **`prev`** and **`next`** (**`slug`**, **`title`**, or null), **`url`** (the public address, **`coddy.dev/ru/docs/<slug>`** for a Russian page), **`lang`** (the language of the text: English for a page the translation lacks). A section's **`anchor`** is the one GitHub gives its English heading, in both languages: a Russian page answers to it (and **`ref`** may also name the anchor of its Russian heading), and its **`headings[]`** carry the Russian text under the shared anchor. **`400`** without **`ref`**; **`404`** for a page or a section that does not exist, naming the closest pages or the page's sections. |
 | GET | **`/coddy/docs/search`** | Sections of the documentation in **`lang`** ranked against **`q`** with BM25 over the page title, the section heading and the text, after stemming (English, and Snowball for Russian words, **`ё`** read as **`е`**); a word of three letters or more also finds the words it begins; at most three sections per page. Optional **`limit`** (1 to 50, default 10). JSON **`query`**, **`version`**, **`lang`**, **`hits[]`** (**`slug`**, **`title`**, **`group`**, **`anchor`** and **`heading`** unless the hit is the part above the first section, **`snippet[]`** of **`text`** fragments with **`hit`** on the matched words). An empty **`q`** answers no hits; **`400`** for a bad **`limit`**. |
@@ -19391,6 +19699,285 @@ The agent can call these methods on the client (if client supports them):
 ```
 
 
+# Reference / Browser protocol
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/reference/browser-protocol.md
+
+# Browser protocol
+
+The wire between `coddy serve` and the [Coddy for Browser](../features/browser.md) extension. Two repositories
+implement it: the endpoint and the `browser` tool in `external/browser` of this repository, and the extension in
+[coddy-project/coddy-for-browser](https://github.com/coddy-project/coddy-for-browser). A change to the protocol
+lands in both, and this page changes with it.
+
+The current version is **1**.
+
+## Transport
+
+The extension opens one WebSocket to the HTTP server of `coddy serve`, its home server, and keeps it open. The
+server never connects to the browser: everything Coddy asks of it travels down this socket, so Coddy reaches a browser
+it has no route to. The endpoint answers while `browser.enable` is on with a `browser.token`, and `404` otherwise.
+
+| | |
+| --- | --- |
+| Address | `ws://<host>:<port>/browser/v1/connect` on the HTTP server, the address of the web UI; `wss://` behind an HTTPS proxy |
+| Origin | `chrome-extension://<id>` (Chrome, Yandex Browser) or `moz-extension://<uuid>` (Firefox); the server refuses the upgrade with any other `Origin` header, or none |
+| Messages | One JSON-RPC 2.0 object per text frame, in both directions |
+| Size | 16 KiB until `initialize` is answered, 8 MiB after |
+| Liveness | The extension sends `$/ping` every 20 s; the server closes a socket silent for 60 s |
+
+The endpoint's routes are outside the HTTP API's own gate: the extension proves the key itself, in `initialize`
+and on every file transfer. A chat of another Coddy process never uses this socket; it reaches the browser through
+the home server's API ([Other Coddy processes](#other-coddy-processes)).
+
+Both sides send requests, answers and notifications. Coddy's request ids are strings of 48 hex digits; the
+extension's ids are its own. An answer to an id the other side never sent is ignored.
+
+## Handshake
+
+The first message is the extension's `initialize` request. The key travels in it because a browser cannot set
+headers on a WebSocket. The server answers anything else first with `-32600` and closes the socket.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": 1,
+    "key": "<browser.token>",
+    "browser": { "id": "6f1c0a9e-2d4b-4b8e-9a51-3c7e0f2d9b10", "name": "Chrome - laptop", "version": "0.1.0" },
+    "actions": ["open_tab", "close_tab", "release", "snapshot", "screenshot", "navigate", "click", "type", "press", "hover", "scroll", "drag", "upload_file", "download_file"],
+    "grant": "b0f3a5d2-..."
+  }
+}
+```
+
+- `browser.id` is stable for one installation: 8 to 80 characters of letters, digits and `-`. A second connection
+  with the same id replaces the first one, whose requests still waiting fail as an unknown outcome;
+- `browser.name` (1 to 100 characters) tells browsers apart when several are connected;
+- `actions` lists what the extension implements. Coddy sends no other action;
+- `grant` names the extension's current selection, as `browser/tabs` does, so a command sent before the first tab
+  list carries the right one.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": 1,
+    "server": { "name": "coddy", "version": "1.4.0" },
+    "limits": { "maxFileBytes": 33554432 }
+  }
+}
+```
+
+| Error | Meaning |
+| --- | --- |
+| `-32001` | The key does not match `browser.token`. |
+| `-32002` | Another protocol version; `data.supported` lists the versions the server speaks. |
+| `-32600` | The first message was not `initialize`. |
+| `-32602` | Invalid parameters, a malformed browser id or name among them. |
+
+After an error the server closes the socket. Right after the answer, the extension sends `browser/tabs`, an empty
+list included.
+
+## Tabs
+
+The extension decides which tabs Coddy reaches and reports them in full whenever the list changes.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "browser/tabs",
+  "params": {
+    "tabs": [
+      { "id": 41, "url": "https://example.com/", "title": "Example Domain" },
+      { "id": 77, "url": "https://example.org/report", "title": "Report", "sessionId": "sess_8f2c..." }
+    ],
+    "grant": "b0f3a5d2-..."
+  }
+}
+```
+
+- A tab without `sessionId` is shared: any chat may act in it, and its first action moves it to that chat. A tab with
+  `sessionId` belongs to that chat, and the server refuses another chat's command for it before sending it;
+- at most 100 tabs, `http` and `https` pages only, a URL of at most 8192 characters and a title of at most 1000. A
+  list that breaks these rules ends the connection;
+- `grant` names the current selection. The extension replaces it when the user presses Stop, and refuses a command
+  that carries an older one. An empty `grant` keeps the previous one;
+- the extension sends `browser/tabs` before it answers a command that changed the list, so the answer to `open_tab`
+  never names a tab Coddy does not know yet.
+
+In Coddy for Browser the list is the content of its tab groups of the browser: the shared **Coddy** group, and one group per
+chat titled after the chat.
+
+## Commands
+
+Coddy sends one `browser/command` request per action of a chat.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "9a1f...",
+  "method": "browser/command",
+  "params": {
+    "action": "click",
+    "tabId": 41,
+    "params": { "ref": "4c1d9e2a:7" },
+    "grant": "b0f3a5d2-...",
+    "session": { "id": "sess_8f2c...", "title": "Check the release notes" }
+  }
+}
+```
+
+`params` holds the action's own parameters as the chat's model wrote them. `session.title` names the chat for the
+tab group and the in-page indicator. `tabId` is left out for `open_tab` and `release`.
+
+A chat of another Coddy process carries `session.node`, the machine it runs on as it names itself, and its
+`session.id` is `<node>/<session id>`; a session id of the home server never holds a `/`. The extension asks the user
+before such a chat's first action and adds the node to the title of its tab group.
+
+```json
+"session": { "id": "laptop/sess_31d0...", "title": "Plan the trip", "node": "laptop" }
+```
+
+| Action | Parameters | Result |
+| --- | --- | --- |
+| `open_tab` | `url` | `tabId`, `url`, `title` of the new tab, once it loaded; the tab starts in the chat's group |
+| `close_tab` | - | `closed` |
+| `release` | - | `released`: how many of the chat's tabs went back to the shared group |
+| `snapshot` | - | `url`, `title`, `text` (up to 20000 characters), `elements` (up to 500: `ref`, `tag`, `name`, `x`, `y`, and `role`, `type`, `href`, `value`, `checked`, `disabled`, `offscreen` when they apply), `viewport` |
+| `screenshot` | - | `dataUrl` (`data:image/png;base64,...`, one image pixel per CSS pixel), `width`, `height` |
+| `navigate` | `url`, or `back` / `forward` | `url`, `title` after the load |
+| `click` | `ref`, or `x` and `y`; `button` (`left`, `right`, `middle`), `count` (1 to 3) | `ok`; `trusted: false` when the input went through the page |
+| `type` | `text`; `ref`, `clear` | `ok` |
+| `press` | `key` (`Enter`, `Tab`, `Escape`, `Backspace`, `Delete`, arrows, `Home`, `End`, `PageUp`, `PageDown`, `Space`, a letter or digit, with `Ctrl+`, `Alt+`, `Shift+`, `Meta+`) | `ok` |
+| `hover` | `ref`, or `x` and `y` | `ok` |
+| `scroll` | `dx`, `dy`; `x`, `y` (the middle of the viewport when left out) | `ok` |
+| `drag` | `x`, `y`, `to_x`, `to_y` | `ok` |
+| `upload_file` | `ref` of a file input, `transfer_id`, `filename` | `filename`, `bytes` |
+| `download_file` | `url`, `transfer_id`, `filename` | `bytes`, `filename` |
+
+- Coordinates are CSS pixels of the viewport. A `ref` comes from the latest `snapshot` of the same page and stops
+  working when the page changes;
+- every result but `open_tab`, `close_tab` and `release` also carries `tab`: the `id`, `url` and `title` of the tab
+  after the action;
+- an extension without the browser's debugger (Firefox) dispatches the events of `click`, `type`, `press`, `hover`,
+  `scroll` and `drag` in the page itself and adds `trusted: false` to their result: a page can tell them from a
+  person's input;
+- an action fails with an error answer, code `-32000`, a message the chat reads and a `data.reason` among
+  `not_shared`, `other_chat`, `stopped`, `chat_declined`, `chat_prompt_timeout`, `site_declined`, `cross_origin_frame`,
+  `site_prompt_timeout`, `page_changed`, `cancelled`, `unsupported`, `invalid_params`, `too_large`,
+  `transfer_failed`, `download_failed`.
+
+Coddy waits 2 minutes for an answer, 10 for `download_file`. When a chat's turn is cancelled or the wait runs out,
+Coddy sends `$/cancelRequest` and reports to the chat that the outcome is unknown; it never repeats an action by
+itself.
+
+```json
+{ "jsonrpc": "2.0", "method": "$/cancelRequest", "params": { "id": "9a1f..." } }
+```
+
+## Website approval
+
+Before the first action on a website (scheme, host and port), the extension asks the user in a window of its own, or
+in the side panel when it is open: allow for this chat, always allow, or decline. `open_tab`, `navigate` and
+`download_file` ask about the site they go to. A question unanswered for 110 s fails the command with
+`site_prompt_timeout`, a refusal with `site_declined`. The question never reaches Coddy: the user's answer stays with
+the browser.
+
+A chat that carries `session.node` is asked about first, once: allow this chat, or decline (`chat_declined`,
+`chat_prompt_timeout`). "Always allow" covers the chats of the home server only, so every new website asks again for
+a chat of another process, and Stop takes back what such chats were allowed.
+
+The list of sites allowed always starts with host entries for `localhost`, `127.0.0.1` and `[::1]` (`*://<host>:*`,
+any scheme and port), which the user revokes like any other. A host entry leaves out the home server's own port under
+every local name, and a chat that carries `session.node` asks about local origins like any other. The user adds
+entries beforehand - an origin, `*://<host>:<port>`, a range `*://<host>:<lo>-<hi>`, or one scheme on every port
+(`http://<host>:*`) - and may allow every website at once. Only an entry naming one port covers the home server's
+own port.
+
+## Files
+
+`upload_file` and `download_file` carry no file content on the socket. Coddy opens a one-time ticket for the length
+of the call and sends its id as `transfer_id`; the extension moves the bytes over HTTP on the same server, with the
+key as a bearer token.
+
+| Request | Direction | Answer |
+| --- | --- | --- |
+| `GET /browser/v1/files/<transfer_id>` | Coddy to the browser: the file to set on the input | `200` with the bytes |
+| `POST /browser/v1/files/<transfer_id>` | the browser to Coddy: the bytes it downloaded | `204` |
+
+A ticket serves one request within 2 minutes and then answers `410`; a wrong key answers `401`. A file is at most
+32 MiB. The extension fetches a download with the browser's cookies and refuses a redirect, so the chat passes the
+final address.
+
+## Notifications
+
+| Method | Direction | Parameters | Meaning |
+| --- | --- | --- | --- |
+| `browser/tabs` | extension to Coddy | `tabs`, `grant` | The tabs Coddy may reach, in full. |
+| `browser/stop` | extension to Coddy | - | The user pressed Stop: every command still waiting fails and no tab is shared until the next `browser/tabs`. |
+| `$/ping` | extension to Coddy | - | Keeps the socket alive, and Chrome's service worker with it. |
+| `browser/turnEnded` | Coddy to the extension | `sessionId` | The chat's turn ended; the extension takes its working marks off. Coddy sends it only to a browser holding a tab of that chat. |
+| `$/cancelRequest` | Coddy to the extension | `id` | Stop the command with that id. |
+
+A side ignores a notification it does not know, and answers a request it does not know with `-32601`, so either side
+can be upgraded first within one protocol version.
+
+## Side panel
+
+The extension's side panel shows the web UI of the home server in a frame. It asks for a ticket over the socket.
+
+```json
+{ "jsonrpc": "2.0", "id": 7, "method": "panel/open", "params": {} }
+```
+
+```json
+{ "jsonrpc": "2.0", "id": 7, "result": { "ticket": "3f9c...64 hex digits" } }
+```
+
+A ticket is good for one sign-in within a minute and is bound to the key it was issued for. The panel loads
+`<server>/?coddy_panel=<ticket>&coddy_panel_origin=<extension origin>` (`chrome-extension://<id>` or
+`moz-extension://<uuid>`); the web UI takes both out of the address
+and redeems the ticket at `POST /coddy/auth/browser` for a session cookie of its own, which ends when `browser.token`
+changes ([HTTP API](http-api.md#web-ui-sign-in-optional)).
+
+The frame and the panel then talk by `postMessage`, each to the other's origin only, and each takes a message only from
+the other's window at that origin.
+
+| Message | From | Fields | Meaning |
+| --- | --- | --- | --- |
+| `{source: "coddy-web-ui", type: "turn"}` | the web UI | `requestId`, `sessionId`, `title` | Before a turn is sent: which tab does the person write from? |
+| `{source: "coddy-for-browser", type: "turn"}` | the panel | `requestId`, `tab` (`browser_id`, `tab_id`, `url`, `title`) or `null`, `error` | The tab, already in the chat's tab group. The web UI sends it as `metadata.browser` of `POST /v1/responses`. |
+| `{source: "coddy-web-ui", type: "theme"}` | the web UI | `theme`: `scheme` and the colours `bg`, `surface`, `border`, `text`, `muted`, `accent` as computed colours, `rgb()` or `color(srgb ...)` | The panel's strip takes the web UI's theme; any other value is refused. |
+| `{source: "coddy-for-browser", type: "open"}` | the panel | `sessionId` | Show this chat of the server (`#/s/<sessionId>`). Only an id of the form `sess_...` is taken, and only while the web UI shows the panel's own server. |
+
+The web UI waits 3 s for the panel's answer and sends the turn without a tab when none comes. A chat of another
+environment of the web UI gets no tab.
+
+Opened on a tab that a chat of the home server holds, the panel loads the web UI on that chat:
+`<server>/?coddy_panel=...&coddy_panel_origin=...#/s/<session id>`.
+
+## Other Coddy processes
+
+A chat that does not run in the home server's process - a console or an editor on the same machine, a node of the
+swarm - reaches its browsers through the home server's HTTP API, behind the server's ordinary credentials, while
+`browser.serve_remote` is on. Through a swarm relay the routes are carried as `<relay>/swarm/nodes/<node>/coddy/...`.
+
+| Request | Does |
+| --- | --- |
+| `GET /coddy/browser/v1/browsers?node=&session_id=` | the connected browsers and their tabs as that chat sees them |
+| `POST /coddy/browser/v1/call` | one action: `browser_id`, `action`, `tab_id`, `params`, `caller` (`node`, `session_id`, `title`), and `file` (`name`, base64 `data`) for `upload_file` and `download_file` |
+
+The home server sends the action down the socket with `session.id` `<node>/<session id>` and `session.node`, and
+answers with `result` and, for `download_file`, the bytes in `file`. A refused or failed action answers `409` with the
+extension's message. The caller drops its request to cancel the action, and the home server sends
+`$/cancelRequest`. The home server cannot see where a remote chat's turn ends, so it sends `browser/turnEnded` for
+that chat 45 s after its last call. The fields and status codes are in the [HTTP API](http-api.md).
+
+
 # Tutorials / Coddy in CI
 
 Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/tutorials/coddy-in-ci.md
@@ -19520,7 +20107,7 @@ One `coddy serve` process polls a bot, answers in the chats you allow, and keeps
    ```bash
    make build TAGS="gateway.telegram"
    # or the set a release ships
-   make build TAGS="http ui scheduler memory cli gateway swarm metrics"
+   make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"
    ```
 
    Enabling the bot in a binary built without the tag is a startup error naming the tag, so a mismatch cannot pass unnoticed.
@@ -20649,7 +21236,7 @@ This page is for people: the environment, the build, the test runs, the flow of 
 git clone https://github.com/coddy-project/coddy-agent
 cd coddy-agent
 make hooks      # once per clone: git commit runs the gate in .githooks/pre-commit
-make build TAGS="http ui scheduler memory cli gateway swarm metrics"
+make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"
 ./build/coddy -v
 ```
 
@@ -20659,7 +21246,7 @@ On Windows the `Makefile` targets need a Unix-like shell: run them from Git Bash
 
 ## Building
 
-`make build` writes `build/coddy`. Optional modules are Go build tags, passed through the `TAGS` variable with spaces (a raw `go build` takes the same list with commas, `-tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics`):
+`make build` writes `build/coddy`. Optional modules are Go build tags, passed through the `TAGS` variable with spaces (a raw `go build` takes the same list with commas, `-tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics,browser`):
 
 | Command | What you get |
 |---|---|
@@ -20667,7 +21254,7 @@ On Windows the `Makefile` targets need a Unix-like shell: run them from Git Bash
 | `make build TAGS=http` | the HTTP API and `/docs` for `coddy serve`, no npm step |
 | `make build TAGS=cli` | the interactive console, bare `coddy` on a terminal |
 | `make build TAGS="http ui"` | the API plus the embedded SPA; `ui-build` runs first |
-| `make build TAGS="http ui scheduler memory cli gateway swarm metrics"` | the full set (`FULL_TAGS` in the `Makefile`): what the releases, the Docker image and the packages ship |
+| `make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"` | the full set (`FULL_TAGS` in the `Makefile`): what the releases, the Docker image and the packages ship |
 
 A subsystem enabled in `config.yaml` but not compiled into the binary is a startup error naming the tag. The tag reference, `make install`, `make print-version` and the distribution packages (`make deb`, `make rpm`, `make brew`) are in [docs/contributing/build.md](docs/contributing/build.md).
 
@@ -20688,7 +21275,7 @@ What ships is still the embedded copy: a change under `external/ui/src` is compl
 ## Running the tests
 
 - **`go test ./...`** - the untagged tree with its stubs; the quick check while iterating. A single package: `go test ./path/to/pkg -run TestName -count=1`.
-- **`make test`** - the express run, before every push: `make test-agent-rules` (Python hooks plus the OpenCode plugin), `ui-build`, the SPA's vitest suite (`make ui-test`), then one `go test -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics ./...` over the whole tree with every optional module compiled in. Minutes, not tens of minutes.
+- **`make test`** - the express run, before every push: `make test-agent-rules` (Python hooks plus the OpenCode plugin), `ui-build`, the SPA's vitest suite (`make ui-test`), then one `go test -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics,browser ./...` over the whole tree with every optional module compiled in. Minutes, not tens of minutes.
 - **`make test-matrix`** - every tag combination in `TEST_TAG_SETS` (`Makefile`), one after another. This is CI's job, one job per combination on every pull request; do not walk it locally. When a change moved a build-tag boundary (a `_stub.go`, an `Available` const, a `//go:build` line), run that one combination by hand, `go test -tags=<set> ./...`, and leave the rest to CI.
 - **`make test-race`** - the tree under the Go race detector, with every optional module but `ui` compiled in. CI runs it on every pull request (job **Race detector**). Run it before the push when a change touches goroutines, locks, channels or a test harness that drives a live loop; `GOFLAGS=-count=3 make test-race` repeats every test for a race that shows up rarely. Every package is clean under it, so a race it reports is fixed rather than skipped.
 - **`make test-cache`** - the prompt-cache group on its own: the `features/prompt_cache_*.feature` specs and every test named `TestPromptCache*`, which check what each request sends the provider - the same system message for the whole session, a history that only grows at its end, every rule at most once and nothing no path brought in. It is part of `make test`; run it when a change touches the system prompt, the rules, the history or the send boundary, and name a new test of the kind `TestPromptCache...` so it joins the group.
@@ -20842,7 +21429,7 @@ The writing rules for both languages, the glossary of Russian terms and the comm
 
 Capture the real surface, never a mockup and never a re-used older image that no longer matches.
 
-- **Web UI**: `make build TAGS="http ui scheduler memory cli gateway swarm metrics"`, `coddy serve` on a disposable `CODDY_HOME` at a presentable path, Playwright at 1280x800 in the Dark theme as the default, 390 wide when the page discusses the narrow layout, Light when the page discusses themes. Never capture the provider detail pane: it renders `api_key` values in full. The `examples/` harnesses and the paired UI verification rule ([Cursor](../../.cursor/rules/ui-verification.mdc), [Claude Code](../../.claude/rules/ui-verification.md)) describe the stand.
+- **Web UI**: `make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"`, `coddy serve` on a disposable `CODDY_HOME` at a presentable path, Playwright at 1280x800 in the Dark theme as the default, 390 wide when the page discusses the narrow layout, Light when the page discusses themes. Never capture the provider detail pane: it renders `api_key` values in full. The `examples/` harnesses and the paired UI verification rule ([Cursor](../../.cursor/rules/ui-verification.mdc), [Claude Code](../../.claude/rules/ui-verification.md)) describe the stand.
 - **Console**: a real Konsole window on an isolated Xvfb display, driven with XTEST (`demo-videos/rig/stage_konsole.sh` in the demo-videos repository), cropped to the used rows. States a real model would not reproduce on demand are captured the other way, without Konsole: a script drives `coddy cli` in a pty, emulates the screen with **pyte** and renders the cell grid to PNG through headless chromium, standing its own HTTP endpoint so it needs neither a provider nor a key - `examples/cli/capture_usage.py` for the usage footer, `examples/cli/capture_subagent.py` for a delegated run with a loaded skill, `examples/cli/capture_tasks.py` for the status line of a running turn and the `/tasks` overlay, `examples/cli/capture_settings.py` for the footer after the session settings commands.
 - **Naming and placement**: `docs/assets/<page-or-feature>/<state>-<theme>-<width>.png` when a page needs more than a couple of images, otherwise `docs/assets/<feature>-<state>-<theme>-<width>.png` at the top level. Kebab-case, no issue or pull request numbers, under 1 MB.
 - **On the page**: an image line followed by a one-line caption in italics, placed next to the paragraph that explains what the image shows. One image per view and state; a table with two images side by side when the page compares them.
@@ -21283,7 +21870,7 @@ Build with **`memory`** to link long-term memory (`external/memory`). Enable beh
 The **HTTP gateway**, **embedded SPA**, **scheduler**, **memory**, the **messenger gateway** (**`gateway`** — see [`docs/surfaces/gateway.md`](../surfaces/gateway.md)), and the **interactive console** (**`cli`**, bare **`coddy`** on a terminal — see [`docs/surfaces/console.md`](../surfaces/console.md)) are controlled by Go build tags. For a single binary that matches the default **Docker** image and includes every optional feature:
 
 ```bash
-make build TAGS="http ui scheduler memory cli gateway swarm metrics"
+make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"
 ```
 
 Output: **`build/coddy`**.
@@ -21294,7 +21881,7 @@ Equivalent **`go build`** (after `ui-build` when you use **`ui`**, or use **`mak
 make ui-build   # only when using -tags=...,ui,... with http; Makefile runs this for you on `make build`
 VERSION="$(make -s print-version)"
 REVISION="$(make -s print-revision)"
-go build -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics \
+go build -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics,browser \
   -ldflags "-X github.com/EvilFreelancer/coddy-agent/internal/version.Version=${VERSION} -X github.com/EvilFreelancer/coddy-agent/internal/version.Revision=${REVISION}" \
   -o build/coddy \
   ./cmd/coddy/
@@ -21306,14 +21893,14 @@ The [**Dockerfile**](../../Dockerfile) uses the same idea: comma-separated tags 
 
 **`make install`** copies **`build/coddy`** onto your **`PATH`**:
 
-- If **`build/coddy`** already exists (for example after **`make build TAGS="http ui scheduler memory cli gateway swarm metrics"`**), it is installed as-is without rebuilding.
-- If the binary is missing, **`make install`** runs **`make build TAGS="http ui scheduler memory cli gateway swarm metrics"`** first.
+- If **`build/coddy`** already exists (for example after **`make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"`**), it is installed as-is without rebuilding.
+- If the binary is missing, **`make install`** runs **`make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"`** first.
 
 - **root** - **`/usr/local/bin/coddy`**, man page in **`/usr/local/share/man/man1`**
 - **non-root** - **`~/.local/bin/coddy`** (ensure that directory is on **`PATH`**), man page in **`~/.local/share/man/man1`**
 
 ```bash
-make build TAGS="http ui scheduler memory cli gateway swarm metrics"
+make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"
 make install
 ```
 
@@ -21332,7 +21919,7 @@ Output: **`dist/coddy_<version>_linux_<arch>.deb`** and **`.rpm`**. Knobs:
 | Variable | Default | What |
 |----------|---------|------|
 | **`PKG_ARCHS`** | host **`GOARCH`** | architectures to package, e.g. **`"amd64 arm64"`** |
-| **`PKG_TAGS`** | **`http ui scheduler memory cli gateway swarm metrics`** | build tags for the packaged binary |
+| **`PKG_TAGS`** | **`http ui scheduler memory cli gateway swarm metrics browser`** | build tags for the packaged binary |
 | **`DIST_DIR`** | **`dist`** | where the packages land |
 
 ```bash
@@ -21498,7 +22085,7 @@ Use this when you only need stdio ACP and want fewer dependencies and no **`npm`
 ## Android (Termux)
 
 ```bash
-make android TAGS="http ui scheduler memory cli gateway swarm metrics"   # build/coddy-android-arm64, -amd64
+make android TAGS="http ui scheduler memory cli gateway swarm metrics browser"   # build/coddy-android-arm64, -amd64
 make check-android                                              # go vet with GOOS=android, test files included
 ```
 
@@ -21555,7 +22142,7 @@ Manual one-liner aligned with **`make build`**:
 
 ```bash
 go build \
-  -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics \
+  -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics,browser \
   -ldflags "-X github.com/EvilFreelancer/coddy-agent/internal/version.Version=$(make -s print-version) -X github.com/EvilFreelancer/coddy-agent/internal/version.Revision=$(make -s print-revision)" \
   -o build/coddy \
   ./cmd/coddy/
@@ -21566,13 +22153,13 @@ go build \
 In **`Makefile`**, **`TAGS`** is **space-separated**:
 
 ```bash
-make build TAGS="http ui scheduler memory cli gateway swarm metrics"
+make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"
 ```
 
 **`go build`** expects a **comma-separated** list (no spaces):
 
 ```bash
-go build -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics ...
+go build -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics,browser ...
 ```
 
 Order does not matter for these tags.
@@ -21591,7 +22178,7 @@ Order does not matter for these tags.
 | **`swarm`** | Stateless relay that aggregates nodes, started by **`coddy serve`** under **`swarm.enable`** | [`docs/operate/swarm.md`](../operate/swarm.md) · [`external/swarm/`](../../external/swarm) |
 | **`metrics`** | Prometheus exporter, started by **`coddy serve`** under **`metrics.enable`** (off by default); serves **`/metrics`** on a port of its own | [`docs/operate/monitoring.md`](../operate/monitoring.md) · [`external/metrics/`](../../external/metrics) |
 
-**`make test`** is the express run: the whole tree once with every optional module compiled in (**`http,ui,scheduler,memory,cli,gateway,swarm,metrics`**). **`make test-matrix`** walks every combination (the **`TEST_TAG_SETS`** list in [`Makefile`](../../Makefile)); CI runs that matrix on every pull request, one job per combination. The `cli` job also starts the built binary and drives the console through a real pty (`examples/cli/cli_e2e_startup.py`), and the **Telegram stand (tgfake)** job runs the Telegram bot against the release binary of [tgfake](tgfake.md) (`examples/gateway/tg_e2e_offline.sh`; the binary it runs is built with `gateway metrics`, and the script scrapes the exporter after the chat). The **Docker image** job builds the runtime image for **`linux/amd64`** and **`linux/arm64`**, the platforms a release pushes, and checks that each variant carries a binary of its own platform (**`make check-image`**, see [Checking the platforms of the image](../getting-started/docker.md#checking-the-platforms-of-the-image)). **`make test-race`** runs the whole tree under the Go race detector with every tag but `ui`; CI runs it on every pull request in the **Race detector** job, and `GOFLAGS=-count=3 make test-race` repeats every test locally for a race that shows up rarely. Two groups can be run on their own: **`make test-cache`** is the prompt-cache group (the `features/prompt_cache_*.feature` specs and the `TestPromptCache*` tests, part of `make test`: what every request sends the provider, held byte for byte across a session), and **`make test-perf`** is the performance group (the benchmarks of the `perf_test.go` files, never part of `make test`: timings of the work a turn repeats and the context a session over this repository's own rules costs, as `system-tokens`, `request-tokens` and `duplicate-rules`).
+**`make test`** is the express run: the whole tree once with every optional module compiled in (**`http,ui,scheduler,memory,cli,gateway,swarm,metrics,browser`**). **`make test-matrix`** walks every combination (the **`TEST_TAG_SETS`** list in [`Makefile`](../../Makefile)); CI runs that matrix on every pull request, one job per combination. The `cli` job also starts the built binary and drives the console through a real pty (`examples/cli/cli_e2e_startup.py`), and the **Telegram stand (tgfake)** job runs the Telegram bot against the release binary of [tgfake](tgfake.md) (`examples/gateway/tg_e2e_offline.sh`; the binary it runs is built with `gateway metrics`, and the script scrapes the exporter after the chat). The **Docker image** job builds the runtime image for **`linux/amd64`** and **`linux/arm64`**, the platforms a release pushes, and checks that each variant carries a binary of its own platform (**`make check-image`**, see [Checking the platforms of the image](../getting-started/docker.md#checking-the-platforms-of-the-image)). **`make test-race`** runs the whole tree under the Go race detector with every tag but `ui`; CI runs it on every pull request in the **Race detector** job, and `GOFLAGS=-count=3 make test-race` repeats every test locally for a race that shows up rarely. Two groups can be run on their own: **`make test-cache`** is the prompt-cache group (the `features/prompt_cache_*.feature` specs and the `TestPromptCache*` tests, part of `make test`: what every request sends the provider, held byte for byte across a session), and **`make test-perf`** is the performance group (the benchmarks of the `perf_test.go` files, never part of `make test`: timings of the work a turn repeats and the context a session over this repository's own rules costs, as `system-tokens`, `request-tokens` and `duplicate-rules`).
 
 On Windows, run Make through Git Bash. The build and install targets use Go's
 executable suffix (`coddy.exe`), including the binary that `make docs` runs.
@@ -21656,7 +22243,7 @@ land in **`dist/security/`**. Runner, gate knobs and triage:
 go install github.com/EvilFreelancer/coddy-agent/cmd/coddy@latest
 ```
 
-That compiles whatever the module default is **without** your local **`TAGS`**. For a known set of features (HTTP, UI, scheduler, memory, console, messenger gateway), clone the repo and use **`make build TAGS="http ui scheduler memory cli gateway swarm metrics"`** (or **`go build -tags=...`** as above).
+That compiles whatever the module default is **without** your local **`TAGS`**. For a known set of features (HTTP, UI, scheduler, memory, console, messenger gateway), clone the repo and use **`make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"`** (or **`go build -tags=...`** as above).
 
 
 # Contributing / Integration tests with tgfake
@@ -24207,6 +24794,7 @@ Composer YAML **`models[].model`** selector
 - **Stays in step with the configuration** — the list behind this menu is read once, at boot, so a model added while the page is open would otherwise be invisible until a reload. **`GET /coddy/events`** carries **`event: config_reloaded`** after every swap of the live configuration (a settings save here or elsewhere, the agent's **`config_commit`** / **`config_rollback`**, a skill install); **`App.tsx`** bumps **`configEpoch`** on it and re-reads **`GET /v1/models`** together with the slash-command list. The menu changes under the operator without any chrome of its own: no toast, no badge, no reopen. The re-read never moves the current selection of an open session - only a chat with no session yet re-picks its default from the new list.
 - **Mobile sheet** — on narrow/mobile shells (**`isMobileShell`**, the **`max-width: 1199px`** shell-stack breakpoint) the **`Mode`** / **`Model`** / **`Reasoning`** menus render as a **full-width bottom sheet** (**`mode-menu--sheet`**), the same family as the slash / **`@`** picker sheet, over a dimmed scrim (**`mode-menu-backdrop--scrim`**) instead of the cramped anchored dropdown. The sheet drops the desktop width cap (full width up to **560px**, centered) and gives the scroll a taller **`46vh`** cap. Desktop keeps the anchored **`mode-menu--portal`** dropdown.
 - **Telegram Mini App** — inside Telegram (`html[data-telegram-mini-app="true"]`, set by **`ui/telegram/miniApp.ts`** from the launch parameters) the menus and pickers stay bottom sheets. What the stacked shell anchors to the bottom rises by the part of the WebView Telegram does not show (**`--coddy-telegram-hidden-bottom`**, a half-open Mini App) or by an overlaying keyboard (**`--coddy-keyboard-inset`**), whichever is more (**`--coddy-telegram-lift`**): the composer's menus, the slash, **`@`** and context pickers on the start screen, the confirmation dialog and the image viewer, each capped to the visible height under the top bar. The docked composer keeps its **`bottom`** on the keyboard inset and grows a block at the end of **`.chat-bottom-inner`** by the rest, so the transcript's reserve, measured on that block's content box, and the follow to the newest message take it in. Drawers keep their bottom, their head in sight. The top bar's inset (**`--coddy-mobile-bar-h`**) adds Telegram's safe area and content safe area (their sum). Telegram's header, background and bottom bar take **`--coddy-canvas-gradient-top`** / **`--coddy-canvas-gradient-bottom`**. Nothing sets **`overflow-x`** on **`html`** or **`body`**, which would stop **`body`** from scrolling the viewport and the sticky chat title from sticking. Telegram's Back is an Escape for the layer on top, and a layer hears it only through a listener on the document (**`useEscapeCloses`**): a click on Telegram Web's Back, a button of the parent page, leaves the frame's focus on **`body`**, as a tap on a sheet's title or on a picture does. The rules live in **`ui/telegram/telegram.css`**, every one under **`html[data-telegram-mini-app="true"]`**; contract **`ui/telegram/telegram.test.tsx`**, live check **`npm run check:telegram`**. The ordinary browser sheet is unchanged.
+- **Coddy for Browser side panel** — inside the extension's side panel (`html[data-browser-panel="true"]`, set by **`ui/browserPanel/launch.ts`** when the page is a frame opened with **`?coddy_panel=<ticket>&coddy_panel_origin=<extension origin>`** (**`chrome-extension://<id>`** or **`moz-extension://<uuid>`**), both taken out of the address before the router reads it) the web UI is the ordinary shell at the panel's width, the stacked shell below 1200px, with nothing of its own to lay out. It signs in with the ticket (**`POST /coddy/auth/browser`**) before any form is shown, once per page. Before every send of a chat of the page's own server it asks the panel for the tab the person writes from (**`ui/browserPanel/bridge.ts`**, 3 s at most, the turn going without one otherwise) and sends it as **`metadata.browser`**; a chat of another environment asks nothing. It tells the panel its theme on load and on every change of **`data-theme`**: **`--coddy-canvas-gradient-top`**, **`--coddy-glass-panel-bg`**, **`--coddy-glass-panel-border`**, **`--text`**, **`--muted`** and **`--accent`**, each resolved to a computed colour (**`rgb()`**, or **`color(srgb ...)`** for a token written with **`color-mix()`**), so the extension's strip over the frame takes the page's ground and the panel takes nothing but colours from it. The panel may also ask the frame to show a chat of this server, the one that holds the person's tab (**`startPanelNavigation`**: **`{type: "open", sessionId}`**, an id of the form **`sess_...`** only, taken only from the panel's window at its origin and only while the environment is the panel's own, written as **`#/s/<id>`**); a panel opened on such a tab loads the frame on that address directly. Every message goes to the panel's origin only and is taken only from the parent window at that origin. Contract **`ui/browserPanel/browserPanel.test.ts`**, **`ui/auth/authState.test.ts`**; live check through the real extension (**`docs/features/browser.md`**, *Verify a build*).
 - **`Reasoning`** sits immediately next to **`Model`**, shown **only** when the active model row exposes a non-empty **`reasoning_levels`** in **`GET /v1/models`** (reasoning models). Same dropdown styling and **`opens-down`** / **`opens-up`** convention as **`Mode`** / **`Model`**; the button label is the current level capitalized (e.g. **`High`**), default label **`Reasoning`**.
 - Default for **new chat** follows cookie **`coddy_llm_reasoning`** when valid for the model, else the model's **`reasoning_default`**, else **`medium`** (or the first offered level). Opening a session restores it from the snapshot's **`settings.reasoning`**, never from the cookie. A level the snapshot's **`reasoningChoices`** offer beyond the menu (**`off`** where the provider can turn thinking off) is shown and sent as it is (label **`Off`**); an empty level (a model with no **`reasoning_default`** and no pick of the session's) shows as the chooser resolves it, **`medium`** or the first level, and is not sent as **`metadata.reasoning`** until the operator picks one, so the session is not pinned to it. A later snapshot of the session goes through the same chooser, so it never blanks the chip, and a transcript read whose snapshot is older than the one applied moves nothing back. The menu of a session whose **`reasoningChoices`** name **`off`** offers **`Off`** after the model's levels. Switching **Model** clamps the level to one the new model offers. Changing it updates the cookie and **`PATCH`** **`selectedReasoning`**; ReAct turns also send **`metadata.reasoning`**. The rules live in **`pickReasoningLevel`** (**`chat/reasoningSelection.ts`**) and are held by **`App.sessionSettings.test.tsx`**.
 
@@ -25152,6 +25740,7 @@ Short map for automation-friendly contributors.
 | `external/cli` | Interactive console TUI (**`-tags cli`**): bare **`coddy`** on a terminal, pi-style rendering in **`external/cli/tui`**. Guide: **`docs/surfaces/console.md`**. |
 | `external/swarm` | The relay **`coddy serve`** runs under **`swarm.enable`**, built with **`tags=swarm`** (part of **`FULL_TAGS`**, so the release binaries, image and packages carry it): the stateless relay - lease registry, per-node mount, aggregated sessions, ring-aware topology, and the reverse HTTP/2 tunnel for nodes that can only dial out - plus the relay's own settings (**`settings.go`**: **`/coddy/config*`** over **`internal/configapi`** with the relay's form, **`config.RelayUISchemaJSON`**, the document scoped to **`swarm`** and **`logger`** so a relay client neither reads nor writes the rest of the host's configuration, and a write through a mount refused when the node behind it is itself a relay). It serves nothing else of an agent: no **`/v1`**, no sessions, no documentation. **`Server.Close`** ends the tunnels, so a relay rebuilt on a config reload is dialled again. While it runs, **`Serve`** publishes its registry (**`swarm.PublishRelay`**) for the status snapshot. Shared vocabulary and the join client live untagged in **`internal/swarm`**, so **`coddy serve`** can join a relay without the tag; every running join set registers itself (**`internal/swarm/status.go`**: **`swarm.Joins`**, the relay host, kind, transport and online state of each registration, never a name or credential), and an agent registration yields to the relay of its own process (**`Client.yieldsToRelay`**): a process that runs both its API and a relay starts two join sets from one **`swarm.join`** that share the lease of one name, so the relay registers it, once, and the agent stays quiet until that relay stops. Guide: **`docs/operate/swarm.md`**. |
 | `external/metrics` | The Prometheus exporter **`coddy serve`** runs under **`metrics.enable`**, built with **`tags=metrics`** (in **`FULL_TAGS`**, so release binaries, image and packages carry it) and an **auxiliary** subsystem (**`serve.Subsystem.Auxiliary`**: never the only one, always free to stop; **`serve.Resolve`** refuses a config that enables only it). The package has no stub and **`cmd/coddy/metrics.go`** is its only importer; **`metrics_stub.go`** (no tag) keeps the descriptor, so a binary without the tag refuses **`metrics.enable`** naming the tag. **`collector.go`**: one private **`metrics.Set`** per family of **`github.com/VictoriaMetrics/metrics`** (**`expose.go`** writes HELP and TYPE in front of each, escapes label values in the series names and adds the library's Go and process families under a generic HELP), built by **`metricsWiring.Start`** right after **`rt.Init`** whenever the binary has the tag (collection spans the process; **`metrics.enable`** only opens the listener), fed by **`llm.AddCallObserver`** (**`internal/llm/call_observer.go`**: one event per provider attempt, its outcome one of **`llm.CallOutcomes`**, whether it is a retry, and the time to its first chunk with content, which **`Stream`** notes only for a caller's callback while someone observes, since a nil callback decides whether a failed stream may be retried), **`agent.AddToolCallObserver`** (**`internal/agent/tool_observer.go`**: one event per tool call, named by the built-in tool, **`mcp`** or **`other`** and never by an MCP server or tool, its outcome **`ok`**, **`error`**, **`refused`** or **`denied`**), **`session.Manager.AddTurnObserver`** (the turn edges and the duration between them) and **`Runtime.AddConfigObserver`** (a reload that leaves an exporter off loopback without a token is warned about), with the label budget of the llm families (16 providers and 64 named provider and model pairs for the life of the process, everything else **`other`**, decided when the attempt is observed, so labels are closed enums and configured names only; every admitted pair is seeded at zero); **`expose.go`** also writes the gauges from one **`serve.Snapshot`** per scrape, so a scrape asks no provider or server anything; every 15 s the **`Collector`** samples its own instrument sets the way a scrape writes them into a one-hour ring (**`Metrics`**: the providers and seven series of the status document), with no counter of its own and no scrape slot; **`serve.go`** serves **`GET /metrics`** behind the live bearer token (**`404`** elsewhere, at most two scrapes at once across every listener of the collector), and since the **`Collector`** outlives **`Serve`** and the fingerprint is the listen address (no **`RestartKey`**), a new address rebuilds the listener in place with the counters kept. The Metrics tab of Settings is hidden without the tag (**`config.UISchemaJSONHiding`**, fed by **`httpserver.Options.UnbuiltSections`**). The alert rules and their **`promtool`** cases are **`examples/prometheus/`**, the Grafana dashboard and a Prometheus and Grafana compose stand **`examples/grafana/`** (**`TestTheDashboardAndTheRulesReadOnlyExportedSeries`** holds both to what a scrape holds). A relay process runs an exporter of its own and does not carry its nodes'. Guide: **`docs/operate/monitoring.md`**. |
+| `external/browser` | Coddy for Browser, the agent's hands in the user's browser - Chrome, Yandex Browser or Firefox (**`-tags browser`**, in **`FULL_TAGS`**, so release binaries, image and packages carry it): the extension's endpoint on the HTTP server's mux under **`browser.enable`** with a **`browser.token`** (**`browser.Mount`** from **`external/httpserver/server.go`**; **`server.go`**: **`GET /browser/v1/connect`** and the file tickets of **`/browser/v1/files/{ticket}`**, outside the API's gate, a **`chrome-extension://`** or **`moz-extension://`** origin alone opens the socket, the key arrives in **`initialize`**, constant-time compared), one WebSocket per browser that the extension opens and Coddy's **`browser/command`** requests travel down as JSON-RPC 2.0 (**`rpc.go`**; the wire is **`docs/reference/browser-protocol.md`**), the process-wide **`Hub`** (**`hub.go`**: one **`Connection`** per socket lifetime, a reconnect of the same browser replacing the old one, a tab in another chat's tab group refused before sending, **`Call`** never retrying an action and sending **`$/cancelRequest`** when its turn is cancelled, **`TurnEnded`** told to the browsers holding the chat's tabs, **`Serving`** while this process takes the sockets), single-use file tickets (**`files.go`**, 32 MiB, two minutes; a ticket of **`Hub.Transfer`** in **`transfer.go`** lasts as long as its action plus 30 s), the side panel's web UI signed in by a one-time ticket the socket issues (**`panel.go`**, untagged: **`panel/open`**, **`IssuePanelTicket`** / **`RedeemPanelTicket`** bound to **`KeyDigest`**, **`PreparePanelTurn`** for **`metadata.browser`**, the tab reaching the turn context block through **`session.PromptRunOpts.SurfaceTurnContext`** so the system prompt does not move; the route is **`external/httpserver/auth_browser.go`**, the SPA side **`external/ui/src/ui/browserPanel/`**), the API other Coddy processes reach the browsers through (**`api.go`**: **`GET /coddy/browser/v1/browsers`**, **`POST /coddy/browser/v1/call`**, behind the API's gate under **`browser.serve_remote`**, a remote chat owning tabs as **`<node>/<session id>`** with **`session.node`** sent to the extension; **`client.go`**: **`Remote`**), and the **`browser`** tool (**`tool/`**: registered by **`internal/tools/browser_hook.go`** when `browser.enable`; **`backends.go`**: this process's hub, else the server of this machine under **`serve_remote`**, then **`browser.remotes`** resolved like **`--remote`**, a remote's browser named **`<id>@<label>`**; the selection remembered in the session bundle and the only reachable browser used without one, files under **`os.Root`**, downloads refusing an existing path, screenshots checked and attached as tool images). **`browser.go`**, **`panel.go`** and **`serve_stub.go`** carry no tag, so a binary without it refuses **`browser.enable`** naming the tag and hides the Settings section. **`browsertest`** is a fake extension over a real WebSocket; **`TestLiveExtension`** drives the real extension (**[coddy-project/coddy-for-browser](https://github.com/coddy-project/coddy-for-browser)**, a repository of its own) when **`CODDY_FOR_BROWSER_DIR`** names a built checkout. Guide: **`docs/features/browser.md`**, design: **`docs/plans/browser.md`**. |
 | `internal/configapi` | The settings editor's four routes (**`GET /coddy/config/schema`**, **`GET`** / **`PUT /coddy/config`**, **`POST /coddy/config/validate`**) over a **`Backend`** - the live configuration, how a new one is installed, which schema and document decoration go with it - so the HTTP server and the swarm relay share one PUT transaction under **`config.WithConfigFileLock`**, **`Sections`** to serve and take only some top-level sections (the relay's), and **`Revisions`**, the last 32 configurations a process served, which a **`PUT`** is measured against. Untagged. |
 | `external/gateway` | Messenger gateway (**`-tags gateway.telegram`**, **`-tags gateway.pachca`** or **`-tags gateway`** for both), each bot a subsystem of **`coddy serve`** of its own: the Telegram bot under **`gateways.telegram.enable`** (a photo, a document or an album a person sends it reaches the session as the web UI's attachments do, downloaded through the Bot API with the caption as the prompt: **`telegram/media.go`**, issue #509), and the **Pachca** integration bot under **`gateways.pachca.enable`** (**`external/gateway/pachca`**: reads the bot's events history - newest first down to a `(created_at, id)` watermark in `gateway_pachca_state.json`, dispatched oldest first, deleted after handling - answers every message of a direct chat and, in a group, only a mention or a reply to the bot (Telegram follows the same group rule), streams into one edited message, answers a message with no text (a file on its own) that it reads text only; a reply reaches the session with the replied-to message quoted in front (**`external/gateway/replyquote`**, both adapters); its offline fake is the untagged **`internal/pachcafake`**, guide **`docs/surfaces/pachca.md`**); session store, proxy support, the ACL over **`access.Policy`** shared by both, and the web UI as the Telegram bot's Mini App (**`telegram/miniapp.go`**: the menu button and **`/app`** under **`gateways.telegram.mini_app`**, advertised only behind a credential through **`gateway.Options.WebUI`**, which **`cmd/coddy/serve.go`** decides, and opened only by the bot's admins, whom the launch data signs in (**`POST /coddy/auth/telegram`**, **`external/httpserver/auth_telegram.go`**); a sender who is not in a bot's **`admins`** only chats: the turn carries **`access.NonAdminTurn()`** (**`session.TurnRestriction`**: config, model, subagent, worktree and scheduler tools refused, approvals always asked and refused by the bot); **`gateway.Fingerprint`** and **`gateway.PachcaFingerprint`** in the untagged **`serve.go`** hash each bot's whole block). Chat turns run through the shared manager and are mirrored into the HTTP relay, so a conversation is live in the web UI; what the messenger needs is said twice and kept out of the transcript both times - a system prompt block for the turn (**`prompt.go`**, carried by **`session.PromptRunOpts.SurfaceSystemPrompt`**) and the outbound rendering of the answer (**`markdown.go`**); the poller stops intake before generation on shutdown, so a restart from a settings change does not truncate an answer. Full guide: **`docs/surfaces/gateway.md`**, rules: **`.cursor/rules/gateway.mdc`**. |
 | tgfake (external module) | The offline stand for the Telegram gateway lives in its own repository, **[github.com/EvilFreelancer/tgfake](https://github.com/EvilFreelancer/tgfake)** ("tgfake server"): a fake Bot API (every method the adapter calls, long-polled `getUpdates`, the `/sim/*` simulation API, a chat page that also plays Telegram for a Mini App) plus a scripted OpenAI-compatible model behind **`--llm`**. **`go.mod`** pins one version and everything here uses that one: the gateway's Go tests import **`pkg/server`** (as `tgfake`, through **`external/gateway/telegram/fakeapi_test.go`**) and **`pkg/botapi`**, several suites import **`pkg/llmstub`** (with **`StripTags: ["turn_context"]`**), the scripts build **`github.com/EvilFreelancer/tgfake/cmd/tgfake`** (a **`tool`** of **`go.mod`**) unless **`CODDY_TGFAKE_BIN`** names a prebuilt binary, and CI's **Telegram stand (tgfake)** job installs the release of that version with tgfake's own action. **`coddy serve`** is pointed at it with **`CODDY_TELEGRAM_API_BASE`** (**`config.TelegramAPIBaseEnv`**, honoured by the bot and the **`--dry-run`** probe alike). A change Telegram's behaviour needs is made in tgfake, released, and bumped here. Runner: **`examples/gateway/tg_e2e_offline.sh`**. Guides: **`docs/contributing/tgfake.md`** (running and bumping it), **`docs/surfaces/gateway.md`** (Debugging against a fake Bot API). |
@@ -25160,7 +25749,7 @@ Short map for automation-friendly contributors.
 
 ## Builds
 
-**`coddy serve`** is the only long-running command: it starts every subsystem **`config.yaml`** enables (**`httpserver.enable`**, default true; **`gateways.telegram.enable`**; **`gateways.pachca.enable`**; **`swarm.enable`**; **`scheduler.enable`**; **`metrics.enable`**, auxiliary: it serves beside the others and never keeps the process up on its own) over one session manager. A subsystem enabled but not compiled in is a startup error naming the tag. Run **`make build TAGS=http`** for the HTTP surface only (REST and **`/docs`**, no **npm**). Run **`make build TAGS=cli`** for the interactive console (**bare `coddy`** on a terminal; see **`docs/surfaces/console.md`**). Run **`make build TAGS="http ui"`** to link the embedded SPA (**Makefile** runs **ui-build** before **go build**). Recommended full image matches **`Dockerfile`** (**`make build TAGS="http ui scheduler memory cli gateway swarm metrics"`**). Default **`make build`** omits HTTPServer, scheduler, and memory to keep dependency surface lean.
+**`coddy serve`** is the only long-running command: it starts every subsystem **`config.yaml`** enables (**`httpserver.enable`**, default true; **`gateways.telegram.enable`**; **`gateways.pachca.enable`**; **`swarm.enable`**; **`scheduler.enable`**; **`browser.enable`**; **`metrics.enable`**, auxiliary: it serves beside the others and never keeps the process up on its own) over one session manager. A subsystem enabled but not compiled in is a startup error naming the tag. Run **`make build TAGS=http`** for the HTTP surface only (REST and **`/docs`**, no **npm**). Run **`make build TAGS=cli`** for the interactive console (**bare `coddy`** on a terminal; see **`docs/surfaces/console.md`**). Run **`make build TAGS="http ui"`** to link the embedded SPA (**Makefile** runs **ui-build** before **go build**). Recommended full image matches **`Dockerfile`** (**`make build TAGS="http ui scheduler memory cli gateway swarm metrics browser"`**). Default **`make build`** omits HTTPServer, scheduler, and memory to keep dependency surface lean.
 
 Primary conversational surface for bundled UI lives at **`POST /v1/responses`** with **`stream:true`**. Prefer it over **`POST /v1/chat/completions`** when shipping Coddy-hosted experiences.
 
