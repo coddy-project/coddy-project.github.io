@@ -62,4 +62,12 @@
       <image:title>Coddy и другие агентные харнесы - сравнение 2026 года</image:title>
     </image:image>
   </url>
+  <url>
+    <loc>https://coddy.dev/privacy/browser/</loc>
+    <lastmod>2026-10-27</lastmod>
+    <image:image>
+      <image:loc>https://coddy.dev/assets/og-image.png</image:loc>
+      <image:title>Privacy policy of Coddy for Browser</image:title>
+    </image:image>
+  </url>
 </urlset>

@@ -26,7 +26,7 @@ from ru_translations import TRANSLATIONS  # noqa: E402
 
 ROOT = build_ru.ROOT
 RUSSIAN_PAGES = tuple(build_ru.PAGES.values())
-SITE_PAGES = (*build_ru.PAGES, *RUSSIAN_PAGES)
+SITE_PAGES = (*build_ru.PAGES, *RUSSIAN_PAGES, "privacy/browser/index.html")
 
 # The site copy uses a hyphen in place of both dashes and straight quotes only.
 FORBIDDEN_CHARACTERS = {
@@ -96,6 +96,29 @@ class FaqParser(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self.tag:
             self.text.append(data)
+
+
+class BrowserPrivacyTest(unittest.TestCase):
+    def test_homepages_link_visibly_to_browser_privacy(self) -> None:
+        for path, label in (("index.html", "Privacy policy"),
+                            ("ru/index.html", "Политика конфиденциальности")):
+            with self.subTest(page=path):
+                footer = re.search(r"<footer\b[^>]*>(.*?)</footer>", read(path), re.S)
+                self.assertIsNotNone(footer)
+                self.assertRegex(footer.group(1), rf'<a href="/privacy/browser/">{label}</a>')
+
+    def test_browser_privacy_is_a_local_document(self) -> None:
+        path = ROOT / "privacy/browser/index.html"
+        self.assertTrue(path.is_file(), "browser privacy policy must be a local HTML document")
+        page = path.read_text(encoding="utf-8")
+        self.assertIn('<link rel="canonical" href="https://coddy.dev/privacy/browser/"', page)
+        self.assertNotRegex(page.lower(), r'<meta[^>]+http-equiv=["\']refresh')
+        self.assertNotRegex(page.lower(), r'window\.location|location\.replace')
+        for text in ("Privacy policy of Coddy for Browser", "27 October 2026",
+                     "Where data goes", "What stays on your device",
+                     "What the extension does not do", "Contact"):
+            with self.subTest(text=text):
+                self.assertIn(text, page)
 
 
 class RussianBuildTest(unittest.TestCase):

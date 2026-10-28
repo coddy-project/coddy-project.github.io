@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy policy of Coddy for Browser</title>
+  <meta name="description" content="Privacy policy for the Coddy for Browser extension." />
+  <meta name="theme-color" content="#9333ea" />
+  <link rel="canonical" href="https://coddy.dev/privacy/browser/" />
+  <link rel="icon" href="/assets/coddy-favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css?v=29" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebPage","url":"https://coddy.dev/privacy/browser/","name":"Privacy policy of Coddy for Browser","inLanguage":"en"}
+  </script>
+</head>
+<body>
+  <main class="shell-width">
+    <p><a href="/">Coddy Agent</a></p>
+    <h1>Privacy policy of Coddy for Browser</h1>
+    <p>Last updated: 27 October 2026.</p>
+    <p>Coddy for Browser is a browser extension that connects your browser to a Coddy agent server you run yourself (<code>coddy serve</code>). This policy describes what the extension handles and where it goes.</p>
+    <h2>Where data goes</h2>
+    <p>The extension talks to one server: the Coddy server whose address you enter on its settings page. It sends nothing to the developers of Coddy for Browser or to any other party.</p>
+    <p>To that server it sends:</p>
+    <ul>
+      <li>the address and title of the tabs in its tab groups (the tabs you share and the tabs a chat opens), and of the tab you look at when you write in the side panel;</li>
+      <li>when a chat acts in one of those tabs, after you allowed that website: the text of the page with references to its elements, screenshots of the visible part of the tab, the files a chat uploads to or downloads from the page, and the outcome of each action;</li>
+      <li>the name you give this browser and the version of the extension.</li>
+    </ul>
+    <p>What happens to this data next is decided by your Coddy server: it passes page contents to the model provider it is configured with, like any other tool result. Your Coddy's configuration and its provider's terms apply there.</p>
+    <h2>What stays on your device</h2>
+    <p>The extension keeps its settings in the browser's extension storage: the server address, the key the server issued, the browser's name, the websites you allow always, and which tab group belongs to which chat. Removing the extension removes them.</p>
+    <h2>What the extension does not do</h2>
+    <ul>
+      <li>It collects no analytics or telemetry and shows no advertising.</li>
+      <li>It does not reach tabs outside its tab groups, and it does not act on a website before you allow it. In Chrome and Yandex Browser it has no access to any website beyond your own machine until you allow that website in the browser's prompt.</li>
+      <li>It does not sell or transfer data to third parties, and it does not use data for any purpose other than letting your Coddy work in your browser.</li>
+    </ul>
+    <h2>Contact</h2>
+    <p>Questions about this policy: <a href="https://github.com/coddy-project/coddy-for-browser/issues">open an issue</a>.</p>
+  </main>
+  <footer class="site-footer"><div class="shell-width"><a href="/">Coddy Agent</a></div></footer>
+</body>
+</html>
