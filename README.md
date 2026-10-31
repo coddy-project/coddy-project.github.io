@@ -60,14 +60,14 @@ punctuation, when the copy uses long dashes, guillemets or curly quotes, when a 
 from its page, or when the FAQ in the landing page JSON-LD differs from the visible one. The style
 rules for the copy and the Russian terminology live in `AGENTS.md`.
 
-`config.schema.json` is the opposite: a **verbatim mirror** of `docs/config.schema.json` in
+`config.schema.json` is the opposite: a **verbatim mirror** of `internal/config/config.schema.json` in
 [coddy-agent](https://github.com/coddy-project/coddy-agent), published here because a hosted,
 stable address is what a YAML language server can resolve. Coddy writes that address into every
 `config.yaml` it saves (`# yaml-language-server: $schema=https://coddy.dev/config.schema.json`), so
 the file must stay in step with the agent's config structs. Refresh it whenever those change:
 
 ```bash
-cp ../coddy-agent/docs/config.schema.json config.schema.json   # a plain copy, no edits
+cp ../coddy-agent/internal/config/config.schema.json config.schema.json   # a plain copy, no edits
 git diff --stat config.schema.json
 ```
 
