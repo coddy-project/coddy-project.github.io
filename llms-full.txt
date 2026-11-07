@@ -14213,6 +14213,8 @@ What the panel shows is what the plan reports:
 - an **ACU** plan reads a single `acu` meter from the consumed/limit pair, with no reset clock;
 - a **credits** plan, an unknown billing strategy, or a status that names only the plan reads as the plan alone - Coddy invents no meter, request count or reset the server did not send, and a missing quota reads as `quota unavailable` rather than `0%`.
 
+A plan's quota is not the only thing that can stop a turn. A model can refuse one on a rate limit of its own - `HTTP 429 resource_exhausted: Reached free model rate limit ... Your limit will reset in 20 minutes` - and no field of `GetUserStatus` carries that limit, so the `day` and `week` meters read 100 % remaining while that model refuses every request. Devin sends no `Retry-After` header with the refusal and writes the moment the window reopens into the message instead. Coddy reads that phrase, so the reset time reaches the panel and the turn does not end on a bare error, and [`agent.wait_for_limit_reset`](../reference/config.md#agent) waits the limit out and re-issues the same call, with the countdown in the panel meanwhile. Until such a limit is hit nothing shows it, because the account reports no counter for it.
+
 `usage_limits_panel: false` on the row hides the panel everywhere and stops the `GetUserStatus` reads. The protocol is not published by Cognition, so the read follows the editor's current wire shape (the 3.10.31 descriptors) and can break when Devin moves it.
 
 ## Configuration
@@ -17527,7 +17529,7 @@ Defaults for the main agent loop (model id and safety caps).
 | `agent.loop_tool_repeat_limit` | integer or null | 2 | Consecutive identical tool calls in successive ReAct responses (same name, same canonical arguments) before the loop guard steps in. 0 disables the tool-repeat check. |
 | `agent.loop_stream_repeat_cycles` | integer or null | 5 | Identical back-to-back output cycles inside one streamed response before the stream is cut. 0 disables the stream check. |
 | `agent.loop_nudge_max` | integer or null | 1 | How many times one turn may be nudged back on track before the loop guard stops it with a notice. |
-| `agent.wait_for_limit_reset` | boolean | false | Wait for a hit usage limit to lift and re-issue the call, instead of ending the turn with the provider's error. Applies to a top-level turn whose provider names a pause beyond the retry budget (a 429 with Retry-After or "Limit resets at"); the turn lock and the client stream stay open while it waits, so it is off by default. |
+| `agent.wait_for_limit_reset` | boolean | false | Wait for a hit usage limit to lift and re-issue the call, instead of ending the turn with the provider's error. Applies to a top-level turn whose provider names a pause beyond the retry budget, in a Retry-After header or in the text of the 429 itself; the turn lock and the client stream stay open while it waits, so it is off by default. |
 | `agent.wait_for_limit_reset_max_ms` | integer or null | 14400000 | Longest time one turn spends waiting for limits in total, in milliseconds, the retry wrapper's own sleeps on a limit included; a pause that would exceed it ends the turn at once with the error. An explicit 0 never waits. |
 
 ### `prompts`
