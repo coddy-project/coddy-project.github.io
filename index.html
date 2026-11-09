@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Coddy Agent - general-purpose agent in one Go binary</title>
-  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary with a terminal console, ACP for editors, an embedded web UI, a Telegram gateway, a cron scheduler, a swarm relay and remote control, plus rules, skills, subagents, hooks, MCP and your own API keys." />
+  <meta name="description" content="Coddy Agent is a distroless-friendly agent harness: one Go binary with a desktop app, terminal console, ACP for editors, an embedded web UI, a Telegram gateway, a cron scheduler, a swarm relay and remote control, plus rules, skills, subagents, hooks, MCP and your own API keys." />
   <meta name="theme-color" content="#9333ea" />
   <link rel="canonical" href="https://coddy.dev/" />
   <link rel="alternate" hreflang="en" href="https://coddy.dev/" />
@@ -16,7 +16,7 @@
   <meta property="og:site_name" content="Coddy Agent" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:title" content="Coddy Agent - general-purpose agent in one Go binary" />
-  <meta property="og:description" content="One static Go binary for software agents: ReAct, subagents, hooks, terminal console, ACP, web UI, Telegram gateway, scheduler, swarm relay, remote control, memory, Cursor-style rules, Docker-ready, your API keys." />
+  <meta property="og:description" content="One static Go binary for software agents: ReAct, subagents, hooks, desktop app, terminal console, ACP, web UI, Telegram gateway, scheduler, swarm relay, remote control, memory, Cursor-style rules, Docker-ready, your API keys." />
   <meta property="og:url" content="https://coddy.dev/" />
   <meta property="og:image" content="https://coddy.dev/assets/og-image.png" />
   <meta property="og:image:width" content="1280" />
@@ -24,7 +24,7 @@
   <meta property="og:image:alt" content="Coddy Agent - distroless-friendly coding agent harness" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Coddy Agent - general-purpose agent in one Go binary" />
-  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, subagents, hooks, terminal console, ACP, web UI, Telegram gateway, scheduler, swarm relay, memory, on-prem models." />
+  <meta name="twitter:description" content="One static Go binary for software agents: ReAct, subagents, hooks, desktop app, terminal console, ACP, web UI, Telegram gateway, scheduler, swarm relay, memory, on-prem models." />
   <meta name="twitter:image" content="https://coddy.dev/assets/og-image.png" />
   <link rel="icon" href="assets/coddy-favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
@@ -79,7 +79,7 @@
         "name": "Coddy Agent",
         "alternateName": "Coddy",
         "url": "https://coddy.dev/",
-        "description": "Coddy Agent is an open-source, general-purpose AI agent in one static Go binary: a ReAct loop with filesystem and shell tools, MCP, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, driven from a terminal console, an embedded web UI, an OpenAI-compatible HTTP API, the Agent Client Protocol (ACP) for editors, or a Telegram gateway, with a swarm relay that lists and reaches a fleet of nodes and remote control of a running server. Works with any OpenAI-compatible provider or Anthropic using your own API keys, including local models, and runs in distroless containers.",
+        "description": "Coddy Agent is an open-source, general-purpose AI agent in one static Go binary: a ReAct loop with filesystem and shell tools, MCP, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, driven from a desktop app, a terminal console, an embedded web UI, an OpenAI-compatible HTTP API, the Agent Client Protocol (ACP) for editors, or a Telegram gateway, with a swarm relay that lists and reaches a fleet of nodes and remote control of a running server. Works with any OpenAI-compatible provider or Anthropic using your own API keys, including local models, and runs in distroless containers.",
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "AI agent",
         "operatingSystem": "Linux, macOS, Windows, Android",
@@ -112,7 +112,7 @@
         ],
         "featureList": [
           "ReAct loop with filesystem and shell tools",
-          "Terminal console TUI, embedded web UI, OpenAI-compatible HTTP API",
+          "Desktop app, terminal console TUI, embedded web UI, OpenAI-compatible HTTP API",
           "Agent Client Protocol (ACP) server for Zed, Obsidian, VS Code",
           "Telegram gateway",
           "Coddy for Browser, an extension for Chrome, Yandex Browser and Firefox: the web UI in the side panel and any chat working in your tabs",
@@ -140,7 +140,7 @@
             "name": "What is Coddy Agent?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram, on one machine or across a swarm of them."
+              "text": "Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, and the same agent is available from the desktop app, a terminal, a browser, an editor over ACP, or Telegram, on one machine or across a swarm of them."
             }
           },
           {
@@ -188,7 +188,7 @@
             "name": "How is Coddy different from other coding agents?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor and Claude Code rules, skills and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at coddy.dev/compare/."
+              "text": "It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the desktop app, terminal, web UI, editor, Telegram, and scheduler. It reads Cursor and Claude Code rules, skills and AGENTS.md from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at coddy.dev/compare/."
             }
           }
         ]
@@ -248,7 +248,7 @@
       <p class="tagline">
         Coddy is an agent harness: a ReAct loop with filesystem and shell tools, MCP, project rules, skills,
         subagents, hooks, background tasks, and long-term memory.
-        Drive it from a terminal, a browser, your editor over ACP, or Telegram; run it as a service with a
+        Drive it from the desktop app, a terminal, a browser, your editor over ACP, or Telegram; run it as a service with a
         cron scheduler, a swarm relay for a fleet of nodes, and remote control from anywhere.
         Built for containers and your own API keys.
       </p>
@@ -420,6 +420,8 @@
           <dl class="install-cmds">
             <dt><code>coddy</code></dt>
             <dd>the terminal console</dd>
+            <dt><code>coddy desktop</code></dt>
+            <dd>the desktop app</dd>
             <dt><code>coddy serve</code></dt>
             <dd>the web UI</dd>
             <dt><code>coddy acp</code></dt>
@@ -552,7 +554,7 @@
       <p>
         Coddy started as a coding agent and grew into a <strong>general-purpose harness</strong>:
         Cursor-style rules and skills on disk, <code>agent</code>, <code>plan</code> and <code>ask</code> modes, tool
-        permissions, streaming output, and sessions you can resume from a terminal, an IDE, a browser, Telegram, or
+        permissions, streaming output, and sessions you can resume from the desktop app, a terminal, an IDE, a browser, Telegram, or
         automation - the same <code>$CODDY_HOME</code> bundle whichever surface opens it.
       </p>
       <p>
@@ -598,6 +600,10 @@
       <div class="feature-group">
         <h3 class="feature-group-title">Where you run it</h3>
         <div class="features">
+          <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/desktop" target="_blank" rel="noopener noreferrer">
+            <h4>Desktop</h4>
+            <p><code>coddy desktop</code> on Linux, macOS and Windows. Chat tabs share sessions, settings and history with the other surfaces.</p>
+          </a>
           <a class="glass feature feature-link" href="https://coddy.dev/docs/surfaces/console" target="_blank" rel="noopener noreferrer">
             <h4>Console</h4>
             <p>Bare <code>coddy</code> on a terminal. Streaming transcript, tool boxes, permission modals, <code>!!</code> for a local shell the model never sees, <code>coddy -c</code> to resume, <code>coddy -p</code> for one-shot output.</p>
@@ -746,7 +752,7 @@
       <div class="faq-list">
         <div class="faq-item">
           <h3>What is Coddy Agent?</h3>
-          <p>Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, and the same agent is available from a terminal, a browser, an editor over ACP, or Telegram, on one machine or across a swarm of them.</p>
+          <p>Coddy Agent is an open-source, general-purpose AI agent that ships as one static Go binary under the MIT license. It runs a ReAct loop with filesystem and shell tools, MCP servers, project rules, skills, subagents, hooks, background tasks, a cron scheduler, and long-term memory, and the same agent is available from the desktop app, a terminal, a browser, an editor over ACP, or Telegram, on one machine or across a swarm of them.</p>
         </div>
         <div class="faq-item">
           <h3>Which LLM providers and models does Coddy work with?</h3>
@@ -770,7 +776,7 @@
         </div>
         <div class="faq-item">
           <h3>How is Coddy different from other coding agents?</h3>
-          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the terminal, web UI, editor, Telegram, and scheduler. It reads Cursor and Claude Code rules, skills and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at <a href="/compare/">coddy.dev/compare/</a>.</p>
+          <p>It is provider-agnostic and self-hosted by design: one MIT-licensed binary with no runtime dependencies, your own keys or local models, and one set of sessions shared by the desktop app, terminal, web UI, editor, Telegram, and scheduler. It reads Cursor and Claude Code rules, skills and <code>AGENTS.md</code> from the repository, so it fits projects already set up for other agents. A side-by-side comparison with nineteen other harnesses is published at <a href="/compare/">coddy.dev/compare/</a>.</p>
         </div>
       </div>
     </section>

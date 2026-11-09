@@ -14,7 +14,6 @@
 - [Homebrew](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/getting-started/homebrew.md): Cask и формула, какой репозиторий Homebrew что принимает, заявка в homebrew/core. (docs/ru/getting-started/homebrew.md)
 - [Android (Termux)](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/getting-started/android.md): Сборка для Termux на Android, почему архив для Linux там не запускается и что Coddy подстраивает на устройстве. (docs/ru/getting-started/android.md)
 - [Устранение неполадок](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/getting-started/troubleshooting.md): Что проверить, если бинарника нет в PATH, конфигурация не загружается, провайдер отвергает ключ, порт занят или нужного интерфейса нет в сборке. (docs/ru/getting-started/troubleshooting.md)
-- [История изменений](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/ru/getting-started/changelog.md): Описания каждого опубликованного релиза, сгенерированные из GitHub Releases. (docs/ru/getting-started/changelog.md)
 
 ## Интерфейсы
 

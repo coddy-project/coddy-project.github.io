@@ -21,7 +21,6 @@ Every page below is the Markdown kept in the repository, read straight from the 
 - [Homebrew](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/homebrew.md): The cask against the formula, which Homebrew repository takes what, the homebrew/core submission. (docs/getting-started/homebrew.md)
 - [Android (Termux)](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/android.md): The Android build for Termux, why the Linux archive does not start there, and what Coddy adapts on the device. (docs/getting-started/android.md)
 - [Troubleshooting](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/troubleshooting.md): What to check when the binary is not on PATH, the config does not load, a provider rejects the key, a port is busy or a surface is missing from the build. (docs/getting-started/troubleshooting.md)
-- [Changelog](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/changelog.md): Release notes of every published version, generated from GitHub Releases. (docs/getting-started/changelog.md)
 
 ## Surfaces
 
