@@ -136,8 +136,8 @@ over stdio. Sessions, modes, permissions, and streaming updates for Zed, Obsidia
 HTTP API	HTTP API
 OpenAI-compatible gateway on	Шлюз, совместимый с OpenAI, в
 , models, Swagger at	, модели, Swagger по адресу
-Telegram gateway	Шлюз Telegram
-Bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.	Адаптер бота с отдельными сессиями для каждого пользователя, режимами изоляции групп, ACL администраторов и нативным форматированием сообщений. Расширяется на другие мессенджеры.
+Messenger gateway	Шлюз мессенджеров
+Telegram bot adapter with per-user sessions, group isolation modes, admin ACL, and native rich messages. Extensible to other messengers.	Адаптер бота Telegram с отдельными сессиями для каждого пользователя, режимами изоляции групп, ACL администраторов и нативным форматированием сообщений. Расширяется на другие мессенджеры.
 Sessions	Сессии
 Bundles on disk under	Каталоги сессий лежат на диске в
 Operate it	Эксплуатация
