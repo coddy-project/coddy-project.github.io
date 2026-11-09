@@ -673,32 +673,9 @@ section h2 {
   gap: 12px;
 }
 
-/* A group of seven split 3 + 4: three tiles across the first row, four
-   across the second. */
-.features-split {
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-}
-
-.features-split .feature:nth-child(-n + 3) {
-  grid-column: span 4;
-}
-
-.features-split .feature:nth-child(n + 4) {
-  grid-column: span 3;
-}
-
 @media (max-width: 900px) {
-  .features,
-  .features-split {
+  .features {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .features-split .feature {
-    grid-column: auto;
-  }
-
-  .features-split .feature:last-child {
-    grid-column: 1 / -1;
   }
 }
 
