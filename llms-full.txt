@@ -4636,7 +4636,7 @@ Select text anywhere in the transcript - an answer, a prompt, a tool card - and 
 
 Context ring and breakdown popover
 
-- **Hover** on **`.composer-context-tip-host`**: compact tooltip (percent, input/output/total, max context) unchanged.
+- **Hover** on **`.composer-context-tip-host`** shows the percentage and tokens in the current window, followed by its maximum. When the server reports neither a breakdown nor a percentage, the tooltip says the context usage is unavailable; it never substitutes cumulative session tokens.
 - **Click** opens **`ContextBreakdownPopover`** beside the ring on wide viewports (**`context-breakdown-menu--portal`**); on stacked shell (**`max-width: 1199px`**) it uses the same bottom sheet as the slash / **`@`** pickers, over a dimming scrim of its own (**`context-breakdown-menu--sheet`**, **`slash-sheet-backdrop`**; the pickers' backdrop is transparent). **Escape** or **Close** dismisses; hover tooltip returns when closed.
 - Legend keys map to **`contextBreakdown`** on **`GET /coddy/sessions/{id}/stats`** (`systemPrompt`, `toolDefinitions`, `rules`, `skills`, `mcp`, `conversation`). Live **`usage_update`** SSE replaces the displayed total immediately (including after `/compact` or automatic compaction), then the UI refreshes the detailed stats. Vitest: **`Composer.test.tsx`** (`click context ring opens breakdown popover`) and **`consumeComposerSse.order.test.ts`** (`usage_update replaces the displayed current context after compaction`).
 
@@ -6347,10 +6347,10 @@ These scenarios are intended to be automated via Playwright against the Vite dev
   - When the user clicks **Less**
   - Then the preview shows the capped text ending in **`...`**, **`overflow-y`** is hidden on **`.tool-result-viewport--clip`**, and **More…** appears again
 
-- Token usage survives restart
-  - Given a session has non zero token usage
+- Context usage survives restart
+  - Given a session has a saved context breakdown
   - When the user reloads the page
-  - Then the context ring's tooltip shows the persisted Input, Output and Total
+  - Then the context ring's tooltip shows the saved window usage and maximum
 
 - Memory subagent in the Tasks panel (Playwright MCP)
   - Given **`memory.enable: true`** on the **`coddy serve`** process and at least one Markdown file under global or workspace memory so recall can run
@@ -6472,12 +6472,16 @@ coddy desktop [--window auto|browser|native] [--browser PATH] [--frame] [--auth]
 | `--auth` | ask for the credential the configuration carries. Without it the window asks for nothing (below) |
 | `-t`, `--test-config` | check the configuration file and exit, starting nothing |
 
-The window runs the web interface and nothing else. A configuration that also enables the Telegram
-bot, the Pachca bot, the swarm relay, the scheduler, the exporter or the browser endpoint keeps
-them as written; this process simply does not start them, says so on startup and leaves them to
-`coddy serve`. Running them twice over one agent home does not divide the work: two bots on one
-token make Telegram answer `409`, two schedulers fire every job twice, and a relay that cannot bind
-its port would take the window down with it.
+The desktop runs the same site `coddy serve` runs. If a service for the same agent home is already
+running, the window connects to that process over a private local channel and starts no second
+session manager, scheduler or gateway. The service keeps running when the window closes. This also
+works when the public HTTP listener is disabled. Restart an older background service that does not
+yet offer the channel before opening the window.
+
+Otherwise the desktop starts the surfaces the configuration enables - the public HTTP surface, the
+Telegram and Pachca bots, the swarm relay, the scheduler, the exporter and the browser endpoint -
+beside the window's loopback surface. A surface that cannot start stops alone and says so in the
+log; the window and the rest keep running. The configuration on disk is not rewritten.
 
 ## Tabs
 
@@ -6487,6 +6491,7 @@ its port would take the window down with it.
 | Close a tab | its `×`, a middle click on it, or `Ctrl`+`W` for the one in front |
 | Switch | click a tab, or `Ctrl`+`1` ... `Ctrl`+`9` |
 | Next, previous | `Ctrl`+`Tab` and `Ctrl`+`Shift`+`Tab`, which wrap at both ends |
+| Reorder | drag a tab to its new place in the row |
 | Reload the chat in front | `Ctrl`+`R`, which reloads that tab and leaves the others alone |
 | Walk a long row | the two arrows beside the window's own buttons, which appear once the tabs are wider than the bar |
 
@@ -6495,6 +6500,8 @@ A middle click on **New chat**, a conversation in **History**, or a rail item su
 browser window. `Ctrl`+click and `Cmd`+click do the same. A new chat opened this way starts in the
 folder of the chat you were reading; before a chat has started, it uses the folder picked on the
 start screen. The route of every tab is restored after a restart, including an open rail screen.
+A new tab shows its start screen immediately while that folder is resolved. If a chat does not
+finish loading, the window tries its address again twice before leaving it for `Ctrl`+`R`.
 
 The chords work while you are typing in a chat, and some of them take a detour to get there. A
 browser window in application mode answers `Ctrl`+`T`, `Ctrl`+`W`, `Ctrl`+`R` and `Ctrl`+`Tab`
@@ -6504,9 +6511,10 @@ those keys at the X server, with a grab on its own window, and hands them to the
 `Ctrl`+`Tab` and `Ctrl`+`Shift`+`Tab` are two grabs rather than one, because a grab matches the
 modifiers exactly. `Ctrl`+`1` ... `Ctrl`+`9` need none of that, since an application window has no
 tabs of its own to switch to and gives the digits to the page. `Alt` stands beside `Ctrl` for every
-chord, and on a Mac so does `Cmd`: that is what a Wayland or a macOS session - where the keys
-cannot be taken from the browser - leaves you with. A chord is read off the physical key, so a
-Russian or any other layout answers the same keys as a US one.
+letter and digit chord, and on a Mac so does `Cmd`: that is what a Wayland or a macOS session -
+where the keys cannot be taken from the browser - leaves you with. `Alt`+`Tab` and `Cmd`+`Tab`
+always belong to the window manager and never switch these tabs. A chord is read off the physical
+key, so a Russian or any other layout answers the same keys as a US one.
 
 A row longer than the bar scrolls, and the tab you switch to is always brought into sight, so the
 chords stay usable however many chats are open.
@@ -6519,10 +6527,14 @@ Ahead of the name each tab carries the state of its chat, the same mark the Hist
 | Mark | What it means |
 | --- | --- |
 | A filled dot, pulsing | the chat is working: a turn is running, or a background task is still in flight |
-| A ring in the theme's accent | the chat is waiting for you, for a permission or an answer |
+| A question mark, named **Permission required** | the chat is waiting for a permission |
+| A question mark, named **Question pending** | the chat is waiting for an answer |
 | A red dot | the last turn of that chat failed |
 | A filled dot in the accent | the chat finished while you were in another tab |
 | A hollow ring | the chat is finished |
+
+A turn sent in any tab marks that tab as working immediately; the ordinary session-list poll
+then takes over and clears the mark when the work finishes.
 
 The window keeps a tab: closing the last one opens an empty chat instead of leaving the window
 blank. The strip's close button minimises the window when **Show the tray icon** is enabled and
@@ -6549,6 +6561,7 @@ right edge. The corners are rounded while the window floats and square while it 
 | Action | How |
 | --- | --- |
 | Move the window | drag the empty part of the strip |
+| Resize the window | drag an edge or a corner; the pointer shows the direction |
 | Maximise or restore | double-click the empty part of the strip, or the middle button at the right |
 | Minimise, close | the buttons at the right edge |
 | The desktop menu | the button at the left edge of the strip |
@@ -6689,17 +6702,26 @@ The window asks for nothing. It binds loopback for the person who started the ap
 sign-in form in a window they opened themselves proves nothing, so `coddy desktop` serves without a
 credential whatever the configuration carries - a bearer token, a sign-in account, both.
 
-**The configuration on disk is untouched.** The same `config.yaml` still signs in a `coddy serve`
-that is reachable from elsewhere, and the settings screen inside the window shows the real values,
-so saving from there does not take the operator's account off disk.
+**The configuration on disk is untouched.** The same `config.yaml` still signs in the public
+surface this process and `coddy serve` run, and the settings screen inside the window shows the
+real values, so saving from there does not take the operator's account off disk.
 
 Two things follow. Any program running on this machine can reach that port and drive the agent,
 which is the same bargain `coddy serve` makes on loopback by default. And if you want the
 credential back - a shared machine, a second user account - `--auth` asks for whatever the
 configuration configures, and the sign-in form appears inside the window.
 
-The window runs the web interface and nothing else, as above, and that too is a decision of this
-process rather than an edit: the other subsystems are simply not among the surfaces it starts.
+Every other surface the configuration enables runs beside the window, as above, and that too is a
+decision of this process rather than an edit: the document stays as written, and the credential the
+public surface asks of a visitor from elsewhere is the one it holds.
+
+A remote environment sees the desktop window as a separate browser origin,
+`http://127.0.0.1:<port>`, where the port is recorded in `<home>/desktop/port`. On the remote
+server, enable `httpserver.cors` and list that exact origin in `httpserver.cors.allowed_origins`.
+For a swarm relay, configure `swarm.cors` on the relay instead. The alternative
+`allow_loopback: true` admits every loopback page in the browser, not only Coddy's window; use it
+only when that broader trust is intended, and protect the remote API with a credential. Starting
+the desktop does not change a remote server's CORS policy.
 
 ## Linux, macOS and Windows
 
@@ -6711,12 +6733,13 @@ The window opens on all three. What differs is how much of it the system lets Co
 | No system frame, the strip as the title bar | yes | no | no | no |
 | Rounded corners, drag by the strip, its own buttons | yes | no | no | no |
 | `Ctrl`+`T`, `Ctrl`+`W`, `Ctrl`+`R`, `Ctrl`+`Tab` taken from the browser | yes | no | no | no |
-| `Alt` (and `Cmd` on a Mac) for the same chords | yes | yes | yes | yes |
+| `Alt` (and `Cmd` on a Mac) for the letter and digit chords | yes | yes | yes | yes |
 | Tray icon | yes | yes | no | no |
 | Open at login | autostart entry | autostart entry | launch agent | `Run` key |
 
-Where a chord cannot be taken from the browser, `Alt`+`T`, `Alt`+`W`, `Alt`+`R` and `Alt`+`Tab` do
-the same thing, and on a Mac `Cmd` stands beside them.
+Where a chord cannot be taken from the browser, `Alt`+`T`, `Alt`+`W`, `Alt`+`R` and the digit
+chords do the same thing, and on a Mac `Cmd` stands beside them. `Alt`+`Tab` and `Cmd`+`Tab` stay
+with the window manager.
 
 The browser is looked for where each system keeps one: on `PATH` on Linux, in `/Applications` and
 `~/Applications` on macOS, under Program Files and the user's local application data on Windows.
@@ -23327,9 +23350,9 @@ Floating **composer** card, **History** drawer chrome, **skills** slash menu, **
 
 ### Token usage HUD
 
-The context ring tooltip shows cumulative **`input` / `output` / `total`** counts from **`token_usage`** SSE updates, not a separate footer row. Counts update after each backend LLM pass, not per streamed token. Session totals are persisted and restored from stats.
+The session tracks cumulative **`input` / `output` / `total`** counts from **`token_usage`** SSE updates. Counts update after each backend LLM pass, not per streamed token. Session totals are persisted and restored from stats. They are not the contents of the current context window and are never substituted for its size in the ring's tooltip.
 
-**Unknown is not zero.** An update or restored total with **`usageKnown: false`** hides all three counts; subsequent known updates do not make an incomplete session total known again. An explicitly known zero remains a value and is shown as zero. A missing **`usageKnown`** is treated as known for older servers and saved stats. In the console, **`external/cli/updates.go`** similarly marks the footer counters unknown and hides them for the session after an unknown update; an update without the field is counted for compatibility.
+**Unknown is not zero.** An update or restored total with **`usageKnown: false`** marks the session's cumulative counts unknown; subsequent known updates do not make an incomplete session total known again. An explicitly known zero remains a value. A missing **`usageKnown`** is treated as known for older servers and saved stats. In the console, **`external/cli/updates.go`** similarly marks the footer counters unknown and hides them for the session after an unknown update; an update without the field is counted for compatibility.
 
 ## Layout
 
@@ -24258,7 +24281,7 @@ Ring to the **left** of **Send** in **`Composer.tsx`**. Implemented by **`Contex
 - **The tooltip is one line**: how much of the window is used and the two numbers that say it, **`20.1% · 201k / 1M`** (**`composer.contextTipShort`**, the counts through **`formatTurnTokens`**, so they shorten past a thousand and never round up). Everything else - input, output, the breakdown by category, the compaction threshold - is in the popover the ring opens, and the five lines the tip used to be repeated it badly.
 - **It draws no shadow** (**`box-shadow: none`**). The tip stands **12px** above the ring it belongs to, and a shadow of the rail's shape reaches past that gap: the downward one - 10px down over 28px of blur - washed grey over the ring and the bar under it, and cast upward it still spilled under its own bottom edge. The opaque plate and its border are what tell it from the transcript (**`tooltipTouchCss.test.ts`**).
 - Idle home (**`contextIdle`**): inner ring only (no outer arc); tooltip **`Context is empty`** / **`Контекст пуст`** alone (no **`Model …`** line and no window: there is nothing to measure yet).
-- Active session: arc fills from stats; live **`usage_update`** SSE replaces both the current total (`used`) and the session's context window (`size`) immediately and refreshes detailed stats, so manual and automatic compaction reduce the displayed window without a reload. The live size overrides the initial model listing, including when a provider listing arrives late, survives stats refreshes, and is scoped to the session, selected model and configuration version. The tooltip includes the cumulative token counts only when they are known (see **Token usage HUD**); hiding them does not hide the separately calculated context percentage or arc. It **never** has a **`Model …`** line that duplicates **Mode** (the mode dropdown).
+- Active session: arc fills from stats; live **`usage_update`** SSE replaces both the current total (`used`) and the session's context window (`size`) immediately and refreshes detailed stats, so manual and automatic compaction reduce the displayed window without a reload. The live size overrides the initial model listing, including when a provider listing arrives late, survives stats refreshes, and is scoped to the session, selected model and configuration version. The tooltip takes its used count from the context breakdown, or estimates it from an explicitly supplied percentage; without either it says **Context usage unavailable · max 128k** rather than substituting the session's cumulative usage. It **never** has a **`Model …`** line that duplicates **Mode** (the mode dropdown).
 - **Click** (or **Enter** / **Space** when focused) on **`.composer-context-tip-host`** opens **`ContextBreakdownPopover`** (**`data-testid="context-breakdown-popover"`**). Its head is the drawers' head (**`.sessions-head`**: 12px bold capitals, like **Settings** and **History**). Right over the stacked bar stands one row: the percent used at the left and the tokens at the right (**`540.6k / 1M`**, shortened and never rounded up, the exact numbers in its tooltip). Under the bar the legend (**System prompt**, **Tool definitions**, **Rules**, **Skills**, **MCP**, **Conversation**), and at the foot, over a divider, when compaction starts by itself and how to start it now: **`Auto-compact at 80% · 104.8k`** (the percent of the model's window and what it comes to) or **`Auto-compact is off`**, and the **Compact now** button. Everything keeps one left and one right edge, **12px** in from the panel's, and the two dividers span the panel (**`contextBreakdownPopoverCss.test.ts`**). **Escape** or **Close** dismisses; hover tooltip returns when closed. Data from **`GET /coddy/sessions/{id}/stats`** field **`contextBreakdown`** (estimated tokens per category).
 
 See the paired UI rule ([Cursor](.cursor/rules/ui-spa.mdc), [Claude Code](.claude/rules/ui-spa.md)) for the full wording.
@@ -25509,7 +25532,7 @@ Short map for automation-friendly contributors.
 | `internal/docs`, `docs/embed.go` | The documentation built into the binary: **`docs/embed.go`** (package **`docs`**, the only place the embed pattern reaches the tree from) carries **`nav.yaml`** and the pages of its groups, and the Russian translation under **`ru/`** (its **`nav.yaml`** and the same pages), never **`plans/`** or **`assets/`**; **`internal/docs`** reads them into a **`Library`** per language (**`library.go`**: **`Default`** (English), **`LoadLang`**, **`Resolve`** for every spelling of a page, **`Prev`** / **`Next`**; **`lang.go`**: **`For(lang)`**, **`Lang`** for any spelling of a locale, **`LangFromEnv`** (`CODDY_LANG`, `LC_ALL`, `LC_MESSAGES`, `LANG`), **`LangOfText`**; a translated heading answers to the anchor of the English heading at the same position, so an address names a section in both languages), splits pages at headings with GitHub's anchors (**`markdown.go`**: **`Anchor`** and **`HeadingAnchors`**, which **`internal/docsgen`**'s link check uses too, and the link rewriting to **`coddy:<slug>#<anchor>`** and to GitHub at the release tag), ranks sections with BM25F (**`rank.go`**: the exported **`Ranker`** over documents of up to three weighted fields, with the tokenizer, the stemmers and the stopwords, which the memory note search ranks with too; **`search.go`**: the sections, the snippets and the index built once on first use per language; Russian words stemmed by Snowball, **`stem_ru.go`**) and reads a page or a section under a budget of characters (**`read.go`**). Consumers: **`coddy_docs_search`** / **`coddy_docs_read`** (**`internal/tools`**), **`@coddy:`** (**`internal/session/mentions.go`**, **`mention_search.go`**), **`GET /coddy/docs*`** (**`external/httpserver/docs_http.go`**), the web reader (**`external/ui/src/ui/docs/`**), the console's F1 help (**`external/cli/docs_modal.go`**), **`coddy docs`** (**`cmd/coddy/docs.go`**). A new group folder under **`docs/`** goes into the embed pattern; **`TestDefaultCarriesEveryPageOfTheMap`** fails otherwise. Guide: **`docs/features/built-in-docs.md`**. |
 | `internal/rules` | Rules: discovery (**`factory.go`**) reads **one** project folder, the first of `.coddy/rules`, the shared `.agents/rules` as system **`agents-dir`**, `.cursor/rules`, `.claude/rules` and `.codex/rules` that holds a rule file - so another agent's mirror of the same rules is never loaded next to it - plus the operator's own **`${CODDY_HOME}/rules`** as system **`user`**, which applies in every workspace and loses to the project a rule at the same path inside the rule folder, extension included; the same chain under every subfolder on the way down to a file a tool or a mention reaches, read on demand (**`Factory.Nested`**, issue #557), each such rule anchored at its own subfolder (`Root` and `ScopeDir`) and matched there only (**`MatchScoped`** needs the scope and the globs both), and under the one subfolder **`@rule:<folder>/<name>`** names, its **`.coddy/rules`** only (**`Factory.Folder`**, **`session.SubfolderRules`**); a rule is named by its file's path inside its rule folder (`frontend/style`) and `@rule:` addresses one tree of those names, a subproject's with the subproject in front (**`internal/session/rule_refs.go`**: the catalog first, then the deepest subproject; its completion steps down one level per query through **`Factory.FoldersWithRules`**); links in a rule folder are followed everywhere; nested `AGENTS.md` and `DESIGN.md` files read on demand for the folders a tool enters and never walked for (**`agents.go`**, **`AgentsForPaths`**), the dialect chosen by extension in **`markdown.go`** (**`.mdc`** Cursor: `description` / `globs` / `alwaysApply`, default manual; **`.md`** Claude Code: `paths`, unconditional without them) with a lenient reader for Cursor's YAML-invalid `globs: **/*.go` headers, doublestar glob matching anchored at the session cwd (**`MatchGlob`**), activation from mentioned paths (`@path`, an editor's `file://` attachment) and filesystem tool paths (**`select.go`**, **`scope.go`**): only the always-on rules (**`AlwaysOnRules`**) are in **`{{.Rules}}`**, a rule a tool call activates rides in that call's result (**`llm.Message.Rules`**, **`internal/agent/rules_activation.go`**) and one a mention brings in that user message, each once until a compaction folds it away, and the catalog behind **`coddy rules list`**, which names the folder read and the ones skipped. The **`AGENTS.md`** and **`DESIGN.md`** documents come in three layers, always and in this order, whatever `rules.auto_discover`, `rules.systems` or the prompt template say (issue #425): the agent home's pair, then the workspace's (**`project_docs.go`**, **`LoadStanding`**), both in the system prompt, then the pair of every folder on the way down to a file a tool or a mention reaches (**`AgentsForPaths`**), attached to that result or message; no config key names them - the file existing is the switch. **`instructions.files`** (empty by default) only adds files after them, each under a `### <path>` heading like the documents, its entries resolved by **`internal/session/instructions_load.go`**, which also reports the entries whose file a session cannot read (**`UnreadInstructionFiles`**: a log warning per rules generation, the console header, **`--dry-run`**) - one naming the same file in every workspace (absolute, `~`, `${CODDY_HOME}`) whenever it is unreadable, a relative or `${CWD}` one only when its file is there and unreadable - since **`LoadStanding`** skips such a file without a word. Every file reaches the model once per rules generation, known by its real path (**`dockey.go`**, **`DocKey`**: links resolved, case folded on Windows and macOS), the first occurrence winning, so a nested document the system prompt already carries is not attached again. The standing parts are rendered once per rules generation of the session (**`session.RulesPrompt`**, **`internal/agent/rules_prompt.go`**) and placed in whatever template a turn runs on by **`internal/agent/system_prompt.go`** (**`renderWithDocuments`**: documents a template did not print are appended), so an `AGENTS.md` edited mid-session does not move the cached system prompt; a compaction, a config reload or a workspace switch starts the next generation. Guide: **`docs/features/rules.md`**. |
 | `external/httpserver` | The HTTP surface **`coddy serve`** runs under **`httpserver.enable`**, built with **`tags=http`** (SSE bridge, Swagger statics, `/coddy` REST, ServeMux wiring). **`Serve(ctx, Options)`** takes an already-built manager; **`turn_mirror.go`** implements **`session.TurnMirror`**, publishing a turn another surface started into that session's composer relay so a browser can watch it - session updates fan out, permission and question requests stay with the surface that has a human. A call to a **`models[].model`** selector without **`X-Coddy-Session-ID`** is stateless (**`resolveDirectSession`**, **`session.Manager.NewEphemeralState`**, issue #585): no bundle, no turn lock, no place among the live sessions. **`onboarding_http.go`** serves **`GET /coddy/onboarding/status`** for the SPA's first-run provider picker, using **`providerlogin.ProviderReady`** without running credential helpers. **`devin_auth_http.go`** exposes Devin's PKCE browser sign-in, polling, callback paste and cancellation beside the existing provider auth routes. **`status_http.go`** serves **`GET /coddy/status`** (registered only when **`Options.Status`** is set, so a server without it answers 404 like an older one) and merges its OpenAPI schemas. **`subagent_permission_hub.go`** is this server's offer to **`serve.Runtime`** for detached permission prompts: a subagent whose spawning turn has ended publishes its prompt on the agent task row (**`pending_permission`**, shown in the parent chat) and on **`GET /coddy/events`** (**`subagent_permission`**), answered through the ordinary **`POST /coddy/sessions/{child}/permission`**. |
-| `external/desktop` | What **`coddy desktop`** is (**`-tags desktop`**, which needs **`http`** and **`ui`** beside it and is in **`FULL_TAGS`**, so every release binary and the image carry it): the **launcher** (**`launch.go`**: the port of **`<home>/desktop/port`** remembered across launches, because a browser scopes a page's storage to the origin and the origin carries the port; a second launch that finds a Coddy desktop there hands it the window instead of serving twice; **`port.go`**, **`browser.go`** and the per-OS candidate lists **`browser_{linux,darwin,windows,other}.go`**, a Chromium-family browser in app mode in a profile of its own under **`<home>/desktop/profiles/`**), the **tab shell** (**`shell/`**: one HTML page, one stylesheet, one script - a tab strip over one iframe per chat, each the SPA of the same server - mounted by **`external/httpserver/desktop_shell.go`** inside the SPA's **`"/"`** catch-all, which is the one pattern the authentication gate leaves open, and only for the process that opened a window (**`Server.servesDesktopShell`**); its routes are **`/desktop/window`**, **`/desktop/keys`**, **`/desktop/settings`**, **`/desktop/menu`** and **`/desktop/open`**, all same-origin only), the **window itself on X11** (**`window_x11.go`**, **`window_shape_x11.go`**, **`window_keys_x11.go`** over **`jezek/xgb`**: the system frame taken off with **`_MOTIF_WM_HINTS`** and the window remapped, corners cut with the Shape extension while it floats, moves driven by the page with **`_NET_MOVERESIZE_WINDOW`** rather than the manager's own loop, and a passive grab for the chords a browser answers itself - **`Ctrl+T`**, **`Ctrl+W`**, **`Ctrl+R`**, **`Ctrl+Tab`** - handed to the strip through **`chords.go`**), the **tray icon** (**`tray_linux.go`**, **`tray_menu_linux.go`**: a StatusNotifierItem on the session bus with a **`com.canonical.dbusmenu`** menu whose rows are **`shell.MenuRows`**, the same list the strip's menu draws), and the **switches** (**`settings.go`** at **`<home>/desktop/settings.json`**, **`autostart_{linux,darwin,windows,other}.go`**). The command is **`cmd/coddy/desktop_cmd.go`**. Guide: **`docs/surfaces/desktop.md`**, design: **`docs/plans/desktop.md`**. |
+| `external/desktop` | What **`coddy desktop`** is (**`-tags desktop`**, which needs **`http`** and **`ui`** beside it and is in **`FULL_TAGS`**, so every release binary and the image carry it): the **launcher** (**`launch.go`**: the port of **`<home>/desktop/port`** remembered across launches, because a browser scopes a page's storage to the origin and the origin carries the port; a second launch that finds a Coddy desktop there hands it the window instead of serving twice; **`port.go`**, **`browser.go`** and the per-OS candidate lists **`browser_{linux,darwin,windows,other}.go`**, a Chromium-family browser in app mode in a profile of its own under **`<home>/desktop/profiles/`**), the **tab shell** (**`shell/`**: one HTML page, one stylesheet, one script - a tab strip over one iframe per chat, each the SPA of the same server - mounted by **`external/httpserver/desktop_shell.go`** inside the SPA's **`"/"`** catch-all, which is the one pattern the authentication gate leaves open, and only for the process that opened a window (**`Server.servesDesktopShell`**); its routes are **`/desktop/window`**, **`/desktop/keys`**, **`/desktop/settings`**, **`/desktop/menu`** and **`/desktop/open`**, all same-origin only), the **window itself on X11** (**`window_x11.go`**, **`window_shape_x11.go`**, **`window_keys_x11.go`** over **`jezek/xgb`**: the system frame taken off with **`_MOTIF_WM_HINTS`** and the window remapped, corners cut with the Shape extension while it floats, moves driven by the page with **`_NET_MOVERESIZE_WINDOW`** rather than the manager's own loop, and a passive grab for the chords a browser answers itself - **`Ctrl+T`**, **`Ctrl+W`**, **`Ctrl+R`**, **`Ctrl+Tab`** - handed to the strip through **`chords.go`**), the **tray icon** (**`tray_linux.go`**, **`tray_menu_linux.go`**: a StatusNotifierItem on the session bus with a **`com.canonical.dbusmenu`** menu whose rows are **`shell.MenuRows`**, the same list the strip's menu draws), and the **switches** (**`settings.go`** at **`<home>/desktop/settings.json`**, **`autostart_{linux,darwin,windows,other}.go`**). The command is **`cmd/coddy/desktop_cmd.go`**: beside the window's loopback surface (**`serve.KindDesktop`**, the one non-auxiliary entry) the process runs every subsystem the configuration enables, built by the same **`subsystems()`** **`coddy serve`** uses and marked auxiliary so a surface that fails stops alone instead of taking the window down, and both HTTP surfaces register on the runtime's mirror set (**`AddTurnMirror`**). Guide: **`docs/surfaces/desktop.md`**, design: **`docs/plans/desktop.md`**. |
 | `external/ui` | Embedded SPA (`go:embed`) when built with **`tags=http,ui`**. First-run onboarding lives in **`src/ui/onboarding/`**: the provider picker (OpenAI, Anthropic, Ollama, compatible, NeuralDeep, Codex, OpenCode and Devin), its non-destructive config merge, the one-shot guided tour and its localStorage flag, with **Settings → Appearance → Restart onboarding**; visual contract in **`DESIGN.md`**, functional checklist in **`docs/surfaces/web-ui.md`**. **Settings → System** (**`src/ui/settings/SystemSection.tsx`**, a lazy chunk, with **`systemStatus.ts`** and **`Sparkline.tsx`**; the reads and the badge in **`systemStatusApi.ts`**) draws **`GET /coddy/status`** of the server the page talks to (**`DESIGN.md`**, *System tab*). It installs as an app and shows system notifications from the background: the manifest, icons and service worker in **`public/`**, the notifications in **`src/ui/pwa/`** (**`DESIGN.md`**, *Installable app and notifications*). Everything Telegram-specific is **`src/ui/telegram/`** (the Mini App: its own bridge to the client, no script from telegram.org; **`DESIGN.md`**, *Telegram Mini App*). A long conversation is a sliding window: the newest page first, older pages as the reader scrolls up, a bounded slice of rows in the DOM (**`chat/TranscriptList.tsx`**, **`useTranscriptWindow`**; **`DESIGN.md`**, *Transcript window*); **`npm run check:transcript`** measures it in a real browser against the binary. The views of a chat are buttons in the chat header: Files as its icon alone at every width (the name in the tooltip), Background tasks at the right edge with its dot and counts; the dock shows the background tasks without a tab strip, the edits open in a window of their own (git's report of the folder, opened from git's count at the right edge of the plate joined to the top of the composer card, **`chat/WorkspaceBar.tsx`**), and so do the files, each with nothing over it: source coloured as one text with the chat's grammars, pictures, sound and film, a PDF in the browser's own viewer, an SVG as a picture and an HTML page in a sandboxed frame through **Preview** in the window's menu (**`src/ui/files/FilesView.tsx`**; **`DESIGN.md`**, *Views of a chat*, *Workspace files window*); **`npm run check:files`** drives them through an authenticated swarm relay. |
 | `external/memory` | Long-term memory (**`-tags memory`**): the memory subagent's prompt template, task (the **`AGENTS.md`** guide of each memory root in front of the user message) and tool set (**`agent.go`**), the note storage (ranked search over **`docs.Ranker`**) and the six **`coddy_memory_*`** tools. The run is an ordinary subagent the model delegates to through **`spawn_agent`** under the bundled **`memory`** definition (**`internal/subagents/bundled/memory.md`**), launched by the generic machinery of **`internal/agent/subagent.go`** like any other child (an **`agent`**-kind background task, hooks fire, counted and visible to the pool tools). **`internal/agent/memory_hooks.go`** (untagged) holds only the spawn-path helpers: **`registerMemoryChildTools`** puts the six tools into the child registry, **`memorySpawnCheck`** / **`memorySpawnVisible`** gate the spawn on **`memory.enable`** and the tag, **`memorySpawnSpec`** builds the spec (model and fallbacks from the memory config, the worktree refusal), **`memoryFallbackModels`** reads the fallback chain. See README there and **`docs/features/memory.md`**. |
 | `external/cli` | Interactive console TUI (**`-tags cli`**): bare **`coddy`** on a terminal, pi-style rendering in **`external/cli/tui`**. Guide: **`docs/surfaces/console.md`**. |
