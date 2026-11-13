@@ -2944,6 +2944,43 @@ throttle with immediate renders after keystrokes.
 
 ## Commands and keys
 
+Suggestions are available from the first completed reply. After a turn, the empty
+editor can show a dim suggestion for the next prompt, including a one-word reply
+in Russian such as "продолжай".
+**Tab** or **Right** copies it into the draft; typing hides it. The extra model
+call repeats the finished turn's own request - the same model and reasoning level,
+its system prompt, complete history and tool definitions - with the suggestion
+instruction appended as a request-only user message, so a provider that caches
+prompts reads the turn's history back from its cache instead of paying for it
+again. The turn-context block (the time, the git state) is left out, tools are
+never executed and the transcript stays unchanged. Where the turn asked for no
+reasoning, the call reserves up to 1024 output tokens, including reasoning, so a
+model such as OpenCode's `beam-free` can finish before producing the hint; where
+it did ask for reasoning, the turn's own output bound stays, because Anthropic
+derives the thinking budget from `max_tokens` and a request whose thinking
+parameters differ from the turn's reads none of its cached history. A turn the
+provider did not serve from its cache gets no suggestion at all: Coddy reads the
+turn's own usage, and over 10000 tokens of it processed rather than read back the
+side call is not worth making. The reading applies where a provider reports what
+it served from its cache, which the Messages API always does. Suggestions
+are enabled by default; set `agent.prompt_suggestions: false` in `config.yaml` to
+disable them, or use **Settings → ReAct loop → Prompt suggestions** in the web UI.
+With `--remote`, the console fetches the hint from the server and reports whether
+it was accepted. The server's `agent.prompt_suggestions` controls generation; no
+local model or provider credentials are needed. Tab and Right work the same way.
+A new remote turn, server configuration reload or reconnect retires an obsolete
+hint and cancels a pending request. If the server does not provide the suggestion
+route, the editor continues without a hint. Update both the server and console to
+use this feature.
+
+![A dim suggestion in a remote console](../assets/cli-tui/remote-suggestion-hint-dark-1280.png)
+
+*A dim hint from the server, dark theme, 1280px. [Narrow view at 390px](../assets/cli-tui/remote-suggestion-hint-dark-390.png).*
+
+![The remote suggestion accepted into the draft](../assets/cli-tui/remote-suggestion-accepted-dark-1280.png)
+
+*The hint accepted with Tab into an editable draft, dark theme, 1280px. [Accepted with Right at 390px](../assets/cli-tui/remote-suggestion-accepted-dark-390.png).*
+
 Slash commands: the settings commands `/model`, `/reasoning` (`/effort`),
 `/think`, `/nothink`, `/toolset`, `/agent`, `/plan`, `/ask` and `/permissions`, each with
 `--once` or `--count=N` for the next turns only
@@ -4011,6 +4048,32 @@ In **Settings → LLM providers**, a Kimi subscription row offers device sign-in
 - Automated checks: **`FieldHint.test.tsx`**. Live check: hover an (i) at **1280px** and tap one at **390px**; the tip is a child of `<body>`, sits 8px above the (i) and centred on it, and `.settings-scroll` keeps `scrollWidth` equal to `clientWidth`.
 
 ## Settings: boolean switch fields
+
+**ReAct loop → Prompt suggestions** controls the dim next-prompt hint in an empty composer.
+It is enabled by default. After a turn, Coddy repeats that turn's own request: the
+main system prompt, the complete history with tool calls and results, the tool
+definitions and the same model and reasoning level, with the suggestion instruction
+appended as a request-only user message. A provider that caches prompts therefore
+reads the history back from its cache instead of paying for it again. Tools
+are never executed and nothing enters the transcript. Two turns get no suggestion
+at all: one that ended while this tab was hidden, since its composer shows the
+hint to nobody, and one the provider did not serve from its cache, since the side
+call would then read the whole history at the input price. **Tab** or **Right** copies
+the suggestion into the draft. The suggestion stays as the placeholder while
+you edit. Clearing the draft shows the same suggestion again, including after accepting
+and editing it. Sending a message, starting another turn or switching context retires it.
+Set `agent.prompt_suggestions: false`
+in `config.yaml`, or turn the switch off and save, to stop generating suggestions in both
+the web UI and consoles connected to this server, including `--remote` clients.
+The change applies without restarting Coddy.
+
+![The same suggestion after editing and clearing the draft](../assets/web-ui/prompt-suggestion-restored-dark-1280.png)
+
+*The same suggestion after editing and clearing the draft, dark theme, 1280px. [Narrow view at 390px](../assets/web-ui/prompt-suggestion-restored-dark-390.png).*
+
+![Prompt suggestions enabled in ReAct loop settings](../assets/web-ui/prompt-suggestions-on-dark-1280.png)
+
+*Prompt suggestions enabled by default in ReAct loop settings, dark theme, 1280px. [Narrow view at 390px](../assets/web-ui/prompt-suggestions-on-dark-390.png).*
 
 - Every on/off option in the settings forms renders through the shared **`SwitchField`** (**`external/ui/src/ui/settings/SwitchField.tsx`**): the **`Switch`** control and a label cell on one two-column grid (**`.settings-switch-field`**). This covers the schema-driven booleans of **`SchemaForm`** (for example **Logical models → Multimodal** and **Stream responses**, **Tools and permissions → Background tasks → Enabled**, the **Gateways → Telegram** flags) and the **Skills → Skill auto-discovery** row.
 - The label sits level with the switch (vertical centres match within 1px, 8px gap), and the field's description is the (i) right after the label, as on every other field.
@@ -16527,6 +16590,7 @@ Defaults for the main agent loop (model id and safety caps).
 | `agent.loop_tool_repeat_limit` | integer or null | 2 | Consecutive identical tool calls in successive ReAct responses (same name, same canonical arguments) before the loop guard steps in. 0 disables the tool-repeat check. |
 | `agent.loop_stream_repeat_cycles` | integer or null | 5 | Identical back-to-back output cycles inside one streamed response before the stream is cut. 0 disables the stream check. |
 | `agent.loop_nudge_max` | integer or null | 1 | How many times one turn may be nudged back on track before the loop guard stops it with a notice. |
+| `agent.prompt_suggestions` | boolean or null | true | Suggest the next prompt in the empty console or web composer after a turn. An extra model call forks the turn's provider context; tools are never executed and nothing enters the transcript. Tab or Right accepts the suggestion. Defaults to true; false disables generation. |
 | `agent.wait_for_limit_reset` | boolean | false | Wait for a hit usage limit to lift and re-issue the call, instead of ending the turn with the provider's error. Applies to a top-level turn whose provider names a pause beyond the retry budget, in a Retry-After header or in the text of the 429 itself; the turn lock and the client stream stay open while it waits, so it is off by default. |
 | `agent.wait_for_limit_reset_max_ms` | integer or null | 14400000 | Longest time one turn spends waiting for limits in total, in milliseconds, the retry wrapper's own sleeps on a limit included; a pause that would exceed it ends the turn at once with the error. An explicit 0 never waits. |
 
@@ -17382,6 +17446,8 @@ The keys of the console TUI and of the web UI composer, as the code binds them: 
 
 ## Console
 
+With a next-prompt suggestion in the empty editor, **Tab** or **Right** copies it into the draft (`agent.prompt_suggestions`, enabled by default). The same keys accept the hint in the web composer.
+
 Keys are parsed into the `ctrl+x` / `shift+enter` / `alt+backspace` notation of `external/cli/tui/keys.go`. While a modal is open, only the modal sees the keyboard; while the suggestion menu of the editor is open, it takes the navigation keys first.
 
 | Key | Action |
@@ -18140,6 +18206,15 @@ Reads, uploads and deletions use the [normal API authentication policy](#authent
 | `404` | Missing picture, link or another non-regular file. |
 | `415` | Invalid or unrecognized image header. |
 | `500` | Gallery or picture storage failure. Error messages contain no filesystem paths. |
+### Prompt suggestions
+
+The composer reads **`GET /coddy/sessions/{id}/prompt-suggestion`** after a turn.
+It returns `{"object":"coddy.prompt_suggestion","sessionId":"...","text":"..."}`;
+`text` is empty when suggestions are disabled, suppressed, or unavailable.
+**`POST /coddy/sessions/{id}/prompt-suggestion/outcome`** with `{"accepted":true}`
+records acceptance; `false` records an unused suggestion. Repeated unused suggestions
+reduce their frequency after the initial grace period. `agent.prompt_suggestions`
+defaults to `true`; setting it to `false` stops the extra model calls.
 
 ### System status
 
@@ -20936,7 +21011,7 @@ What ships is still the embedded copy: a change under `external/ui/src` is compl
 - **`make test`** - the express run, before every push: `make test-agent-rules` (Python hooks plus the OpenCode plugin), `ui-build`, the SPA's vitest suite (`make ui-test`), then one `go test -tags=http,ui,scheduler,memory,cli,gateway,swarm,metrics,browser ./...` over the whole tree with every optional module compiled in. Minutes, not tens of minutes.
 - **`make test-matrix`** - every tag combination in `TEST_TAG_SETS` (`Makefile`), one after another. This is CI's job, one job per combination on every pull request; do not walk it locally. When a change moved a build-tag boundary (a `_stub.go`, an `Available` const, a `//go:build` line), run that one combination by hand, `go test -tags=<set> ./...`, and leave the rest to CI.
 - **`make test-race`** - the tree under the Go race detector, with every optional module but `ui` compiled in. CI runs it on every pull request (job **Race detector**). Run it before the push when a change touches goroutines, locks, channels or a test harness that drives a live loop; `GOFLAGS=-count=3 make test-race` repeats every test for a race that shows up rarely. Every package is clean under it, so a race it reports is fixed rather than skipped.
-- **`make test-cache`** - the prompt-cache group on its own: the `features/prompt_cache_*.feature` specs and every test named `TestPromptCache*`, which check what each request sends the provider - the same system message for the whole session, a history that only grows at its end, every rule at most once and nothing no path brought in. It is part of `make test`; run it when a change touches the system prompt, the rules, the history or the send boundary, and name a new test of the kind `TestPromptCache...` so it joins the group.
+- **`make test-cache`** - the prompt-cache group on its own: the `features/prompt_cache_*.feature` specs and every test named `TestPromptCache*`, which check what each request sends the provider - the same system message for the whole session, a history that only grows at its end, every rule at most once and nothing no path brought in. It is part of `make test`; run it when a change touches the system prompt, the rules, the history, the send boundary or the prompt-suggestion side call, whose request must stay the turn's own, and name a new test of the kind `TestPromptCache...` so it joins the group.
 - **`make test-perf`** - the performance group: the benchmarks in the `perf_test.go` files, which `make test` never runs. They time what a turn repeats (rules discovery, the look for the rules a tool call brings in, the send boundary) and report what a session over this repository's own rules costs the context (`system-tokens`, `request-tokens`, `duplicate-rules`). `BENCH=<regexp>` narrows them, `BENCHTIME=5x` sets the runs; compare a branch with `main` before and after a change to the prompt or the rules.
 - **`make check-windows`** and **`make lint-windows`** - whenever you touch a file behind `//go:build windows`, or a signature it shares with the rest of the tree. The host runs never compile that half; CI cross-builds it and also runs the OS-specific packages on real `windows-latest` and `macos-latest` runners, the latter driving the console through a pty with `examples/cli/cli_e2e_startup.py`.
 - **`make bench-cli-startup`** and **`make bench-cli-startup-real`** - the performance checks of the console's startup, not a gate: the first is timed from spawn to the first frame and to a typed probe being echoed, in a real pty, with an empty, a real and a synthetic skill set and a source that never answers; the second does the same on a private copy of your own `~/.coddy` (never written to), MCP servers included, and reports when every one of them settled and which failed. Both need `examples/cli/requirements.txt` and a `cli`-tagged `build/coddy`; `BENCH_RUNS` sets the runs per case. A change that touches the startup path cites its numbers in a design record, the way `docs/plans/console-mcp-startup.md` does. The startup bounds CI enforces are in `cli_e2e_startup.py`: the first frame within seconds with a stdio MCP server that never answers, and within two seconds with 300 skills and a skill source that never answers.
@@ -23434,6 +23509,11 @@ The right insights rail is removed for the current milestone.
 
 ### Settings drawer (tabbed master–detail)
 
+**ReAct loop → Prompt suggestions** is an enabled-by-default switch in **Model and turns**,
+backed by `agent.prompt_suggestions`. Saving it off stops the extra model calls in the web UI
+and local console. A suggestion appears only in the idle, empty composer; Tab or Right copies
+it into the draft. A new turn, session change or config reload retires pending and visible hints.
+
 The **Settings** drawer (**`#/settings`**, **`Settings.tsx`**) is **tabbed**, not one long sheet. Tabs are derived from the live config JSON Schema (**`deriveSettingsSections`** over **`/coddy/config/schema`**): each top-level property is a tab (label from its **`title`**, or from **`settings.section.<id>.label`**) in the schema's own order (**`rootOrder`** in **`internal/config/ui_schema.go`**, pinned by **`TestUISchemaRootPropertyOrder`**), which reads in groups of meaning: where the models come from (**LLM providers**, **Logical models**), the loop that runs them (**ReAct loop**, **Context compaction**, **Memory**), what the agent can do (**Tools and permissions**, **MCP servers**, **Skills**, **Subagents**, **Hooks**), what runs it without a person at the composer (**Scheduler**, **Gateways**), and the operation of the process (**Logger**, **Metrics**, **Prompts**). A section the binary cannot run is left out of the schema (**`config.UISchemaJSONHiding`**, fed by **`httpserver.Options.UnbuiltSections`**: the **Metrics** tab in a build without the **`metrics`** tag), while it still travels in the settings document, so a save writes it back to the file untouched. The rarely edited tail (**`prompts`**, **`instructions`**; **`SYSTEM_KEYS`** in **`settingsSections.ts`**) folds into a single **Prompts** tab (id **`system`**, **`#/settings/system`**: the address and the id kept their old name), which always closes the list wherever its keys stand; the scheduler, the logger and the gateways are features with tabs of their own, and the **`sessions`** section (where the bundles are stored) is edited on the **Sessions** tab (**`SESSIONS_CONFIG_KEY`**). Three client-side tabs are placed **first**, the head group - **Appearance** (the default tab), **Sessions** (**`sessions_manager`**, the session management table below) and **System** (**`status`**, *System tab* below, after Sessions). All render before the schema has loaded; the Sessions tab adds its **Storage** fieldset once it has. **System** sits in the head group and **Metrics** in the operation group, after **Logger**. There is no separate Appearance/Skills flyout or **`settings-dock-cluster`** side panel — both are tabs now.
 
 - **Saving**: there is **no per-section save button**. The drawer footer keeps only **Reload** (**`data-testid="settings-reload"`**) and **Save all** (**`data-testid="settings-save"`**, PUTs the whole config after `/coddy/config/validate`). **Appearance** is client-side only and never touches the config PUT. **A save that went through says so on the Save button alone**: it turns green (**`.is-saved`**: green border, wash and a 2px halo, a short scale pop) for **`SAVE_SUCCESS_MS`** (2 s, **`Settings.tsx`**) and eases back to its own colour, with no line of text on screen (a screen reader hears **Saved** from an **`.sr-only`** status). The green is a state rather than a frame of the pop, so it holds under **`prefers-reduced-motion`**, where only the pop goes. **A failed save says why in words** in the lead pane (**`.settings-lead-pane`**, **`.settings-error`**), which stands between the head and the tabs only while a failed read or a failed save needs saying; the Save button stays as it was. The success line that used to sit in that pane (**All sections saved**) stayed on screen for as long as the drawer did, and it is gone. **Unsaved edits** (issue #485): a change applies only after Save, so while the form differs from the config it was read from or last saved (**`settingsFormDirty`** in **`settings/settingsDirty.ts`**: values compared as the form means them - empty values, a switch at its default and key order are no edit, the revision is left out) the Save button stands out (**`.settings-btn-primary.is-dirty`**: a solid accent fill, a white glyph and a 3px accent ring that breathes; the fill and the ring are the state and hold under **`prefers-reduced-motion`**, where only the breathing stops) and the footer opens with a line that says so (**`.settings-save-status`**, **`data-testid="settings-save-status"`**, **Unsaved changes**, empty otherwise, **`min-width: 0`** so it never pushes the buttons off a phone). Closing over unsaved edits - the close button, Escape through **`useRailEscapeStep`** and a click on the backdrop beside the drawer through **`useRailCloseGuard`** (**`nav/railEscape.ts`**) - asks first (**`ConfirmDialog`**, **`data-testid="settings-close-dialog"`**: **Save and close** / **Keep editing**), and a page reloaded or closed over them asks the browser (**`beforeunload`**), except for the reload of a switch to another environment: the form remembers the server it was read from, and Save on a page whose reload onto another server was stopped, or that switched while the save ran, refuses with a reason instead of writing there. An edit typed while a save runs stays unsaved against what was sent (a value put back included), and **Save and close** keeps the drawer open over it; a newer copy of the config does not replace a form edited during a save. Unsaved wins over the green of a save that just went through, and a close asked for while a save runs closes the drawer once that save leaves nothing unsaved. Contract: **`Settings.unsaved.test.tsx`**, **`App.settingsUnsaved.test.tsx`**, **`settingsDirty.test.ts`**, **`settingsSaveStateCss.test.ts`**, **`features/web_ui_settings_unsaved.feature`**; live check **`npm run check:settings-unsaved`**.
@@ -25643,7 +25723,7 @@ Swagger lives at **`/docs/`**, OpenAPI YAML at **`/openapi.yaml`**.
 
 ## Pre-commit gate
 
-A git **`pre-commit`** hook runs the linter before every commit, so nothing lands with lint errors. It is the single enforcement point for humans and coding agents alike. Tests are **opt-in** on commit: **`make test`** (the express run: the SPA's vitest suite, then every optional module compiled in once) belongs before the push, and the per-combination tag matrix (**`make test-matrix`**) runs on GitHub Actions for every pull request, as does **`make test-race`**: the race detector over the whole tree with every tag but `ui`, clean in every package. Run it before the push when a change touches goroutines, locks or a test harness that drives a live loop. Two groups run on their own: **`make test-cache`** (the **`features/prompt_cache_*.feature`** specs and the **`TestPromptCache*`** tests, part of `make test`: what each request sends the provider, byte for byte across a session - run it when a change touches the system prompt, the rules, the history or the send boundary) and **`make test-perf`** (the benchmarks of the **`perf_test.go`** files, never part of `make test`: timings and the context a session costs, as token metrics).
+A git **`pre-commit`** hook runs the linter before every commit, so nothing lands with lint errors. It is the single enforcement point for humans and coding agents alike. Tests are **opt-in** on commit: **`make test`** (the express run: the SPA's vitest suite, then every optional module compiled in once) belongs before the push, and the per-combination tag matrix (**`make test-matrix`**) runs on GitHub Actions for every pull request, as does **`make test-race`**: the race detector over the whole tree with every tag but `ui`, clean in every package. Run it before the push when a change touches goroutines, locks or a test harness that drives a live loop. Two groups run on their own: **`make test-cache`** (the **`features/prompt_cache_*.feature`** specs and the **`TestPromptCache*`** tests, part of `make test`: what each request sends the provider, byte for byte across a session - run it when a change touches the system prompt, the rules, the history, the send boundary or the prompt-suggestion side call, whose request must stay the turn's own) and **`make test-perf`** (the benchmarks of the **`perf_test.go`** files, never part of `make test`: timings and the context a session costs, as token metrics).
 
 - Enable once per clone: **`make hooks`** (sets **`core.hooksPath=.githooks`**; this is local config and is not committed, so every clone runs it once).
 - AppSec scanning is **opt-in** the same way: **`make security`** (trivy + semgrep + govulncheck over the checkout, docker fallback when the binaries are absent; govulncheck fails on a vulnerable function the code calls, the standard library of the `toolchain` line of **`go.mod`** included) is what `.github/workflows/security.yaml` runs on pull requests, pushes to main and a weekly cron; **`make sec-report`** scans without failing on findings. Reports and the severity summary land in **`dist/security/`**; the gate knobs (`SEC_FAIL_TRIVY`, `SEC_FAIL_SEMGREP`, `SEC_FAIL_GOVULNCHECK`, `GOVULNCHECK_TAGS`, `SEC_DOCKER`, `SEMGREP_CONFIGS`) and the triage workflow (`.trivyignore.yaml`, `trivy.yaml` skip-dirs, `nosemgrep`) are in **`docs/contributing/security-scanning.md`**.
