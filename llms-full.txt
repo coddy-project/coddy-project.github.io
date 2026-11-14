@@ -333,7 +333,9 @@ brew install coddy-project/coddy-agent/coddy
 The cask lives in Coddy's own tap, [coddy-project/homebrew-coddy-agent](https://github.com/coddy-project/homebrew-coddy-agent),
 and every release updates it. The command adds the tap, trusts this one cask and installs the
 **`coddy`** binary from the macOS archive of the latest release, plus **`man coddy`** and the bash and zsh
-completions. It needs macOS 12 or later. It does not install **`tmux`**: its caveats, printed after
+completions. It needs macOS 13 or later, the minimum a binary of the Go 1.27 toolchain records. On
+macOS 14 or later, `coddy desktop` opens a native Cocoa/WKWebView window without an installed
+browser; on older releases it uses a Chromium-family browser. It does not install **`tmux`**: its caveats, printed after
 the install and by **`brew info --cask coddy`**, recommend **`brew install tmux`** for a console
 session that outlives the terminal. They also give the two lines for **`~/.zshrc`** that make zsh load
 the completion: the zsh macOS ships runs no **`compinit`**, and without it Tab does not complete
@@ -1831,8 +1833,9 @@ The cask is written for Homebrew 7: the completions go through **`bash_completio
 **`postflight`** block, and the **`url`** carries no **`verified:`**. That step removes
 **`com.apple.quarantine`**, which Homebrew sets on every cask download: the binary is ad-hoc signed
 and not notarised, and with the attribute in place Gatekeeper stops its first run. Notarisation needs
-an Apple Developer ID, which the project does not have. The cask asks for macOS 12 or later, because
-binaries built by Go 1.25 and later do not run on older releases.
+an Apple Developer ID, which the project does not have. The cask asks for macOS 13 or later, because
+from Go 1.27 a darwin binary records macOS 13 as its minimum and the loader refuses it on anything
+older.
 
 The zsh completion lands in **`$(brew --prefix)/share/zsh/site-functions/_coddy`**. **`brew shellenv`**,
 which the Homebrew installer adds to **`~/.zprofile`**, puts that folder on zsh's **`fpath`**, but zsh
@@ -6538,8 +6541,19 @@ The surface costs 0.44 MiB in a binary that already carries the HTTP server and 
 which is why it is a verb rather than a second program to install and update, and why every build
 has it - the release archives, the packages, the Homebrew formula and the container image alike.
 
-It needs a Chromium-family browser installed - Chrome, Chromium, Edge, Brave, Vivaldi or Yandex
-Browser - which it starts in application mode. Firefox has no application mode and is not used.
+macOS release archives include the Cocoa/WKWebView backend.
+The native window needs macOS 14 or later for a persistent WebKit store isolated to the agent home,
+and a GUI session. On older macOS versions, `auto` falls back to a Chromium-family browser.
+Linux, Windows and macOS builds without the native backend need Chrome, Chromium, Edge, Brave,
+Vivaldi or Yandex Browser. Firefox has no application mode.
+The native backend needs no C compiler and no Xcode command-line tools: it reaches Cocoa and WebKit
+through the Objective-C runtime, so `make build` produces it like any other Go code, and the release
+cross-compiles it on Linux. Running a release binary on macOS 14 or later needs neither a compiler
+nor an installed browser. See [Building from source](../contributing/build.md#desktop-window-coddy-desktop).
+
+![The native macOS window in Dark at 1280 pixels](../assets/desktop/desktop-native-window-dark-1280.png)
+
+*The macOS native window uses the same tab shell in WKWebView.*
 
 ### The Linux package
 
@@ -6568,10 +6582,10 @@ coddy desktop [--window auto|browser|native] [--browser PATH] [--frame] [--auth]
 
 | Flag | What it does |
 | --- | --- |
-| `--window` | which window to open: `auto` (the default), `browser` for application mode, `native` for the window around the system WebView, which is not built in yet |
+| `--window` | `auto` (the default) tries native when built in, then falls back to the browser when the macOS version or GUI session is unavailable; `browser` uses application mode; `native` uses Cocoa/WKWebView on macOS 14+, which every macOS build carries, release or source; it reports an error if unavailable |
 | `--browser` | the browser to open the window with, by name on `PATH` or by path. Also `CODDY_DESKTOP_BROWSER` |
 | `--config`, `--home`, `--cwd` | as on `coddy serve`: the configuration file, the agent home, the workspace new chats open in |
-| `--frame` | keep the system title bar and borders. Without it, on an X11 session, the strip is the title bar |
+| `--frame` | keep the system title bar and borders. Without it, on X11 and native macOS, the strip is the title bar |
 | `--log-level` | `debug`, `info`, `warn` or `error`, overriding the configuration |
 | `--auth` | ask for the credential the configuration carries. Without it the window asks for nothing (below) |
 | `-t`, `--test-config` | check the configuration file and exit, starting nothing |
@@ -6615,9 +6629,10 @@ those keys at the X server, with a grab on its own window, and hands them to the
 `Ctrl`+`Tab` and `Ctrl`+`Shift`+`Tab` are two grabs rather than one, because a grab matches the
 modifiers exactly. `Ctrl`+`1` ... `Ctrl`+`9` need none of that, since an application window has no
 tabs of its own to switch to and gives the digits to the page. `Alt` stands beside `Ctrl` for every
-letter and digit chord, and on a Mac so does `Cmd`: that is what a Wayland or a macOS session -
-where the keys cannot be taken from the browser - leaves you with. `Alt`+`Tab` and `Cmd`+`Tab`
-always belong to the window manager and never switch these tabs. A chord is read off the physical
+letter and digit chord, and so does `Cmd`: in the native macOS window `Cmd`+`T`, `Cmd`+`W` and the
+`Cmd` digit chords reach the strip. In a browser window a `Cmd` shortcut the browser answers itself
+stays the browser's, and `Ctrl` or `Alt` do the same there. `Alt`+`Tab` and
+`Cmd`+`Tab` always belong to the window manager and never switch these tabs. A chord is read off the physical
 key, so a Russian or any other layout answers the same keys as a US one.
 
 A row longer than the bar scrolls, and the tab you switch to is always brought into sight, so the
@@ -6655,12 +6670,12 @@ origin shares a single connection.
 
 ## The window itself
 
-On an X11 session the window opens without the system frame, and the tab strip is its title bar.
-On macOS, on Windows and on Wayland the window keeps the frame its desktop draws, and the strip is
-a strip of tabs: everything below is what an X11 session adds. The strip
-carries, from left to right: the menu of the desktop, the tabs, `+`, the empty space that drags the
+On X11 and native macOS the window opens without the system frame, and the tab strip is its title
+bar. Browser windows on macOS, Windows and Wayland keep the system frame. The controls below apply
+to X11 and native macOS. The strip carries, from left to right: the menu of the desktop, the tabs, `+`, the empty space that drags the
 window, the two arrows that walk a row too long for the bar, and minimise, maximise and close at the
-right edge. The corners are rounded while the window floats and square while it fills the screen.
+right edge. On X11 the corners are rounded while the window floats and square while it fills the
+screen. macOS draws its native window corners.
 
 | Action | How |
 | --- | --- |
@@ -6678,6 +6693,7 @@ do to any other.
 The first window of a browser profile opens as a landscape rectangle, 1280 by 820, rather than the
 tall one a Chromium application window takes by default. After that the browser remembers where you
 left it, and Coddy does not override that: a window moved or resized comes back where it was.
+The native macOS window starts centred, 1280 pixels wide; it does not save its size or position.
 
 ### In the task bar
 
@@ -6692,9 +6708,9 @@ a machine with no entry installed: a browser gives an application window the
 page's favicon at 16 pixels and nothing larger, which a task bar then blurs up
 to its own size.
 
-Both are X11. On Wayland, on macOS and on Windows the window is the browser's
-as far as the system is concerned, and the task bar draws what the browser
-tells it.
+Both are X11. With the browser backend on Wayland, macOS and Windows, the task bar draws what the
+browser tells it. The native macOS window belongs to the `coddy` process; this build adds no `.app`
+bundle or custom Dock icon.
 
 ### Recent folders in the application menu
 
@@ -6736,7 +6752,7 @@ take another port.
 | **Open at login** | Linux: writes `coddy-desktop.desktop` into this user's autostart folder (`$XDG_CONFIG_HOME/autostart`, else `~/.config/autostart`). macOS: a launch agent, `~/Library/LaunchAgents/dev.coddy.desktop.plist`. Windows: a value under this user's `Run` key. Nothing is installed system-wide and nothing needs administrator rights |
 | **Show the tray icon** | publishes Coddy's mark in the system tray as a StatusNotifierItem on the session bus. A click on it brings the window back from behind another window or from the taskbar |
 | **Start minimised** | the next launch opens the window minimised, which is usually what a window opened at login wants |
-| **Show the system frame** | gives the window back the title bar and borders your desktop draws. The strip then stops drawing minimise, maximise and close, since the frame carries them. An X11 session only: elsewhere the frame is always there |
+| **Show the system frame** | gives the window back the title bar and borders your desktop draws. The strip then stops drawing minimise, maximise and close, since the frame carries them. On X11 and native macOS; other browser windows always keep their frame |
 
 A switch moves only once the launcher has done the thing: a tray this session has no tray for, or
 an autostart folder that cannot be written, leaves the switch where it was and says why on the row.
@@ -6770,7 +6786,7 @@ wrote.
 
 ## Notifications
 
-The window raises the system notifications the web interface raises. Turn them on in **Settings -
+The browser window raises the system notifications the web interface raises. Turn them on in **Settings -
 Appearance - Notifications**, and a chat that ends a turn, asks for a permission or asks a question
 while no window of Coddy has your attention puts a notice on your desktop; clicking it brings that
 chat up. The rules are the web interface's own, described under
@@ -6781,6 +6797,9 @@ first window, so turning the switch on does not open the browser's permission bu
 strip. The grant names this window's address and nothing else, and it holds because the port does.
 A launch that had to take another port gets a grant that no longer matches, and the browser asks
 once.
+
+WebKit denies notification permission requests made without a user gesture. The native backend
+adds no macOS notification bridge. Open the web interface in a browser to use its notification support.
 
 ## The port it remembers
 
@@ -6795,6 +6814,16 @@ Two consequences:
   starts with no tabs, and the new port is what the next one uses;
 - starting the application while a window is already open does not serve a second time. The second
   launch sees the desktop already running and asks it for a window.
+
+A second browser launch hands its tabs to the existing window.
+A second native launch opens another window on the running server. Its shell window controls
+still address the original window; use that original window for move, resize and close controls.
+Closing the second window ends only that launch.
+
+The native macOS window keeps its WebKit store identifier in `<home>/desktop/webkit/id`. WebKit
+stores cookies and localStorage in its system-managed data location, separately for each identifier.
+The identifier persists across launches, so homes keep separate browser data. The native store and
+Chromium profiles are separate; switching backends does not transfer the tab list or sign-in state.
 
 The browser's profile for the window lives in `<home>/desktop/profiles/<browser>`, one per browser.
 It is what makes the window a process of its own, and what keeps the agent's cookie out of your
@@ -6833,16 +6862,16 @@ The window opens on all three. What differs is how much of it the system lets Co
 
 | | Linux (X11) | Linux (Wayland) | macOS | Windows |
 | --- | --- | --- | --- | --- |
-| The window, tabs, settings | yes | yes | yes | yes |
-| No system frame, the strip as the title bar | yes | no | no | no |
-| Rounded corners, drag by the strip, its own buttons | yes | no | no | no |
+| The window, tabs, settings | yes | yes | native on macOS 14+; browser fallback on older macOS | yes |
+| No system frame, the strip as the title bar | yes | no | native only | no |
+| Rounded corners, drag by the strip, its own buttons | yes | no | native only | no |
 | `Ctrl`+`T`, `Ctrl`+`W`, `Ctrl`+`R`, `Ctrl`+`Tab` taken from the browser | yes | no | no | no |
-| `Alt` (and `Cmd` on a Mac) for the letter and digit chords | yes | yes | yes | yes |
+| `Alt` for the letter and digit chords | yes | yes | yes | yes |
 | Tray icon | yes | yes | no | no |
 | Open at login | autostart entry | autostart entry | launch agent | `Run` key |
 
 Where a chord cannot be taken from the browser, `Alt`+`T`, `Alt`+`W`, `Alt`+`R` and the digit
-chords do the same thing, and on a Mac `Cmd` stands beside them. `Alt`+`Tab` and `Cmd`+`Tab` stay
+chords do the same thing. The strip also accepts `Cmd` when the macOS backend delivers it to the page. `Alt`+`Tab` and `Cmd`+`Tab` stay
 with the window manager.
 
 The browser is looked for where each system keeps one: on `PATH` on Linux, in `/Applications` and
@@ -6853,14 +6882,24 @@ The browser is looked for where each system keeps one: on `PATH` on Linux, in `/
 CODDY_DESKTOP_BROWSER="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" coddy desktop
 ```
 
-Two things to know before you use it on macOS or Windows. Neither Gatekeeper nor SmartScreen has
-anything to warn about here, because the program you start is the browser already installed on the
-machine - but `coddy` itself is a console program, so on Windows the console window it was started
-from stays behind the window. And without a window of its own to drive, the strip draws no window
-buttons and the menu offers no frame switch: your desktop's own title bar carries both.
+The macOS native backend uses Cocoa and WebKit from the system, with a standard file picker for
+file inputs and the system browser for HTTP(S) links opened in a new window. The Edit menu supplies
+`Cmd`+`C`, `Cmd`+`V`, `Cmd`+`X`, `Cmd`+`A` and `Cmd`+`Z`; `Cmd`+`Q` closes the window and ends the
+run. Downloads from an HTML `download` link or an attachment response go to the standard Downloads
+folder. A duplicate name receives a numeric suffix, so an existing file is kept.
+Every macOS release archive carries this backend, and no build tag selects it: a macOS build
+compiles it. The window needs macOS 14 because its isolated persistent data store uses
+`WKWebsiteDataStore.dataStoreForIdentifier`, which is what `auto` asks the class itself for, so
+macOS 13 opens a browser instead. `--window browser` asks for the browser on a Mac that has the
+native window, and `CODDY_DESKTOP_BROWSER` says which one.
+This build adds no tray icon, signing, notarisation or application bundle.
 
-If no Chromium-family browser is found at all, the launch prints the address and serves until you
-stop it, so the interface is still reachable in an ordinary browser.
+On Windows, `coddy` remains a console program, so the console window it was started from stays
+behind the browser window. Browser windows on macOS and Windows keep the system title bar, and
+the strip offers no window buttons or frame switch.
+
+If `auto` has no available native backend and finds no Chromium-family browser, it prints the
+address and serves until you stop it, so the interface is still reachable in an ordinary browser.
 
 ## See also
 
@@ -21884,7 +21923,10 @@ developer command run without it switches the mode on for good.
 
 The cask links **`coddy`**, **`coddy.1`** and both completion scripts, which is why the release
 **`darwin`** and **`linux`** archives carry those files beside the binary. It declares
-**`depends_on macos: :monterey`**: Go 1.25 and later build binaries that need macOS 12. A
+**`depends_on macos: :ventura`**: from Go 1.27 a darwin binary records macOS 13 as its minimum,
+cgo or not, and the loader refuses it on anything older.
+The scenario in [`features/homebrew_tap.feature`](../../features/homebrew_tap.feature) holds the
+cask to that number, so the next toolchain bump fails a test rather than the page going stale. A
 **`postflight_steps`** step removes the quarantine attribute Homebrew sets on the download from the
 binary, which is ad-hoc signed and not notarised, so Gatekeeper does not stop its first run. It
 recommends **`tmux`** in its **`caveats`** rather than declaring it: a cask's **`depends_on`** has no
@@ -22001,8 +22043,33 @@ The command itself needs `http` and `ui` beside `desktop` - it opens on the SPA 
 missing any of the three answers `coddy desktop` with the line that names the tags. What it is and
 how it behaves: [Desktop window](../surfaces/desktop.md).
 
+The native macOS window needs no compiler and no Xcode command-line tools. It sends messages to
+the system Cocoa and WebKit frameworks through the Objective-C runtime, which
+[`purego`](https://github.com/ebitengine/purego) reaches without cgo, so it is ordinary Go code and
+any host builds it. At run time the window needs macOS 14 or later for its isolated persistent
+WebKit store, and a GUI session.
+
+```bash
+make build TAGS="http ui desktop"
+./build/coddy desktop --window native
+```
+
+The window carries no build tag of its own: `desktop` on macOS is what compiles it, so every macOS
+build has it and the shipped `FULL_TAGS` set is the same on every platform. Every other platform
+compiles the stub instead. A `GOOS=darwin` build from another host gets the window too, which is
+how the release publishes both darwin archives from the Linux runner. `auto` prefers the window
+where it is compiled in and falls back to a browser when the macOS version or GUI session is
+unavailable. The macOS test job opens and drives a real WKWebView window, because cross-compiling
+is not proof that one opens.
+
 The browser checks of the shell (`npm run check:desktop` in `external/ui`) drive the real binary:
-tabs, the chords, links out of Coddy, the menu, and the tab list surviving a restart.
+tabs, the chords, links out of Coddy, the menu, and the tab list surviving a restart. A link out
+goes to a stub of this machine's opener, one per name the launcher can call (`xdg-open`, `open`),
+so nothing opens on the operator's desktop and the check reads what the opener was given. CI runs
+it last in the `http,scheduler,ui,memory,cli,swarm` row of the test matrix, after `check:transcript`
+and `check:files`; the step builds its own binary with `http ui swarm scheduler desktop`, because
+the check walks the rail and the lean binary of the checks before it carries neither the scheduler
+nor the window.
 
 The desktop application is a Linux package of its own, and it carries no binary: the menu entry and
 the icon that put Coddy in the application launcher, depending on `coddy` for the program.
@@ -22156,6 +22223,12 @@ On each SemVer git tag **`X.Y.Z`** that is on **`main`**, the [**Release binarie
 | **`coddy.rb`** | Homebrew cask for the macOS archives of this tag; the same file is committed to the tap [coddy-project/homebrew-coddy-agent](https://github.com/coddy-project/homebrew-coddy-agent) |
 | **`SHA256SUMS`** | Checksums for every archive and package above |
 | **`SHA256SUMS.minisig`** | The signature of that list ([Signing releases](#signing-releases)) |
+
+One job on the Ubuntu runner builds every archive, the two Darwin ones included: the desktop
+window reaches Cocoa and WebKit through the Objective-C runtime, so `CGO_ENABLED=0 GOOS=darwin`
+cross-compiles it like any other target, and the release needs no macOS runner and no Xcode
+Command Line Tools. The native window still needs macOS 14 at run time; `auto` uses a browser on
+older macOS versions.
 
 The **`.tar.gz`** archives carry the man page and the shell completions beside the binary; the
 packages wrap the Linux binaries the same job just built rather than compiling their own, so the
@@ -25879,7 +25952,7 @@ Short map for automation-friendly contributors.
 | `internal/docs`, `docs/embed.go` | The documentation built into the binary: **`docs/embed.go`** (package **`docs`**, the only place the embed pattern reaches the tree from) carries **`nav.yaml`** and the pages of its groups, and the Russian translation under **`ru/`** (its **`nav.yaml`** and the same pages), never **`plans/`** or **`assets/`**; **`internal/docs`** reads them into a **`Library`** per language (**`library.go`**: **`Default`** (English), **`LoadLang`**, **`Resolve`** for every spelling of a page, **`Prev`** / **`Next`**; **`lang.go`**: **`For(lang)`**, **`Lang`** for any spelling of a locale, **`LangFromEnv`** (`CODDY_LANG`, `LC_ALL`, `LC_MESSAGES`, `LANG`), **`LangOfText`**; a translated heading answers to the anchor of the English heading at the same position, so an address names a section in both languages), splits pages at headings with GitHub's anchors (**`markdown.go`**: **`Anchor`** and **`HeadingAnchors`**, which **`internal/docsgen`**'s link check uses too, and the link rewriting to **`coddy:<slug>#<anchor>`** and to GitHub at the release tag), ranks sections with BM25F (**`rank.go`**: the exported **`Ranker`** over documents of up to three weighted fields, with the tokenizer, the stemmers and the stopwords, which the memory note search ranks with too; **`search.go`**: the sections, the snippets and the index built once on first use per language; Russian words stemmed by Snowball, **`stem_ru.go`**) and reads a page or a section under a budget of characters (**`read.go`**). Consumers: **`coddy_docs_search`** / **`coddy_docs_read`** (**`internal/tools`**), **`@coddy:`** (**`internal/session/mentions.go`**, **`mention_search.go`**), **`GET /coddy/docs*`** (**`external/httpserver/docs_http.go`**), the web reader (**`external/ui/src/ui/docs/`**), the console's F1 help (**`external/cli/docs_modal.go`**), **`coddy docs`** (**`cmd/coddy/docs.go`**). A new group folder under **`docs/`** goes into the embed pattern; **`TestDefaultCarriesEveryPageOfTheMap`** fails otherwise. Guide: **`docs/features/built-in-docs.md`**. |
 | `internal/rules` | Rules: discovery (**`factory.go`**) reads **one** project folder, the first of `.coddy/rules`, the shared `.agents/rules` as system **`agents-dir`**, `.cursor/rules`, `.claude/rules` and `.codex/rules` that holds a rule file - so another agent's mirror of the same rules is never loaded next to it - plus the operator's own **`${CODDY_HOME}/rules`** as system **`user`**, which applies in every workspace and loses to the project a rule at the same path inside the rule folder, extension included; the same chain under every subfolder on the way down to a file a tool or a mention reaches, read on demand (**`Factory.Nested`**, issue #557), each such rule anchored at its own subfolder (`Root` and `ScopeDir`) and matched there only (**`MatchScoped`** needs the scope and the globs both), and under the one subfolder **`@rule:<folder>/<name>`** names, its **`.coddy/rules`** only (**`Factory.Folder`**, **`session.SubfolderRules`**); a rule is named by its file's path inside its rule folder (`frontend/style`) and `@rule:` addresses one tree of those names, a subproject's with the subproject in front (**`internal/session/rule_refs.go`**: the catalog first, then the deepest subproject; its completion steps down one level per query through **`Factory.FoldersWithRules`**); links in a rule folder are followed everywhere; nested `AGENTS.md` and `DESIGN.md` files read on demand for the folders a tool enters and never walked for (**`agents.go`**, **`AgentsForPaths`**), the dialect chosen by extension in **`markdown.go`** (**`.mdc`** Cursor: `description` / `globs` / `alwaysApply`, default manual; **`.md`** Claude Code: `paths`, unconditional without them) with a lenient reader for Cursor's YAML-invalid `globs: **/*.go` headers, doublestar glob matching anchored at the session cwd (**`MatchGlob`**), activation from mentioned paths (`@path`, an editor's `file://` attachment) and filesystem tool paths (**`select.go`**, **`scope.go`**): only the always-on rules (**`AlwaysOnRules`**) are in **`{{.Rules}}`**, a rule a tool call activates rides in that call's result (**`llm.Message.Rules`**, **`internal/agent/rules_activation.go`**) and one a mention brings in that user message, each once until a compaction folds it away, and the catalog behind **`coddy rules list`**, which names the folder read and the ones skipped. The **`AGENTS.md`** and **`DESIGN.md`** documents come in three layers, always and in this order, whatever `rules.auto_discover`, `rules.systems` or the prompt template say (issue #425): the agent home's pair, then the workspace's (**`project_docs.go`**, **`LoadStanding`**), both in the system prompt, then the pair of every folder on the way down to a file a tool or a mention reaches (**`AgentsForPaths`**), attached to that result or message; no config key names them - the file existing is the switch. **`instructions.files`** (empty by default) only adds files after them, each under a `### <path>` heading like the documents, its entries resolved by **`internal/session/instructions_load.go`**, which also reports the entries whose file a session cannot read (**`UnreadInstructionFiles`**: a log warning per rules generation, the console header, **`--dry-run`**) - one naming the same file in every workspace (absolute, `~`, `${CODDY_HOME}`) whenever it is unreadable, a relative or `${CWD}` one only when its file is there and unreadable - since **`LoadStanding`** skips such a file without a word. Every file reaches the model once per rules generation, known by its real path (**`dockey.go`**, **`DocKey`**: links resolved, case folded on Windows and macOS), the first occurrence winning, so a nested document the system prompt already carries is not attached again. The standing parts are rendered once per rules generation of the session (**`session.RulesPrompt`**, **`internal/agent/rules_prompt.go`**) and placed in whatever template a turn runs on by **`internal/agent/system_prompt.go`** (**`renderWithDocuments`**: documents a template did not print are appended), so an `AGENTS.md` edited mid-session does not move the cached system prompt; a compaction, a config reload or a workspace switch starts the next generation. Guide: **`docs/features/rules.md`**. |
 | `external/httpserver` | The HTTP surface **`coddy serve`** runs under **`httpserver.enable`**, built with **`tags=http`** (SSE bridge, Swagger statics, `/coddy` REST, ServeMux wiring). **`Serve(ctx, Options)`** takes an already-built manager; **`turn_mirror.go`** implements **`session.TurnMirror`**, publishing a turn another surface started into that session's composer relay so a browser can watch it - session updates fan out, permission and question requests stay with the surface that has a human. A call to a **`models[].model`** selector without **`X-Coddy-Session-ID`** is stateless (**`resolveDirectSession`**, **`session.Manager.NewEphemeralState`**, issue #585): no bundle, no turn lock, no place among the live sessions. **`onboarding_http.go`** serves **`GET /coddy/onboarding/status`** for the SPA's first-run provider picker, using **`providerlogin.ProviderReady`** without running credential helpers. **`devin_auth_http.go`** exposes Devin's PKCE browser sign-in, polling, callback paste and cancellation beside the existing provider auth routes. **`status_http.go`** serves **`GET /coddy/status`** (registered only when **`Options.Status`** is set, so a server without it answers 404 like an older one) and merges its OpenAPI schemas. **`subagent_permission_hub.go`** is this server's offer to **`serve.Runtime`** for detached permission prompts: a subagent whose spawning turn has ended publishes its prompt on the agent task row (**`pending_permission`**, shown in the parent chat) and on **`GET /coddy/events`** (**`subagent_permission`**), answered through the ordinary **`POST /coddy/sessions/{child}/permission`**. |
-| `external/desktop` | What **`coddy desktop`** is (**`-tags desktop`**, which needs **`http`** and **`ui`** beside it and is in **`FULL_TAGS`**, so every release binary and the image carry it): the **launcher** (**`launch.go`**: the port of **`<home>/desktop/port`** remembered across launches, because a browser scopes a page's storage to the origin and the origin carries the port; a second launch that finds a Coddy desktop there hands it the window instead of serving twice; **`port.go`**, **`browser.go`** and the per-OS candidate lists **`browser_{linux,darwin,windows,other}.go`**, a Chromium-family browser in app mode in a profile of its own under **`<home>/desktop/profiles/`**), the **tab shell** (**`shell/`**: one HTML page, one stylesheet, one script - a tab strip over one iframe per chat, each the SPA of the same server - mounted by **`external/httpserver/desktop_shell.go`** inside the SPA's **`"/"`** catch-all, which is the one pattern the authentication gate leaves open, and only for the process that opened a window (**`Server.servesDesktopShell`**); its routes are **`/desktop/window`**, **`/desktop/keys`**, **`/desktop/settings`**, **`/desktop/menu`** and **`/desktop/open`**, all same-origin only), the **window itself on X11** (**`window_x11.go`**, **`window_shape_x11.go`**, **`window_keys_x11.go`** over **`jezek/xgb`**: the system frame taken off with **`_MOTIF_WM_HINTS`** and the window remapped, corners cut with the Shape extension while it floats, moves driven by the page with **`_NET_MOVERESIZE_WINDOW`** rather than the manager's own loop, and a passive grab for the chords a browser answers itself - **`Ctrl+T`**, **`Ctrl+W`**, **`Ctrl+R`**, **`Ctrl+Tab`** - handed to the strip through **`chords.go`**), the **tray icon** (**`tray_linux.go`**, **`tray_menu_linux.go`**: a StatusNotifierItem on the session bus with a **`com.canonical.dbusmenu`** menu whose rows are **`shell.MenuRows`**, the same list the strip's menu draws), and the **switches** (**`settings.go`** at **`<home>/desktop/settings.json`**, **`autostart_{linux,darwin,windows,other}.go`**). The command is **`cmd/coddy/desktop_cmd.go`**: beside the window's loopback surface (**`serve.KindDesktop`**, the one non-auxiliary entry) the process runs every subsystem the configuration enables, built by the same **`subsystems()`** **`coddy serve`** uses and marked auxiliary so a surface that fails stops alone instead of taking the window down, and both HTTP surfaces register on the runtime's mirror set (**`AddTurnMirror`**). Guide: **`docs/surfaces/desktop.md`**, design: **`docs/plans/desktop.md`**. |
+| `external/desktop` | What **`coddy desktop`** is (**`-tags desktop`**, which needs **`http`** and **`ui`** beside it and is in **`FULL_TAGS`**, so every release binary and the image carry it): the **launcher** (**`launch.go`**: the port of **`<home>/desktop/port`** remembered across launches, because a browser scopes a page's storage to the origin and the origin carries the port; a second launch that finds a Coddy desktop there hands it the window instead of serving twice; **`port.go`**, **`browser.go`** and the per-OS candidate lists **`browser_{linux,darwin,windows,other}.go`**, a Chromium-family browser in app mode in a profile of its own under **`<home>/desktop/profiles/`**), the **tab shell** (**`shell/`**: one HTML page, one stylesheet, one script - a tab strip over one iframe per chat, each the SPA of the same server - mounted by **`external/httpserver/desktop_shell.go`** inside the SPA's **`"/"`** catch-all, which is the one pattern the authentication gate leaves open, and only for the process that opened a window (**`Server.servesDesktopShell`**); its routes are **`/desktop/window`**, **`/desktop/keys`**, **`/desktop/settings`**, **`/desktop/menu`** and **`/desktop/open`**, all same-origin only), the **window itself on X11** (**`window_x11.go`**, **`window_shape_x11.go`**, **`window_keys_x11.go`** over **`jezek/xgb`**: the system frame taken off with **`_MOTIF_WM_HINTS`** and the window remapped, corners cut with the Shape extension while it floats, moves driven by the page with **`_NET_MOVERESIZE_WINDOW`** rather than the manager's own loop, and a passive grab for the chords a browser answers itself - **`Ctrl+T`**, **`Ctrl+W`**, **`Ctrl+R`**, **`Ctrl+Tab`** - handed to the strip through **`chords.go`**), the **window itself on macOS** (**`native_darwin.go`**, **`native_cocoa_darwin.go`**: a window of this process around **`WKWebView`**, reached through the Objective-C runtime with **`github.com/ebitengine/purego`** and no cgo, so the constraint is **`desktop && darwin`** and the release cross-compiles both darwin archives on the Linux runner; it needs macOS 14 for the per-home WebKit store (**`dataStoreForIdentifier:`**, asked of the class itself) and a console session, and **`auto`** opens a browser below that), the **tray icon** (**`tray_linux.go`**, **`tray_menu_linux.go`**: a StatusNotifierItem on the session bus with a **`com.canonical.dbusmenu`** menu whose rows are **`shell.MenuRows`**, the same list the strip's menu draws), and the **switches** (**`settings.go`** at **`<home>/desktop/settings.json`**, **`autostart_{linux,darwin,windows,other}.go`**). The command is **`cmd/coddy/desktop_cmd.go`**: beside the window's loopback surface (**`serve.KindDesktop`**, the one non-auxiliary entry) the process runs every subsystem the configuration enables, built by the same **`subsystems()`** **`coddy serve`** uses and marked auxiliary so a surface that fails stops alone instead of taking the window down, and both HTTP surfaces register on the runtime's mirror set (**`AddTurnMirror`**). Guide: **`docs/surfaces/desktop.md`**, design: **`docs/plans/desktop.md`**. |
 | `external/ui` | Embedded SPA (`go:embed`) when built with **`tags=http,ui`**. First-run onboarding lives in **`src/ui/onboarding/`**: the provider picker (OpenAI, Anthropic, Ollama, compatible, NeuralDeep, Codex, OpenCode and Devin), its non-destructive config merge, the one-shot guided tour and its localStorage flag, with **Settings → Appearance → Restart onboarding**; visual contract in **`DESIGN.md`**, functional checklist in **`docs/surfaces/web-ui.md`**. **Settings → System** (**`src/ui/settings/SystemSection.tsx`**, a lazy chunk, with **`systemStatus.ts`** and **`Sparkline.tsx`**; the reads and the badge in **`systemStatusApi.ts`**) draws **`GET /coddy/status`** of the server the page talks to (**`DESIGN.md`**, *System tab*). It installs as an app and shows system notifications from the background: the manifest, icons and service worker in **`public/`**, the notifications in **`src/ui/pwa/`** (**`DESIGN.md`**, *Installable app and notifications*). Everything Telegram-specific is **`src/ui/telegram/`** (the Mini App: its own bridge to the client, no script from telegram.org; **`DESIGN.md`**, *Telegram Mini App*). A long conversation is a sliding window: the newest page first, older pages as the reader scrolls up, a bounded slice of rows in the DOM (**`chat/TranscriptList.tsx`**, **`useTranscriptWindow`**; **`DESIGN.md`**, *Transcript window*); **`npm run check:transcript`** measures it in a real browser against the binary. The views of a chat are buttons in the chat header: Files as its icon alone at every width (the name in the tooltip), Background tasks at the right edge with its dot and counts; the dock shows the background tasks without a tab strip, the edits open in a window of their own (git's report of the folder, opened from git's count at the right edge of the plate joined to the top of the composer card, **`chat/WorkspaceBar.tsx`**), and so do the files, each with nothing over it: source coloured as one text with the chat's grammars, pictures, sound and film, a PDF in the browser's own viewer, an SVG as a picture and an HTML page in a sandboxed frame through **Preview** in the window's menu (**`src/ui/files/FilesView.tsx`**; **`DESIGN.md`**, *Views of a chat*, *Workspace files window*); **`npm run check:files`** drives them through an authenticated swarm relay. |
 | `external/memory` | Long-term memory (**`-tags memory`**): the memory subagent's prompt template, task (the **`AGENTS.md`** guide of each memory root in front of the user message) and tool set (**`agent.go`**), the note storage (ranked search over **`docs.Ranker`**) and the six **`coddy_memory_*`** tools. The run is an ordinary subagent the model delegates to through **`spawn_agent`** under the bundled **`memory`** definition (**`internal/subagents/bundled/memory.md`**), launched by the generic machinery of **`internal/agent/subagent.go`** like any other child (an **`agent`**-kind background task, hooks fire, counted and visible to the pool tools). **`internal/agent/memory_hooks.go`** (untagged) holds only the spawn-path helpers: **`registerMemoryChildTools`** puts the six tools into the child registry, **`memorySpawnCheck`** / **`memorySpawnVisible`** gate the spawn on **`memory.enable`** and the tag, **`memorySpawnSpec`** builds the spec (model and fallbacks from the memory config, the worktree refusal), **`memoryFallbackModels`** reads the fallback chain. See README there and **`docs/features/memory.md`**. |
 | `external/cli` | Interactive console TUI (**`-tags cli`**): bare **`coddy`** on a terminal, pi-style rendering in **`external/cli/tui`**. Guide: **`docs/surfaces/console.md`**. |
