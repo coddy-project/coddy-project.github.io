@@ -20,6 +20,7 @@ Every page below is the Markdown kept in the repository, read straight from the 
 - [Docker](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/docker.md): The GHCR image, docker compose, volumes and environment, the bundled UI on port 12345. (docs/getting-started/docker.md)
 - [Homebrew](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/homebrew.md): The cask against the formula, which Homebrew repository takes what, the homebrew/core submission. (docs/getting-started/homebrew.md)
 - [Android (Termux)](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/android.md): The Android build for Termux, why the Linux archive does not start there, and what Coddy adapts on the device. (docs/getting-started/android.md)
+- [FreeBSD](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/freebsd.md): The FreeBSD archives, running the server without systemd, the desktop window, and where the BSD kernel interfaces differ from Linux. (docs/getting-started/freebsd.md)
 - [Troubleshooting](https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/troubleshooting.md): What to check when the binary is not on PATH, the config does not load, a provider rejects the key, a port is busy or a surface is missing from the build. (docs/getting-started/troubleshooting.md)
 
 ## Surfaces

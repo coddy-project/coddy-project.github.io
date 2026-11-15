@@ -185,12 +185,14 @@ irm https://coddy.dev/install.ps1 | iex
 **Android (Termux)**: the same **`install.sh`** fetches the Android build; see
 [Android (Termux)](#android-termux).
 
+**FreeBSD**: the same **`install.sh`** fetches the FreeBSD build; see [FreeBSD](#freebsd).
+
 Creates **`~/.coddy/config.yaml`** from the release **`config.example.yaml`** when missing.
 
-On Linux and macOS the script installs more than the binary. The release archive carries the man
-page and the bash and zsh completions beside **`coddy`**, so they land in the **`share`** directory
-of the same prefix (**`~/.local/bin`** -> **`~/.local/share`**), and a user-level install then writes
-one guarded block to the rc file of your login shell:
+On Linux, FreeBSD and macOS the script installs more than the binary. The release archive carries
+the man page and the bash and zsh completions beside **`coddy`**, so they land in the **`share`**
+directory of the same prefix (**`~/.local/bin`** -> **`~/.local/share`**), and a user-level install
+then writes one guarded block to the rc file of your login shell:
 
 | What the block does | Why |
 |---|---|
@@ -391,6 +393,23 @@ program through Android's linker, which turns a static executable away with
 man page and the completions in **`~/.local/share`**, and the block in **`~/.bashrc`**. What differs
 on the device (the programs Coddy starts, certificates, running **`coddy serve`** in the background)
 is on its own page: [Android (Termux)](android.md).
+
+## FreeBSD
+
+```sh
+pkg install -y bash curl
+curl -fsSL https://coddy.dev/install.sh | bash
+```
+
+The script fetches **`coddy_X.Y.Z_freebsd_amd64.tar.gz`** or **`coddy_X.Y.Z_freebsd_arm64.tar.gz`**
+and installs it the way it does on Linux: **`~/.local/bin`**, the man page and the completions in
+**`~/.local/share`**, and the block in the rc file of your login shell, **`~/.profile`** for
+FreeBSD's default **`sh`**. The binary is static and needs no port beside it; **`bash`** and
+**`curl`** are what the script itself runs on.
+
+FreeBSD has no systemd, so **`coddy serve install`** is not available there. What to use instead,
+the **`rc.d`** route included, and where the BSD kernel interfaces differ from Linux are on the
+page of their own: [FreeBSD](freebsd.md).
 
 ## After install
 
@@ -1309,6 +1328,8 @@ CI publishes one archive per platform on each SemVer tag **`X.Y.Z`**, plus Linux
 | **`coddy_X.Y.Z_linux_arm64.tar.gz`** | Linux arm64 |
 | **`coddy_X.Y.Z_android_arm64.tar.gz`** | Android arm64, under Termux ([Android](android.md)) |
 | **`coddy_X.Y.Z_android_amd64.tar.gz`** | Android x86_64, under Termux |
+| **`coddy_X.Y.Z_freebsd_amd64.tar.gz`** | FreeBSD x86_64 ([FreeBSD](freebsd.md)) |
+| **`coddy_X.Y.Z_freebsd_arm64.tar.gz`** | FreeBSD arm64 |
 | **`coddy_X.Y.Z_windows_amd64.zip`** | Windows x86_64 (**`coddy.exe`**) |
 | **`coddy_X.Y.Z_darwin_amd64.tar.gz`** | macOS Intel |
 | **`coddy_X.Y.Z_darwin_arm64.tar.gz`** | macOS Apple Silicon |
@@ -1317,7 +1338,7 @@ CI publishes one archive per platform on each SemVer tag **`X.Y.Z`**, plus Linux
 | **`coddy_X.Y.Z_linux_amd64.rpm`** | Fedora, RHEL, openSUSE and derivatives, x86_64 |
 | **`coddy_X.Y.Z_linux_arm64.rpm`** | Fedora, RHEL, openSUSE and derivatives, arm64 |
 
-The Linux, Android and macOS archives carry the man page and the bash and zsh completions beside the binary; the packages install the same files where the system expects them - see [Install](install.md#linux-packages-deb-rpm). Every release also publishes **`coddy.rb`**, the Homebrew cask for the two macOS archives of that tag, and commits the same file to the tap [coddy-project/homebrew-coddy-agent](https://github.com/coddy-project/homebrew-coddy-agent), which is where **`brew install coddy-project/coddy-agent/coddy`** and **`brew upgrade`** read it.
+The Linux, FreeBSD, Android and macOS archives carry the man page and the bash and zsh completions beside the binary; the packages install the same files where the system expects them - see [Install](install.md#linux-packages-deb-rpm). Every release also publishes **`coddy.rb`**, the Homebrew cask for the two macOS archives of that tag, and commits the same file to the tap [coddy-project/homebrew-coddy-agent](https://github.com/coddy-project/homebrew-coddy-agent), which is where **`brew install coddy-project/coddy-agent/coddy`** and **`brew upgrade`** read it.
 
 Each binary is built with the whole tag set - **`http`**, **`ui`**, **`scheduler`**, **`memory`**, **`cli`**, **`gateway`**, **`swarm`**, **`metrics`**, **`browser`** and **`desktop`** - the same as **`make build TAGS="http ui scheduler memory cli gateway swarm metrics browser desktop"`** and the default Docker image. See [Build from source](../contributing/build.md#release-binaries-ci) for the release pipeline.
 
@@ -1332,7 +1353,7 @@ This differs from **`make install`**, which always copies to **`~/.local/bin`** 
 
 ## The man page and the completions beside it
 
-The Linux, Android and macOS archives carry **`coddy.1`**, **`coddy.bash`** and **`coddy.zsh`** beside the binary, and the install script puts them into the **`share`** directory of the binary's prefix (**`~/.local/bin`** -> **`~/.local/share`**, **`/usr/local/bin`** -> **`/usr/local/share`**; see [Install](install.md)). **`coddy update`** refreshes every one of those files it finds there, right after the executable, so **`man coddy`** and Tab completion describe the release that is running. A completer left at the previous release keeps offering commands the binary no longer has - that is how a completer went on listing **`http`** and **`gateway`** without **`serve`** after the binary had moved on ([issue #188](https://github.com/coddy-project/coddy-agent/issues/188)).
+The Linux, FreeBSD, Android and macOS archives carry **`coddy.1`**, **`coddy.bash`** and **`coddy.zsh`** beside the binary, and the install script puts them into the **`share`** directory of the binary's prefix (**`~/.local/bin`** -> **`~/.local/share`**, **`/usr/local/bin`** -> **`/usr/local/share`**; see [Install](install.md)). **`coddy update`** refreshes every one of those files it finds there, right after the executable, so **`man coddy`** and Tab completion describe the release that is running. A completer left at the previous release keeps offering commands the binary no longer has - that is how a completer went on listing **`http`** and **`gateway`** without **`serve`** after the binary had moved on ([issue #188](https://github.com/coddy-project/coddy-agent/issues/188)).
 
 Nothing is created: a file that was never installed (**`--no-shell-setup`**, a binary copied by hand) is left alone, and an executable outside a **`bin`** directory - a build tree, a bare download - has no **`share`** directory to pair with. A release from before the archives carried those files leaves the installed copies as they are and says so. A file it cannot write is reported after the binary is installed, and the command exits non-zero.
 
@@ -1360,6 +1381,8 @@ sudo coddy update -y
 Ownership is asked of the package database, not guessed from the path, so a binary you copied out of **`/usr/bin`** keeps updating itself, a distribution's own rebuild of Coddy is recognised like ours, and a build under **`~/.local/bin`** is untouched by any of this.
 
 A release published before this pipeline has archives but no packages. Root is told exactly that and pointed back at the package manager, rather than being handed an archive that would overwrite the packaged file.
+
+**FreeBSD** has no such check, because there is no FreeBSD package or port of Coddy to own a file: **`coddy update`** replaces whatever executable it is running as. Install it into your own prefix - which is what the install script does - rather than over something **`pkg`** put in **`/usr/local/bin`**. See [FreeBSD](freebsd.md).
 
 ## Commands
 
@@ -2104,6 +2127,155 @@ path is in [Android phones as swarm nodes](../tutorials/swarm-android-nodes.md).
 with **`TAGS`** as for **`make build`**, and **`make check-android`** type-checks the Android build.
 Both need the Android NDK, which links the binaries against Bionic; see
 [Build from source](../contributing/build.md#android-termux).
+
+
+# Getting started / FreeBSD
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/getting-started/freebsd.md
+
+# FreeBSD
+
+Coddy runs on FreeBSD from a release built for it: **`coddy_X.Y.Z_freebsd_amd64.tar.gz`** for
+x86-64 and **`coddy_X.Y.Z_freebsd_arm64.tar.gz`** for 64-bit ARM. It is the whole Coddy - the
+console, **`coddy serve`** with the web UI, the Telegram and Pachca bots, the swarm relay, the
+Prometheus exporter, **`coddy acp`** and the desktop window - built from the same tag set as the
+Linux and macOS archives.
+
+The binary is pure Go and static: it needs no port installed beside it, and it runs on FreeBSD 13
+and later. The parts of Coddy that talk to the kernel use the BSD interfaces rather than Linux's,
+which is the only thing this page has to explain.
+
+## Install
+
+The install script recognises FreeBSD and fetches the right archive. It is a bash script and uses
+**`curl`**, neither of which is in the base system:
+
+```sh
+pkg install -y bash curl
+curl -fsSL https://coddy.dev/install.sh | bash
+```
+
+It installs **`coddy`** into **`~/.local/bin`**, the man page and the completions into
+**`~/.local/share`**, and writes the block that puts them on **`PATH`** and **`MANPATH`** into the
+rc file of the shell **`$SHELL`** names: **`~/.profile`** for FreeBSD's default **`sh`**,
+**`~/.bashrc`** for bash, **`~/.zshrc`** for zsh.
+
+By hand, with **`X.Y.Z`** replaced by the release you want and **`amd64`** by **`arm64`** when
+**`uname -m`** says **`arm64`**:
+
+```sh
+fetch https://github.com/coddy-project/coddy-agent/releases/download/X.Y.Z/coddy_X.Y.Z_freebsd_amd64.tar.gz
+tar -xzf coddy_X.Y.Z_freebsd_amd64.tar.gz
+mkdir -p ~/.local/bin ~/.local/share/man/man1
+install -m 0755 coddy ~/.local/bin/coddy
+install -m 0644 coddy.1 ~/.local/share/man/man1/coddy.1
+```
+
+The first run needs a provider key in **`~/.coddy/config.yaml`**, as on any other system; see
+[Configuration](configuration.md). **`coddy update`** replaces the binary in place from the FreeBSD
+archive of the next release, the man page and the completions beside it included; see
+[Update](update.md).
+
+There is no FreeBSD package or port yet, so **`coddy update`** does not ask **`pkg`** who owns the
+file it is about to replace the way it asks **`dpkg`** and **`rpm`** on Linux. Install into your own
+prefix, as above, rather than over a file a port put in **`/usr/local/bin`**.
+
+## Running `coddy serve`
+
+**`coddy serve`** works as it does elsewhere, and the web UI opens at
+**`http://127.0.0.1:12345/`**. FreeBSD has no systemd, so **`coddy serve install`** is not
+available and says so. Three routes are left:
+
+- **`coddy serve --daemon`**, which keeps one process up and restarts it after a configuration
+  change that needs a fresh one. **`coddy serve status | stop | restart`** drive it. This is the
+  usual choice on a workstation;
+- **`tmux`** (**`pkg install -y tmux`**), for a console session that outlives the terminal or a
+  dropped SSH connection;
+- an **`rc.d`** script of your own, for a machine where the agent should come back after a reboot.
+  Coddy's state is per user under **`~/.coddy`**, so the service runs as that user and not as root.
+  A short one, in **`/usr/local/etc/rc.d/coddy`**:
+
+  ```sh
+  #!/bin/sh
+  #
+  # PROVIDE: coddy
+  # REQUIRE: LOGIN
+  # KEYWORD: shutdown
+  . /etc/rc.subr
+
+  name="coddy"
+  rcvar="coddy_enable"
+  load_rc_config $name
+  : ${coddy_enable:="NO"}
+  : ${coddy_user:="coddy"}
+  : ${coddy_home:="/home/coddy"}
+
+  pidfile="/var/run/${name}.pid"
+  command="/usr/sbin/daemon"
+  command_args="-p ${pidfile} -u ${coddy_user} -r \
+      /home/coddy/.local/bin/coddy serve"
+  run_rc_command "$1"
+  ```
+
+  Then **`sysrc coddy_enable=YES`** and **`service coddy start`**. **`-r`** is what restarts the
+  process if it exits, which is the part **`--daemon`** does for itself.
+
+See [coddy serve](../operate/serve.md) for everything the server does once it is up.
+
+## The desktop window
+
+**`coddy desktop`** opens its window on FreeBSD the way it does on Linux: a Chromium-family browser
+from the ports tree (**`www/chromium`**, **`www/ungoogled-chromium`** and the rest) in application
+mode, in a profile of its own under **`~/.coddy/desktop/profiles/`**. Under X11 the system frame
+comes off, the corners are cut and the tab strip moves the window; under Wayland the window keeps
+the frame its compositor draws, as on Linux. The tray icon is a StatusNotifierItem on the session
+bus, and **Open at login** writes the XDG autostart entry into **`~/.config/autostart`**.
+
+See [Desktop window](../surfaces/desktop.md).
+
+## What is different from Linux
+
+Nothing needs configuring. These are the places where the FreeBSD build takes another route, so
+that a report about one of them has somewhere to point:
+
+- **Free disk space**, shown on the status page and by **`--dry-run`**, comes from **`statfs`** with
+  **`f_bsize`**, where Linux uses **`f_frsize`**;
+- **the local control socket** verifies that the process on the other end runs as the same user,
+  through **`LOCAL_PEERCRED`** and a **`struct xucred`**, where Linux reads **`SO_PEERCRED`**. This
+  is the check that keeps another account on the machine out of a running agent;
+- **the Kimi credential store** takes the same locked, crash-durable path as on Linux and macOS:
+  owner and permission checks on the store directory, **`flock`** around a refresh and a directory
+  flush after it;
+- **the desktop window** finds the browser process it started by walking up the process tree
+  through the **`kern.proc.pid`** sysctl, because **`procfs`** is not mounted on a FreeBSD system by
+  default and there is no **`/proc`** to read;
+- **opening a URL or a folder** - a provider sign-in, or showing a file the agent produced in the
+  desktop file manager - goes through **`xdg-open`** (**`devel/xdg-utils`**), as on Linux.
+
+## Limitations
+
+- Only the two 64-bit architectures are published, **`amd64`** and **`arm64`**;
+- there is no FreeBSD package or port, and no **`pkg`** route to install or update Coddy;
+- **`coddy serve install`** needs systemd and is therefore Linux only; the section above has what
+  to use instead;
+- the **`.deb`** and **`.rpm`** packages, the Homebrew cask and the container image are Linux and
+  macOS artefacts and have no FreeBSD counterpart.
+
+## Building it yourself
+
+A FreeBSD machine builds Coddy the way any other does, with Go and, for the embedded web UI, Node:
+
+```sh
+pkg install -y go node npm gmake git
+gmake build TAGS="http ui scheduler memory cli gateway swarm metrics browser desktop"
+```
+
+**`gmake`** is GNU make, which the **`Makefile`** needs; FreeBSD's own **`make`** will not read it.
+
+From any host, **`make check-freebsd`** type-checks the FreeBSD build for both published
+architectures with the test files included, and **`make lint-freebsd`** runs the linter over it. CI
+runs both on every pull request and then runs the platform suites on a real FreeBSD; see
+[Build from source](../contributing/build.md#freebsd).
 
 
 # Getting started / Troubleshooting
@@ -6494,7 +6666,7 @@ Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/su
 
 `coddy desktop` opens Coddy as an application on your own machine: a window with a strip of tabs,
 one chat per tab, over the same web interface `coddy serve` serves. It is a verb of the ordinary
-binary, which the release builds carry, and it runs on Linux, macOS and Windows.
+binary, which the release builds carry, and it runs on Linux, FreeBSD, macOS and Windows.
 
 ![The desktop window with two tabs, a chat in front](../assets/desktop/desktop-tabs-dark-1280.png)
 
@@ -6544,8 +6716,8 @@ has it - the release archives, the packages, the Homebrew formula and the contai
 macOS release archives include the Cocoa/WKWebView backend.
 The native window needs macOS 14 or later for a persistent WebKit store isolated to the agent home,
 and a GUI session. On older macOS versions, `auto` falls back to a Chromium-family browser.
-Linux, Windows and macOS builds without the native backend need Chrome, Chromium, Edge, Brave,
-Vivaldi or Yandex Browser. Firefox has no application mode.
+Linux, FreeBSD, Windows and macOS builds without the native backend need Chrome, Chromium, Edge,
+Brave, Vivaldi or Yandex Browser. Firefox has no application mode.
 The native backend needs no C compiler and no Xcode command-line tools: it reaches Cocoa and WebKit
 through the Objective-C runtime, so `make build` produces it like any other Go code, and the release
 cross-compiles it on Linux. Running a release binary on macOS 14 or later needs neither a compiler
@@ -6714,7 +6886,7 @@ bundle or custom Dock icon.
 
 ### Recent folders in the application menu
 
-On Linux every launch writes this user's own application entry,
+On Linux and FreeBSD every launch writes this user's own application entry,
 `~/.local/share/applications/coddy-desktop.desktop`, naming the binary that
 wrote it. That is what puts Coddy in the launcher and in the task bar's menu
 without a package installed, and it carries the folders of this home's recent
@@ -6749,7 +6921,7 @@ take another port.
 | Entry | What it does |
 | --- | --- |
 | **New chat** | the same as `+` |
-| **Open at login** | Linux: writes `coddy-desktop.desktop` into this user's autostart folder (`$XDG_CONFIG_HOME/autostart`, else `~/.config/autostart`). macOS: a launch agent, `~/Library/LaunchAgents/dev.coddy.desktop.plist`. Windows: a value under this user's `Run` key. Nothing is installed system-wide and nothing needs administrator rights |
+| **Open at login** | Linux and FreeBSD: write `coddy-desktop.desktop` into this user's autostart folder (`$XDG_CONFIG_HOME/autostart`, else `~/.config/autostart`). macOS: a launch agent, `~/Library/LaunchAgents/dev.coddy.desktop.plist`. Windows: a value under this user's `Run` key. Nothing is installed system-wide and nothing needs administrator rights |
 | **Show the tray icon** | publishes Coddy's mark in the system tray as a StatusNotifierItem on the session bus. A click on it brings the window back from behind another window or from the taskbar |
 | **Start minimised** | the next launch opens the window minimised, which is usually what a window opened at login wants |
 | **Show the system frame** | gives the window back the title bar and borders your desktop draws. The strip then stops drawing minimise, maximise and close, since the frame carries them. On X11 and native macOS; other browser windows always keep their frame |
@@ -6856,11 +7028,13 @@ For a swarm relay, configure `swarm.cors` on the relay instead. The alternative
 only when that broader trust is intended, and protect the remote API with a credential. Starting
 the desktop does not change a remote server's CORS policy.
 
-## Linux, macOS and Windows
+## Linux, FreeBSD, macOS and Windows
 
-The window opens on all three. What differs is how much of it the system lets Coddy drive:
+The window opens on all four. What differs is how much of it the system lets Coddy drive. FreeBSD
+runs the same freedesktop stack as Linux and is driven through the same code, so the two share a
+column:
 
-| | Linux (X11) | Linux (Wayland) | macOS | Windows |
+| | Linux, FreeBSD (X11) | Linux, FreeBSD (Wayland) | macOS | Windows |
 | --- | --- | --- | --- | --- |
 | The window, tabs, settings | yes | yes | native on macOS 14+; browser fallback on older macOS | yes |
 | No system frame, the strip as the title bar | yes | no | native only | no |
@@ -6874,7 +7048,7 @@ Where a chord cannot be taken from the browser, `Alt`+`T`, `Alt`+`W`, `Alt`+`R` 
 chords do the same thing. The strip also accepts `Cmd` when the macOS backend delivers it to the page. `Alt`+`Tab` and `Cmd`+`Tab` stay
 with the window manager.
 
-The browser is looked for where each system keeps one: on `PATH` on Linux, in `/Applications` and
+The browser is looked for where each system keeps one: on `PATH` on Linux and FreeBSD, in `/Applications` and
 `~/Applications` on macOS, under Program Files and the user's local application data on Windows.
 `CODDY_DESKTOP_BROWSER` names one by path for a machine that keeps its browser somewhere else:
 
@@ -8260,8 +8434,10 @@ crash and, with [lingering](#after-logout-and-at-boot), keeps running after logo
 starts at boot. `coddy serve install` puts it in place and `coddy serve uninstall` takes it
 away. Both run as the user the service is for, never under `sudo`.
 
-On macOS and Windows there is no systemd, and both commands say so; `coddy serve --daemon`
-is the route there. On Linux, what `install` has to do depends on how Coddy was installed:
+On macOS, Windows and FreeBSD there is no systemd, and both commands say so; `coddy serve --daemon`
+is the route there, and on FreeBSD an `rc.d` script is the other one
+([FreeBSD](../getting-started/freebsd.md#running-coddy-serve)). On Linux, what `install` has to do
+depends on how Coddy was installed:
 
 | Installed with | The unit | What `install` does with it |
 |---|---|---|
@@ -8566,6 +8742,7 @@ A supervised process restarts only into settings a fresh process can start. When
 |-----------|------|
 | Linux with systemd, a server that should outlive your login | `coddy serve install` (a systemd user service) |
 | a laptop, a dev box, a shell on a machine without systemd | `coddy serve --daemon` |
+| FreeBSD, a server that should come back after a reboot | an `rc.d` script running `coddy serve` under `daemon -r` ([FreeBSD](../getting-started/freebsd.md#running-coddy-serve)) |
 | `supervisord`, `runit` | `coddy serve` in the foreground with `CODDY_SERVE_ROLE=service`, and let them restart it |
 | Docker, Kubernetes | `coddy serve` in the foreground as PID 1; the orchestrator restarts the container |
 
@@ -13572,7 +13749,7 @@ The conversation starts over in a new ACP session, with the whole history in its
 What the agent reports while it works:
 
 - its text streams as the answer and its reasoning as reasoning;
-- each of its tool calls is a tool row like those of Coddy's own tools, titled by what it works on (`Read README.md`, `read notes.txt`), with what it was given and what it produced. A call the agent announces by the tool's name alone gets its row once it names the file or the command it works on, or when it ends. The rows are the agent's own tools: Coddy runs none of them and sends them to no model;
+- each of its tool calls is a tool row like those of Coddy's own tools, titled by what it works on (`Read README.md`, `read notes.txt`), with what it was given and what it produced. A call the agent announces by the tool's name alone is titled by the programmatic tool name when the agent reports one (`fs_read_file README.md`), which is what tells the same kind of call apart on an agent whose titles are that bare; without it the row appears once the agent names the file or the command it works on, or when the call ends. The rows are the agent's own tools: Coddy runs none of them and sends them to no model;
 - an answer the agent ends without any text reads `(the agent finished without a message)`, and one it stops short of an ordinary end says why, for example `(the agent stopped: it reached its output limit)`.
 
 ![The agent's answer under its two tool calls, the test run open with its command and its output](../assets/acp-provider/acp-provider-answer-dark-1280.png)
@@ -18910,11 +19087,24 @@ stderr -> agent logs (not protocol messages)
   "jsonrpc": "2.0",
   "id": 1,
   "error": {
-    "code": -32600,
-    "message": "Invalid request"
+    "code": -32602,
+    "message": "unknown mode \"turbo\" (agent, plan, ask)"
   }
 }
 ```
+
+Coddy answers with the codes ACP names for the case, and the standard JSON-RPC code for everything else:
+
+| Code | When |
+|---|---|
+| `-32700` | the line is not JSON |
+| `-32600` | the line is not a JSON-RPC request |
+| `-32601` | a method this agent does not implement |
+| `-32602` | a value the method does not accept: an unknown `modeId`, `configId` or value, a malformed `additionalDirectories` entry |
+| `-32002` | a session-scoped method naming a session this agent does not hold, with `data.sessionId` carrying the requested id |
+| `-32603` | anything else that failed inside the agent |
+
+A client reads `-32002` as "this session is gone" - reopen it with `session/load` or drop it - and `-32602` as its own mistake, so a session scoped request made against a session that was closed, deleted or never opened is never reported as an agent failure.
 
 ### Notification (Agent to Client, no response expected)
 
@@ -18972,6 +19162,9 @@ Negotiate protocol version and exchange capabilities.
     "terminal": true,
     "elicitation": {
       "form": {}
+    },
+    "session": {
+      "notices": {}
     }
   },
   "clientInfo": {
@@ -18994,7 +19187,9 @@ A client that renders form elicitation says so in `clientCapabilities.elicitatio
       "list": {},
       "delete": {},
       "additionalDirectories": {},
-      "resume": {}
+      "resume": {},
+      "close": {},
+      "systemPrompt": {}
     },
     "promptCapabilities": {
       "image": false,
@@ -19015,6 +19210,10 @@ A client that renders form elicitation says so in `clientCapabilities.elicitatio
 }
 ```
 
+`authMethods` is a list of objects tagged by `type` (`agent`, `env`, `terminal`), as ACP defines it. Coddy needs no sign-in of its own, so the list is always empty.
+
+A client that says it renders the standard notice - `clientCapabilities.session.notices` - is sent its live lines as `notice` updates, and Coddy's own updates then carry an empty `notice` field, so one line is never shown twice. A client that does not keeps reading the field, as before.
+
 ### `session/new`
 
 Create a new conversation session.
@@ -19031,11 +19230,19 @@ Create a new conversation session.
       "args": ["--stdio"],
       "env": []
     }
-  ]
+  ],
+  "systemPrompt": {
+    "mode": "append",
+    "content": [{ "type": "text", "text": "You are a code review specialist." }]
+  }
 }
 ```
 
 `additionalDirectories` names workspace roots the session works in beside `cwd`. Each path is absolute, and a request naming an entry that is not is refused; the list is the complete one: a request that omits it or sends an empty list starts the session with no extra roots. The roots are kept with the session, reported back on `session/list`, and treated as part of the workspace where Coddy decides whether a path is one the session may reach - the mention resolver and the checks that keep a confined turn inside its workspace.
+
+`systemPrompt` is the client's own system-level instructions for the session, accepted on `session/new`, `session/load` and `session/resume` and advertised as `sessionCapabilities.systemPrompt`. Coddy applies **append** mode only: the text follows its own instructions - under a `## Client system instructions` heading at the end of the system prompt - and never replaces them, so the tool guidance, the project rules and the safety text stay. `override` is not advertised, and a request that names it is refused with `-32602` before a session is created, loaded or resumed, as is an empty `content` or a block that is not text.
+
+The block is kept with the session in `session.json` (`acpSystemPrompt`): a client that reopens a session without resending it keeps the instructions it set, and one that sends a different block replaces them, which is written at once. It is read on every turn rather than folded into the history, so a compaction cannot lose it.
 
 **Response result:**
 
@@ -19198,6 +19405,21 @@ Removes a session and every bundle nested under it - a subagent run recorded ins
 **Response result:** `{}`
 
 Advertised as `sessionCapabilities.delete`. This is what an editor calls on a row of `session/list`.
+
+### `session/close`
+
+Lets go of a session this connection holds: a turn running on it is cancelled and awaited, and the state the process keeps for it is freed. The bundle on disk stays where it is, so the same session can be loaded again later - close is what an editor calls when it puts a conversation away, and delete is what it calls when the conversation is gone.
+
+**Request params:**
+```json
+{
+  "sessionId": "sess_abc123def456"
+}
+```
+
+**Response result:** `{}`
+
+Advertised as `sessionCapabilities.close`. Closing is idempotent, as ACP asks: a session that is not active any more - never opened by this process, already closed, or deleted - answers with the same empty object. A prompt sent to a closed session is answered `-32002`, since the session is no longer live here.
 
 ### `session/list`
 
@@ -19395,12 +19617,15 @@ After **`session/new`** and **`session/load`**, Coddy lists its slash commands. 
 ```json
 {
   "sessionUpdate": "agent_message_chunk",
+  "messageId": "msg_12",
   "content": {
     "type": "text",
     "text": "I'll start by reading the current auth module..."
   }
 }
 ```
+
+`messageId` names the message the chunk belongs to: every chunk of one message carries the same id, and a client reads a change of id as the start of the next message. `user_message_chunk` carries it too. The id is the position the message holds in the session's history, so a message streamed live is replayed under the same id when the session is loaded again - unless a compaction inserted a summary row before it, which moves every later position.
 
 ### `tool_call` - Tool call started
 
@@ -19409,10 +19634,13 @@ After **`session/new`** and **`session/load`**, Coddy lists its slash commands. 
   "sessionUpdate": "tool_call",
   "toolCallId": "call_001",
   "title": "Reading auth.go",
+  "name": "read",
   "kind": "read",
   "status": "pending"
 }
 ```
+
+`name` is the programmatic tool name beside the human-readable `title`: the built-in tool a call runs (`run_command`, `read`, `write`), or the tool an MCP server exposes. It carries no authorization meaning - the permission gate decides what runs, not this field.
 
 ### `tool_call_update` - Tool call status update
 
@@ -19438,6 +19666,8 @@ Tool call kinds are values of the ACP `ToolKind` enum, and Coddy sends no other:
 
 Coddy sends four `session/update` kinds the ACP specification does not
 define; a client that ignores unknown kinds keeps working.
+
+A context compaction is not one of them: it is an ordinary message row of the session, replayed with the rest of the history, and Coddy does not use the standard ID-addressed `compaction_update` entity. One shape on disk is what keeps the fold, the replay and every surface reading the same transcript.
 
 - **`turn_progress`** carries the turn clock and output tokens. Optional `tokensPerSecond` reports generation speed; `completed: true` marks the final update, including a stopped or failed turn; when present, the rate is the average across measured model calls. Saved averages replay on session load. Blocking (non-streaming) providers, ACP agent models and calls delivered in a single output chunk contribute no tokens or time to the speed average; output counts still include them. With no measurable call interval, live output counts remain available, but the rate is omitted and no generation caption is saved. When an average exists, its saved caption pairs total output tokens from all calls with the rate across measured calls only. The same calculation powers the console and web UI.
 - **`token_usage`** after every completed model call: `inputTokens`,
@@ -19555,6 +19785,22 @@ An editor that renders only the standard updates would show an answer nobody ask
 
 `coddy acp --remote` replays a woken turn of the server the same way on `session/load`; it does not follow the server's woken turns live.
 
+### `notice` - A line for the person, not the transcript
+
+The standard live notice, sent only to a client that advertised `clientCapabilities.session.notices` at initialize. It carries what a person should see now and what no transcript should keep: a settings change the agent made itself (`Model: qwen3.8-27b for this session`), a goal that paused because a usage limit was reached.
+
+```json
+{
+  "sessionUpdate": "notice",
+  "severity": "info",
+  "title": "Model: qwen3.8-27b for this session"
+}
+```
+
+`severity` is `info`, `warning` or `error` and is a presentation hint only. `title` stands alone; `description` adds a detail a client may show under it. A notice is not part of the history, so `session/load` never replays one: a client that attaches to a running turn sees the notices that arrive after it.
+
+The same line is carried by the `notice` field of the `session_settings` and `session_goal` updates, which every other surface reads. A client that advertised the capability gets one or the other, never both: its `session_settings` and `session_goal` updates arrive with an empty `notice` field, and the line follows as a `notice`.
+
 ### `session_info_update` - The session was renamed
 
 Sent whenever the title the session is listed under moves: the name its first message derived, a name the agent pinned with `session_describe`, a rename an operator made on another surface. A client that keeps a session list in step with the agent renames it along with them instead of showing the name it was created with.
@@ -19633,6 +19879,7 @@ Under `ask`, a request that belongs to the session itself carries two more optio
     "toolCall": {
       "toolCallId": "call_002",
       "title": "Run: go build ./...",
+      "name": "run_command",
       "kind": "execute",
       "status": "pending",
       "content": [
@@ -22272,6 +22519,31 @@ each is position-independent, names the Android linker and needs no library Andr
 and uploads them as the **`coddy-android-arm64`** and **`coddy-android-amd64`** artifacts to try on
 a device before the release.
 
+## FreeBSD
+
+```bash
+make check-freebsd   # go build and go vet with GOOS=freebsd for amd64 and arm64, test files included
+make lint-freebsd    # golangci-lint over the same build
+```
+
+FreeBSD is the same sources with **`GOOS=freebsd`** and no cgo, so a host of any platform
+cross-compiles the release archives and the two commands above type-check and lint them. What that
+host never compiles is the BSD half of the per-OS files, which is why both commands exist: the
+**`xucred`** peer check of **`internal/localipc`**, the **`statfs`** of **`internal/platform`**,
+the Kimi credential store of **`internal/llm`** and the **`kern.proc.pid`** sysctl that
+**`external/desktop`** reads a process's parent from, because FreeBSD mounts no **`procfs`**.
+Everything above those files is the Linux code: the desktop window is the same X11 and D-Bus
+client, and the autostart entry is the same XDG file.
+
+Cross-compiling is not proof that the binary runs, so the **FreeBSD build and native tests** job of
+the pull request checks does both. It runs **`make check-freebsd`** on the Linux runner, then
+cross-compiles the binary and the test binaries of the platform packages and runs them inside a
+FreeBSD virtual machine (**`vmactions/freebsd-vm`**). The test binaries are built here rather than
+in the machine because FreeBSD's ports carry whichever Go their branch pinned, and the toolchain
+this repository builds with is the one in **`go.mod`**.
+
+What users see is on [FreeBSD](../getting-started/freebsd.md).
+
 ## Version string (`LDFLAGS`, `print-version`)
 
 The Makefile sets:
@@ -22359,6 +22631,7 @@ On each SemVer git tag **`X.Y.Z`** that is on **`main`**, the [**Release binarie
 | **`coddy_X.Y.Z_linux_amd64.tar.gz`** | Linux x86_64 |
 | **`coddy_X.Y.Z_linux_arm64.tar.gz`** | Linux arm64 |
 | **`coddy_X.Y.Z_android_arm64.tar.gz`**, **`coddy_X.Y.Z_android_amd64.tar.gz`** | Android arm64 and x86_64, under Termux (see [above](#android-termux)) |
+| **`coddy_X.Y.Z_freebsd_amd64.tar.gz`**, **`coddy_X.Y.Z_freebsd_arm64.tar.gz`** | FreeBSD x86_64 and arm64 (see [above](#freebsd)) |
 | **`coddy_X.Y.Z_windows_amd64.zip`** | Windows x86_64 (**`coddy.exe`**) |
 | **`coddy_X.Y.Z_darwin_amd64.tar.gz`** | macOS Intel |
 | **`coddy_X.Y.Z_darwin_arm64.tar.gz`** | macOS Apple Silicon |
@@ -26132,6 +26405,7 @@ A git **`pre-commit`** hook runs the linter before every commit, so nothing land
 - On commit, **`.githooks/pre-commit`** calls **`scripts/checks.sh`**, which runs **`make lint`** by default: **`make fmt-check`** (`gofmt -s -l` over every Go file git tracks, whatever its build tags or platform), `golangci-lint` over the untagged tree, over every tag but `ui` and over the shipped tag set, so every Go file of the host platform but the `http && !<tag>` stubs of **`external/httpserver`** is compiled once (**`.golangci.yml`** enables the `gofmt -s` formatter there too), then `tsc --noEmit` over the SPA sources (**`make ui-typecheck`**); then, when the commit stages SPA sources, Prettier over the whole SPA (**`make ui-format-check`**, `prettier --check .` in **`external/ui`**, **`.prettierignore`** keeping the build output and the vendored grammars out), which CI's Lint job runs too: the tree is Prettier-clean, and **`npm run fmt`** in **`external/ui`** keeps it so. Commits touching only non-code files (docs, etc.) skip the gate.
 - Scope knobs: **`CODDY_HOOK_TESTS=fast`** also runs a quick **`go test ./...`**, **`CODDY_HOOK_TESTS=full`** the express **`make test`**, **`CODDY_HOOK_TESTS=matrix`** every tag combination; **`CODDY_HOOK_LINT=0`** skips the linter; **`CODDY_HOOK_FORMAT=0`** skips the Prettier check; **`CODDY_HOOK_SKIP=1`** bypasses everything.
 - Emergency bypass for a single commit: **`git commit --no-verify`**.
+- The BSD half of the per-OS files (**`darwin || freebsd`**, **`(linux && !android) || freebsd`**) is compiled by neither gate: **`make check-freebsd`** cross-builds and **`go vet`**s both published FreeBSD architectures with the test files, **`make lint-freebsd`** lints them, and CI runs both and then the binary and the platform suites inside a real FreeBSD virtual machine (job **FreeBSD build and native tests**).
 - The Android half of **`internal/platform`** (**`//go:build android`**) is compiled by neither gate either: **`make check-android`** runs **`go vet`** with **`GOOS=android`** and cgo through the Android NDK, test files included, and CI runs it in the **Android cross-build** job, which also uploads both release-shaped binaries as artifacts.
 - Both gates compile the **host** platform only. Changing a file behind **`//go:build windows`**, or a signature it shares with the rest of the tree, needs **`make check-windows`** (cross-build plus **`go vet`** over every non-**`ui`** tag combination, test files included) and **`make lint-windows`**. CI runs both, and additionally runs the complete Go suite (**`go test ./...`** with the shipped tag set), the rule adapters and the SPA's vitest suite on a real **`windows-latest`** runner (job **Test suite (Windows)**), so every `_windows_test.go` file (**`internal/platform`**, **`internal/textenc`** and the rest) runs there and every test that writes files or compares paths meets the runner's CRLF checkout. The platform packages and the console suite run on a **`macos-latest`** runner as well (job **`test-macos`**), which also builds the console and drives the binary through a real pty with **`examples/cli/cli_e2e_startup.py`** (first frame, keys, exit); the `cli` job of the Linux test matrix runs that pty script too, and the **Telegram stand (tgfake)** job builds the gateway binary with the exporter (**`TAGS="gateway metrics"`**) and runs **`examples/gateway/tg_e2e_offline.sh`** with **`TG_E2E_METRICS=1`**, which scrapes the exporter after the chat: the real **`coddy serve`** against the fake Bot API and the scripted model of the **tgfake** release binary of the version **`go.mod`** pins, installed by tgfake's own action, no Telegram and no LLM.
 
@@ -26219,8 +26493,8 @@ Every reviewer applies this section to changed files. Keep entries behavioral an
 
 ### Provider platform support
 
-- Do not add an LLM provider, or its auth, credential storage, usage or proxy path, that deliberately refuses a supported operating system (**Windows**, **macOS**, **Linux**, **Android**). A platform difference is implemented, not stubbed with a refusal: a credential helper, keychain, config path, proxy source or sign-in flow a platform cannot serve gets a real per-OS implementation, and where the platform has no equivalent the code degrades to a working fallback rather than failing the provider. Safe path: gate the difference on **`runtime.GOOS`** / **`internal/platform`** behind a per-OS file with a working default, never a blanket error based on the OS alone. Unsafe paths, invalid credentials and failed permission checks remain errors.
-- Cross-compiling for a platform is not proof it runs there. A provider's native runtime on each supported OS is proven by a test that runs on that OS (the **`windows-latest`** and **`macos-latest`** jobs, the Android cross-build plus a Termux run), not by **`GOOS=<os> go build`** alone. Safe path: a per-OS test beside the code and, for behavior a host cannot exercise, a CI job on that runner; see the **testing rule**.
+- Do not add an LLM provider, or its auth, credential storage, usage or proxy path, that deliberately refuses a supported operating system (**Windows**, **macOS**, **Linux**, **FreeBSD**, **Android**). A platform difference is implemented, not stubbed with a refusal: a credential helper, keychain, config path, proxy source or sign-in flow a platform cannot serve gets a real per-OS implementation, and where the platform has no equivalent the code degrades to a working fallback rather than failing the provider. Safe path: gate the difference on **`runtime.GOOS`** / **`internal/platform`** behind a per-OS file with a working default, never a blanket error based on the OS alone. Unsafe paths, invalid credentials and failed permission checks remain errors.
+- Cross-compiling for a platform is not proof it runs there. A provider's native runtime on each supported OS is proven by a test that runs on that OS (the **`windows-latest`** and **`macos-latest`** jobs, the FreeBSD virtual machine, the Android cross-build plus a Termux run), not by **`GOOS=<os> go build`** alone. Safe path: a per-OS test beside the code and, for behavior a host cannot exercise, a CI job on that runner; see the **testing rule**.
 
 ### Build tags
 
