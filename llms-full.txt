@@ -8212,10 +8212,12 @@ decided by `config.yaml`; see the [configuration reference](../reference/config.
 per-surface guides ([HTTP API](../reference/http-api.md), [gateway](../surfaces/gateway.md),
 [swarm](swarm.md), [scheduler](scheduler.md), [Coddy for Browser](../features/browser.md)).
 
-One more subsystem serves beside them: the Prometheus exporter, under `metrics.enable`
-([Monitoring](monitoring.md)). It is auxiliary. It never counts as the surface that keeps the
-process up, so a configuration that enables only `metrics` is refused like one that enables
-nothing, and turning it off always works.
+Two more subsystems serve beside them: the Prometheus exporter, under `metrics.enable`
+([Monitoring](monitoring.md)), and the published-preview origin, under
+`tools.preview_publish.enable` ([Published previews](../features/published-previews.md)).
+Both are auxiliary. Neither counts as the surface that keeps the process up, so a
+configuration that enables only those is refused like one that enables nothing, and turning
+either off always works.
 
 The subsystems share more than the manager. A background task the agent started wakes it
 when it ends (`notify_on_finish`, on by default) whichever subsystems run: the process owns the
@@ -8498,7 +8500,8 @@ What happens next depends on what moved:
 | a subsystem's `enable` | it is started, on the address the new configuration gives it, or stopped |
 | `mcp.project_trust` | every live session reconnects its configured MCP servers under the new policy; moved to `deny`, the project servers stop |
 | `mcp.idle_timeout_seconds` | a server that goes unheld from then on waits the new time before it stops |
-| a listen address (`httpserver.host` / `port`, `swarm.host` / `port`) | under a dispatcher the process restarts on the new address; in the foreground it is logged as needing a restart; [Settings → System](#applying-a-saved-address) shows either |
+| the artifact root or the public address of published previews | the published-preview origin alone is rebuilt in place |
+| a listen address (`httpserver.host` / `port`, `swarm.host` / `port`, `tools.preview_publish.host` / `port`) | under a dispatcher the process restarts on the new address; in the foreground it is logged as needing a restart; [Settings → System](#applying-a-saved-address) shows either |
 
 The MCP servers are not in `config.yaml`: the process watches `~/.coddy/mcp.json` the same
 way, and an edit of it starts a server added or switched on, stops one removed or switched
@@ -15444,6 +15447,137 @@ tools:
 
 When Coddy runs where your browser is not - a container, a remote machine - loopback is out of reach. Bind `host: 0.0.0.0` and set `public_host` to the name you reach that machine by; inside a container the port is a random one, so publish a range or use host networking. A bind that is not loopback exposes the served directory to whoever can reach that address, and the `Host` check no longer applies: set it on purpose. The fields are listed in the [configuration reference](../reference/config.md).
 
+On a server that already has an authenticated HTTPS edge, that is the wrong shape: a random port cannot be routed to, and a published port range is a hole nobody wants to own. [Published previews](published-previews.md) are the channel for it - one static origin on a fixed address over one artifact root, and a `preview_publish` tool that copies finished work there. The preview server itself is unchanged by it.
+
+
+# Features / Published previews
+
+Source: https://raw.githubusercontent.com/coddy-project/coddy-agent/main/docs/features/published-previews.md
+
+# Published previews
+
+The [preview server](preview-server.md) is for the moment you and the agent are iterating: a free port on loopback, the project's own files read on every request, an edit visible on reload. It assumes your browser is on the machine Coddy runs on.
+
+Published previews are for the other situation. Coddy runs on a server, your people reach it through an HTTPS edge that already knows who they are, and a finished build - a report, a demo, a static site - has to reach somebody through that edge. A random port on loopback cannot be routed to, and publishing a port range to the Internet to work around that is not a reverse proxy configuration anyone wants to own.
+
+So the channel is a second, separate one: Coddy runs a small read-only static origin on **one address that does not move**, over **one artifact root**, and `preview_publish` copies a directory of the project into that root and hands back the address your edge serves it under. The proxy authenticates the visitor and forwards to the origin; Coddy serves bytes and nothing else.
+
+It is off until an operator turns it on, and turning it on changes nothing about `preview_server`.
+
+## Publishing
+
+Ask for it in your own words:
+
+```text
+Publish the built site so I can send the link to the team.
+```
+
+The agent calls `preview_publish`, which asks for your approval first - what it produces is readable by everyone your edge lets in - and answers with the address.
+
+| Argument | Meaning |
+|---|---|
+| `path` | Directory to publish, relative to the session's working directory. Left out, the working directory itself. A file is accepted too: its directory is published and the returned address opens that file. |
+| `name` | A short name, so publishing again replaces the artifact **at the same address**. That is what to reach for when somebody already has the link. Left out, every publish gets an address of its own. |
+| `ttl_seconds` | How long it stays up. `0` keeps it until it is unpublished; left out, `tools.preview_publish.ttl_seconds` applies. |
+
+`preview_unpublish` takes one down by its `name` or by the `id` in its address. A session can only replace or remove what it published itself: the id of a named artifact is derived from the session and the name, so two sessions asking for `site` get two addresses and neither can overwrite the other's.
+
+The address always ends in a slash, so relative assets, ES modules, `fetch` and workers of the published page resolve inside their own artifact and nothing else.
+
+## A copy, not a view
+
+A published preview is a copy taken when you published it. The link keeps answering with what it answered with before, however much the branch moves afterwards - which is the point when somebody is reading it on the other side of the world. Publish again under the same name when they should see the new build.
+
+The copy is taken under rules of its own:
+
+- **Only the project.** The source has to be the session's working directory or inside it, symlinks resolved.
+- **No dot-files.** `.git`, `.env`, `.coddy` and anything below them are never copied, and neither is a symlink that resolves to one, so they cannot be published by accident under a name that does not look like theirs.
+- **No link out of the source.** A symlink to a file inside the source is copied as the bytes it names; one that points anywhere else, and one that names a directory, is left out - publish the built directory rather than one that links to its assets elsewhere. Everything left out is counted and named in the tool's answer.
+- **Nothing half-published.** The copy is built in a staging directory and moved into place in one step. A publish that fails - a source over `max_bytes`, a full disk - leaves the previous artifact at that address exactly as it was, and leaves nothing new behind.
+- **Bounded.** One artifact may hold up to `max_bytes` (100 MiB by default) and 20000 files.
+
+## The origin
+
+The static server is a subsystem of [`coddy serve`](../operate/serve.md), started when `tools.preview_publish.enable` is on. It serves the artifact root and refuses everything else:
+
+- `GET` and `HEAD`; anything else is 405.
+- The root itself is **never listed**: a visitor who has one artifact's address gets that artifact, not an index of everyone else's.
+- A path with a dot segment (`..`, `.git`) is 404, whatever it would resolve to. Files are opened through an `os.Root`, so a link cannot lead out of the root either.
+- An artifact whose lifetime has run out is 404 from the moment it expires, whatever the sweeper has got to; a sweep every minute then removes it from the disk.
+- `Cache-Control: no-store`, so a republished artifact is never read from a stale cache.
+- On a loopback bind, a request whose `Host` is not a loopback name, the configured host or the host of `public_url` is refused, which is the same DNS-rebinding guard the preview server has.
+
+Moving the address takes a fresh process, the way the HTTP server's does; the root and the public address are picked up by a reload.
+
+One artifact root belongs to one running origin. Nothing arbitrates between processes over who sweeps it and who writes into it, so do not point two `coddy serve` at the same directory.
+
+## Configuration
+
+```yaml
+tools:
+  preview_publish:
+    enable: true
+    host: 127.0.0.1                        # keep the origin private
+    port: 8081                             # fixed: the proxy needs a stable upstream
+    root: /var/lib/coddy/previews          # the only directory it serves
+    public_url: https://coddy.example/preview/
+    ttl_seconds: 86400
+    max_bytes: 104857600
+```
+
+The bind is loopback by default. An edge on another host needs an address it can reach, and anything that is not loopback serves every published artifact to whoever can reach it: choose a private address and protect it with network policy or an authenticated tunnel. `0.0.0.0` is not a safe default here and Coddy does not pretend it is. The fields are listed in the [configuration reference](../reference/config.md).
+
+## Behind your reverse proxy
+
+Authentication, TLS, rate limiting and public routing stay with the proxy. Coddy's API token is never given to the static origin and never reaches the browser, and `/preview/*` must not fall through to the API upstream.
+
+Caddy:
+
+```caddyfile
+coddy.example {
+    handle /preview/* {
+        forward_auth auth.internal:9091 {
+            uri /api/verify
+            copy_headers Remote-User
+        }
+        uri strip_prefix /preview
+        reverse_proxy 127.0.0.1:8081
+    }
+    handle {
+        reverse_proxy 127.0.0.1:12345
+    }
+}
+```
+
+Nginx:
+
+```nginx
+location /preview/ {
+    auth_request /auth;
+    proxy_pass http://127.0.0.1:8081/;
+    proxy_set_header Host $host;
+}
+```
+
+Traefik, as labels on the Coddy service:
+
+```yaml
+traefik.http.routers.coddy-preview.rule: Host(`coddy.example`) && PathPrefix(`/preview`)
+traefik.http.routers.coddy-preview.middlewares: coddy-auth@file,coddy-preview-strip
+traefik.http.services.coddy-preview.loadbalancer.server.port: "8081"
+traefik.http.middlewares.coddy-preview-strip.stripprefix.prefixes: /preview
+```
+
+Three things to check in whichever you use: the authentication middleware runs **before** the static upstream, the proxy is the only thing that reaches `127.0.0.1:8081`, and `public_url` is the address with the prefix the visitor actually types - that is what the agent hands out.
+
+A proxy that forwards the visitor's `Host` is answered because `public_url`'s host is on the allowlist; one that rewrites `Host` to the upstream is answered because the bind host is on it too.
+
+## What it is not
+
+- **Not a web host.** It serves static files with no authentication of its own. Everything about who may read a preview is a decision your edge makes.
+- **Not a secret store.** An artifact is readable by everyone the edge admits. Publishing is a deliberate act, which is why it asks for approval every time.
+- **Not `preview_server`.** That one is still there, still takes a free local port, still reads the project on every request, and is still what to use while you are working on the page with the agent.
+
 
 # Features / Canvas
 
@@ -16855,6 +16989,14 @@ Filesystem and shell policy for built-in tools.
 | `tools.preview_server.enable` | boolean or null | true | Offer the preview_server tool. The server is a background task, so tools.background.enable: false turns it off as well. |
 | `tools.preview_server.host` | string | 127.0.0.1 | Address the server binds, without a port: the port is always a free one. Anything that is not loopback exposes the served directory to whoever can reach that address. |
 | `tools.preview_server.public_host` | string | "" | Host written into the URL the agent hands out, for a coddy that runs where the operator's browser is not (a container, a remote machine). Empty uses the bind host. |
+| `tools.preview_publish` | object |  | The published-preview channel: a read-only static origin on a fixed address over one artifact root, and the preview_publish and preview_unpublish tools that put copies of finished work there. For a Coddy behind an authenticated HTTPS edge: the reverse proxy authenticates the visitor and routes a stable prefix to this origin. Off by default. See https://coddy.dev/docs/features/published-previews. |
+| `tools.preview_publish.enable` | boolean | false | Run the published-preview origin and offer the preview_publish and preview_unpublish tools. |
+| `tools.preview_publish.host` | string | 127.0.0.1 | Address the origin binds, without a port. Anything that is not loopback serves every published artifact to whoever can reach that address: protect it with network policy or an authenticated tunnel. |
+| `tools.preview_publish.port` | integer | 8081 | Fixed port the origin binds, so a reverse proxy has an upstream that does not move. |
+| `tools.preview_publish.root` | string | "" | Artifact root: the only directory the origin serves and the only one a publish writes into. Absolute. Empty uses <home>/previews. |
+| `tools.preview_publish.public_url` | string | "" | Address the edge serves the artifact root under, written into the link the agent hands out (https://coddy.example/preview/). Empty uses the origin's own address, which is right only where the browser reaches it directly. |
+| `tools.preview_publish.ttl_seconds` | integer | 86400 | How long a published preview stays up before the origin removes it. A call may ask for its own lifetime, or for none at all. |
+| `tools.preview_publish.max_bytes` | integer | 104857600 | Largest one published preview may be. A publish that would pass it is refused whole, so a half-copied artifact is never served. |
 | `tools.canvas` | object |  | The canvas of the web UI: a .canvas file of the workspace shown in the Files window as a board of live frames, each a page of the workspace running in a sandbox, put there by the agent with canvas_show or by the person from the Files window; canvas_inspect reads what the browser saw. See https://coddy.dev/docs/features/canvas. |
 | `tools.canvas.enable` | boolean or null | true | Offer the canvas_show and canvas_inspect tools, serve frames and show the canvas in the web UI. |
 | `tools.canvas.allow_cdn` | boolean or null | true | Let a frame load libraries, styles and fonts from the common CDNs: cdn.jsdelivr.net, unpkg.com, cdnjs.cloudflare.com, cdn.tailwindcss.com, fonts.googleapis.com and fonts.gstatic.com. |
@@ -17814,7 +17956,7 @@ The browser tool is offered in Agent mode when `browser.enable` is true, in a bi
 
 ## Shell and background tasks
 
-The `background_*` tools are registered only while `tools.background` is enabled (the default), and `preview_server` while `tools.preview_server` is enabled as well. `canvas_show` and `canvas_inspect` are registered while `tools.canvas` is enabled (the default). The guide is [Background tasks](../features/background-tasks.md#model-facing-surface).
+The `background_*` tools are registered only while `tools.background` is enabled (the default), and `preview_server` while `tools.preview_server` is enabled as well. `preview_publish` and `preview_unpublish` are registered only where an operator turned `tools.preview_publish` on, since without an artifact root there is nowhere to publish to. `canvas_show` and `canvas_inspect` are registered while `tools.canvas` is enabled (the default). The guide is [Background tasks](../features/background-tasks.md#model-facing-surface).
 
 | Tool | Purpose | Arguments (short) | Permission | Modes |
 |---|---|---|---|---|
@@ -17829,6 +17971,8 @@ The `background_*` tools are registered only while `tools.background` is enabled
 | `background_stop` | Terminate a task and everything it spawned | `task_id` | none | agent, plan |
 | `background_reap` | Find and kill processes of this session that outlived the run which started them | none | always | agent |
 | `preview_server` | Serve a directory of the project as a static website on a free localhost port and return the address for the user to open; the server is a background task that runs until it is stopped ([Preview server](../features/preview-server.md)) | `path`, `timeout_seconds` | none | agent |
+| `preview_publish` | Copy a directory of the project into the configured artifact root and return the address the deployment's reverse proxy serves it under; `name` republishes at the same address, `ttl_seconds` `0` keeps it until it is unpublished ([Published previews](../features/published-previews.md)) | `path`, `name`, `ttl_seconds` | always | agent |
+| `preview_unpublish` | Take a published preview down by its `name` or the `id` in its address; only what this session published | `name`, `id` | none | agent |
 | `canvas_show` | Put an HTML page of the workspace on a canvas, a `.canvas` file (JSON Canvas, Obsidian's format) the web UI opens in its Files window, as a live frame at a device size or a custom one, or point a frame at it; without `file` the page goes on the chat's canvas or a new `canvas/<folder>.canvas`, and a `.canvas` file as `path` makes that file the chat's canvas ([Canvas](../features/canvas.md)) | `path`, `file`, `title`, `device`, `width`, `height`, `root`, `frame` | none | agent |
 | `canvas_inspect` | Read what the browser running a canvas frame reported: loaded or not, its title, console errors and warnings, uncaught exceptions; waits for a report on the current files; `file` names the canvas, default the chat's | `file`, `frame`, `wait_seconds` | none | agent |
 | `ssh_run_command` | Run a command on a remote host over SSH, using the agent socket and then key files ([Configuration](../getting-started/configuration.md#ssh-remote-execution)) | `host`, `command`, `port`, `timeout_seconds`, `permission_rationale` | always | agent |
@@ -25937,7 +26081,7 @@ Short map for automation-friendly contributors.
 |------|------------------|
 | `cmd/coddy` | CLI entry (bare `coddy` console, `cli`, `acp`, **`serve`**, `sessions`, `skills`, `plugin`, `mcp`, `providers login`, `rules list`, `update`), plus **`-t` / `--test-config`** on the console, `acp` and `serve`: the config check in **`internal/config/check.go`** (schema stage in **`schema.go`** over the embedded **`config.schema.json`**, then the loader's rules), reported as `file:line:col` with a fix line, exit 1 on errors, nothing written; and **`--dry-run`** on the same three, which runs that check and then **`internal/dryrun`**. |
 | `internal/dryrun` | The **`--dry-run`** probes over a loaded config: **`Prepare`** (the static check, then **`config.LoadReadOnly`** and a **`config.Locator`** so every finding carries its line), **`Run`** (paths in **`paths.go`**, LLM providers through **`llm.ListModels`** with the configured models checked against the list in **`providers.go`**, listen addresses (the exporter's too, with a warning when it would be bound off loopback with no token), the Telegram token, remote MCP servers, configured remotes and the `--remote` target, swarm joins and upstreams in **`network.go`**), and the checklist **`Report`** (`ok` / `warning` / `error` / `skipped` per config path, exit 1 on errors; alone the flag prints problems and the status line, with **`--test-config`** the config report and every probe). The servers of `<home>/mcp.json` only: project-local `.coddy/mcp.json` stays behind the trust gate. `coddy serve` hands it the subsystems **`serve.Resolve`** enabled and their addresses (**`cmd/coddy/dryrun.go`**). |
-| `internal/serve` | What **`coddy serve`** is: the **`Runtime`** every subsystem shares (paths, logger, one session store and one **`session.Manager`**, the turn-mirror slot, and the surfaces that offered to show a detached subagent's permission prompt - the HTTP server, a Telegram bot - which are all asked at once, the first answer winning, and the process **background waker** (**`wake.go`**: a finished **`notify_on_finish`** task's turn goes to the surface that offered it first by rank - the Telegram chat bound to the session, then the HTTP server - or runs through the manager when neither is up), the **`Supervisor`** that runs them (**`subsystem.go`**: a **`Subsystem`** descriptor per surface with its **`enable`** key, its build tag and its **`Available`** flag, so an enabled surface the binary cannot run is refused by name, plus **`Fingerprint`** for what can be rebuilt in place and **`RestartKey`** for what only a fresh process can adopt, **`Auxiliary`** for a subsystem that serves beside the surfaces and is never the only one (**`KindMetrics`**, the exporter: it does not count as enabled and may always stop); **`supervisor.go`**: one goroutine per surface with panic recovery, a diff applied on every config reload - start, stop or rebuild only what moved - **`ErrRestartRequested`** when a **`RestartKey`** moves under a **`Restartable`** process, shutdown in reverse declaration order so intake stops before the API, and **`Supervisor.Status`**, the live table **`Runtime.Status`** reads), the **status snapshot** (**`status.go`**: the **`Snapshot`** a running process reads off itself - its build, the subsystem rows with their state, **`running`**, **`starting`**, **`stopped`** or **`retained`**, **`RestartRequired`** derived when read and never recorded, the turns running and the oldest one's start, the unfinished background tasks of the model by kind and status, the disk of the session store, the prompts that wait for a person, the provider quota windows and the swarm state - each part read on its own from **`Supervisor.Status`**, **`bgtask.Pool.CountUnfinished`**, **`session.Manager.OldestTurnStartedAt`**, **`platform.DiskFree`**, **`agent.PendingPrompts`**, **`session.Manager.CachedProviderUsage`** (the usage cache only, never a request) and **`swarm.Joins`** / **`swarm.RelayNodes`**, a part with no source left out; the exporter reads one per scrape), the **status document** (**`status_page.go`**: **`Runtime.StatusDocument`** / **`RenderStatus`**, what **`GET /coddy/status`** answers and **Settings → System** draws - the build, how the process started, the subsystems with their addresses, the disk, the activity and the **`attention`** list decided in Go, with the exporter's last hour through **`SetMetricsSource`** in a binary built with **`metrics`**), and the **background dispatcher** (**`dispatcher.go`**: the restart policy and the **`Record`** at **`<home>/serve.json`**; **`daemon.go`**: **`StartDetached`**, **`RunDispatcher`**, the worker process and the **`CODDY_SERVE_ROLE`** split, exit status **`ExitRestart`** = 75), and the **systemd user service** (**`systemd.go`**: **`UserService`** behind **`coddy serve install`** / **`uninstall`**, the unit renderer shared with the package, the **`PATH`** drop-in, the role **`service`** the unit sets so a listen-address change exits 75 under systemd too). Untagged: it names no tagged package, and the surfaces reach it through **`Available`** consts and stubs. Guide: **`docs/operate/serve.md`**. |
+| `internal/serve` | What **`coddy serve`** is: the **`Runtime`** every subsystem shares (paths, logger, one session store and one **`session.Manager`**, the turn-mirror slot, and the surfaces that offered to show a detached subagent's permission prompt - the HTTP server, a Telegram bot - which are all asked at once, the first answer winning, and the process **background waker** (**`wake.go`**: a finished **`notify_on_finish`** task's turn goes to the surface that offered it first by rank - the Telegram chat bound to the session, then the HTTP server - or runs through the manager when neither is up), the **`Supervisor`** that runs them (**`subsystem.go`**: a **`Subsystem`** descriptor per surface with its **`enable`** key, its build tag and its **`Available`** flag, so an enabled surface the binary cannot run is refused by name, plus **`Fingerprint`** for what can be rebuilt in place and **`RestartKey`** for what only a fresh process can adopt, **`Auxiliary`** for a subsystem that serves beside the surfaces and is never the only one (**`KindMetrics`**, the exporter, and **`KindPreviewPublish`**, the published-preview origin of **`internal/tools/preview`**: neither counts as enabled and both may always stop); **`supervisor.go`**: one goroutine per surface with panic recovery, a diff applied on every config reload - start, stop or rebuild only what moved - **`ErrRestartRequested`** when a **`RestartKey`** moves under a **`Restartable`** process, shutdown in reverse declaration order so intake stops before the API, and **`Supervisor.Status`**, the live table **`Runtime.Status`** reads), the **status snapshot** (**`status.go`**: the **`Snapshot`** a running process reads off itself - its build, the subsystem rows with their state, **`running`**, **`starting`**, **`stopped`** or **`retained`**, **`RestartRequired`** derived when read and never recorded, the turns running and the oldest one's start, the unfinished background tasks of the model by kind and status, the disk of the session store, the prompts that wait for a person, the provider quota windows and the swarm state - each part read on its own from **`Supervisor.Status`**, **`bgtask.Pool.CountUnfinished`**, **`session.Manager.OldestTurnStartedAt`**, **`platform.DiskFree`**, **`agent.PendingPrompts`**, **`session.Manager.CachedProviderUsage`** (the usage cache only, never a request) and **`swarm.Joins`** / **`swarm.RelayNodes`**, a part with no source left out; the exporter reads one per scrape), the **status document** (**`status_page.go`**: **`Runtime.StatusDocument`** / **`RenderStatus`**, what **`GET /coddy/status`** answers and **Settings → System** draws - the build, how the process started, the subsystems with their addresses, the disk, the activity and the **`attention`** list decided in Go, with the exporter's last hour through **`SetMetricsSource`** in a binary built with **`metrics`**), and the **background dispatcher** (**`dispatcher.go`**: the restart policy and the **`Record`** at **`<home>/serve.json`**; **`daemon.go`**: **`StartDetached`**, **`RunDispatcher`**, the worker process and the **`CODDY_SERVE_ROLE`** split, exit status **`ExitRestart`** = 75), and the **systemd user service** (**`systemd.go`**: **`UserService`** behind **`coddy serve install`** / **`uninstall`**, the unit renderer shared with the package, the **`PATH`** drop-in, the role **`service`** the unit sets so a listen-address change exits 75 under systemd too). Untagged: it names no tagged package, and the surfaces reach it through **`Available`** consts and stubs. Guide: **`docs/operate/serve.md`**. |
 | `internal/agent` | ReAct orchestration, MCP/tool wiring, the opt-in wait for a hit usage limit (**`limit_wait.go`**: a **`llm.QuotaResetError`** from the resilient wrapper makes a top-level turn wait for the reset under **`agent.wait_for_limit_reset`**, sending **`provider_usage`** updates with **`resuming`** every 20 s, then re-issue the same call), and the **cached-prefix fold** (**`compact_cached.go`**: the send boundary records what each request put on the wire (**`session.TurnSend`**), and a compaction whose summarizer is the session's own model asks with that request cut at the boundary, the summarization brief appended as a request-only message, so the provider reads the head out of the cache it just wrote; every other case falls back to the flattened transcript of **`compact_fold.go`**, and the merge of the chain takes the same path). |
 | `internal/mcp` | MCP transports, merged server list (**`<home>/mcp.json`** and the project's **`.coddy/mcp.json`** only: **`config.yaml`** declares no server, and **`internal/config/legacy_keys.go`** moves an old **`mcp_servers`** key into the home file on load), and the **workspace trust gate** for project-local **`.coddy/mcp.json`** (**`trust.go`**, **`gate.go`**; policy **`mcp.project_trust`**, approvals in **`<home>/mcp-trust.json`** keyed by the project (**`mcp.TrustWorkspace`**: a linked git worktree shares its main checkout's), **`ReadsEnvironment`** naming on every approval surface the variables a declaration's **`${NAME}`** values read). A server's `command` and `args` run exactly as written, their **`${CWD}`** and **`${NAME}`** resolved by **`config.ExpandMCPValue`** the same way in every file: nothing here knows `npx` or any other package runner. The session manager watches **`<home>/mcp.json`** (**`StartGlobalMCPServers`** starts the watcher, **`ReloadMCPDeclarations`** reconciles only the servers whose declaration or switch moved). **`Client.CallToolResult`** returns what a result carries: its text (text blocks, the text of embedded resources, resource links), its pictures (**`ToolImage`**) and its files (**`ToolFile`**: audio, binary resources), which **`internal/agent`** keeps with the session's assets. **`mcptest`** serves test MCP servers of every kind a user configures - the test binary re-executed on stdio, a local npm package started by the real `npx`, streamable HTTP answering with JSON (**`NewHTTPServer`**) or with event streams (**`NewEventStreamServer`**) and SSE - each answering one tool with its token, and all but the npx one a screenshot tool too (**`ScreenshotTool`**: the token and **`Picture`**, **`LargePicture`** over 4 MiB as base64, or several, **`Pictures`**). The **server pool** (**`pool.go`**: **`Pool`**, **`PoolKey`**, **`WorkspaceBound`**) shares the configured servers between sessions: a session holds a lease (**`Client`** is a handle on a shared **`conn`**), a global server is one process for the whole process, a project server that does not name **`${CWD}`** one per project (a linked git worktree shares the one of its main checkout) and any server naming **`${CWD}`** one per workspace, a connection nothing holds stops after **`DefaultStopDelay`** unless the pool keeps it (**`Keep`**: the global servers **`session.Manager.StartGlobalMCPServers`** starts with `coddy serve`, the console and `coddy acp`, ended by **`CloseMCP`**), and a stdio server runs in its own process group, stopped by stdin EOF and then the group (**`client.go`**). The dial itself lives in **`internal/session/mcp_dial.go`** (every configured server through **`TrustGate.Acquire`** under its own 20 s bound, one more try at the next turn for one that did not answer), the manager's side of the pool in **`internal/session/mcp_pool.go`** (a server whose connection ended is parked and started again at the next turn) and the console's background connect in **`internal/session/mcp_background.go`**. Guide: **`docs/features/mcp.md`** (Shared servers). |
 | `internal/remote` | Go client for a remote `coddy serve` server: SSE frames back into ACP updates, `/coddy` REST, permission/question answers, and the permission prompts of background subagents the server announces on its events stream (**`detached_prompts.go`**). Powers `--remote` on the console and `coddy acp`. Guide: **`docs/surfaces/console.md`** (Remote mode), **`docs/plans/remote-control.md`**. |
