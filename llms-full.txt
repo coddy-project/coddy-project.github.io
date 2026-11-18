@@ -761,7 +761,7 @@ prompts:
   #
   # Go text/template data. Fields in internal/prompts/loader.go. YAML shape is config.Prompts in internal/config/prompts.go.
   #   {{.CWD}}      - session working directory
-  #   {{.Tools}}    - markdown list of tool names and short descriptions for the current mode
+  #   {{.Tools}}    - optional markdown catalog for custom templates; native tool definitions are always sent separately
   #   {{.Skills}}   - markdown block for active skills (omit section when empty via {{if .Skills}})
   #   {{.Rules}}    - the AGENTS.md and DESIGN.md of the agent home and of the workspace, then the always-on rules
   #   {{.Instructions}} - the files of instructions.files. A template that prints neither block still gets the
@@ -770,7 +770,7 @@ prompts:
   #   {{.Memory}}   - session notes. The memory subagent's report is not rendered here: it comes back as the tool result of the spawn_agent call that delegated to it
   #   {{.UTCNow}}   - date and time in UTC (RFC3339), refreshed whenever the system prompt is rendered
   #
-  # Built-in templates order: Tools, Skills, Memory (session notes).
+  # Built-in templates order: Skills, Memory (session notes). They omit the duplicate tool catalog.
   # They deliberately render neither {{.TodoList}} nor {{.UTCNow}}: both move between the steps of a
   # turn, and the system prompt is what the provider's prompt cache keys the whole conversation on.
   # Coddy sends the clock and the checklist after the history instead, in a <turn_context> block,
@@ -1165,7 +1165,7 @@ For native image output, set `image_generation: true` on a logical model that su
 
 ### Toolsets
 
-Every request carries the schema of each tool the session offers. A session in agent mode offers about 44 tools: their `tools` array is about 11,700 tokens, and the tool list the system prompt prints is another 4,600 (the context meter's estimate, measured by `make test-perf`). A model with a large window never notices. A local model with a 49k window spends a third of it before the first message on tools a coding session never calls.
+Every request carries the complete native definition of each permitted tool, including its name, description and input schema. Bundled prompts omit a duplicate Markdown catalog. Large tool sets still leave less context for conversation, so a toolset can help models with smaller windows.
 
 A toolset is a named preset of tool lists under `toolsets`. A `models[]` row names the toolset its sessions run with, and a session can pick another one for itself:
 
@@ -1186,7 +1186,7 @@ models:
   - model: "codex/gpt-5.6-sol"          # no toolset: every tool, as before
 ```
 
-The thirteen tools of `coding` take the `tools` array of a request from 44 tools and about 11,700 tokens to 13 tools and about 3,800, and the system prompt's tool list from about 4,600 tokens to about 1,400: roughly 11,000 tokens fewer per request. A session on the third model sends what it always sent.
+`coding` restricts the native offer to its thirteen listed tools. A session on the model without a toolset retains the full permitted offer. Bundled prompts add no duplicate catalog; custom templates that print `{{.Tools}}` add their own catalog cost.
 
 - **Syntax.** `tools` is an allowlist and `disallowed_tools` a denylist, applied after it; a name in both is removed. An entry is an exact tool name from the [tool reference](../reference/tools.md), a bare `*`, or a `prefix*` pattern. MCP tools are named `server__tool`, so `context7__*` admits every tool of one server, and an allowlist that names no MCP pattern offers no MCP tool. The matching is the one a [subagent definition](../features/subagents.md#definition-files) uses for its own `tools` and `disallowed_tools`. A name is letters, digits, `.`, `_` and `-`, and `default` is reserved.
 - **Empty means everything.** A preset whose lists are absent, empty or blank offers every tool the mode would, and so does a model that names no toolset. `disallowed_tools: ["*"]` is the way to offer none: the request then carries no tools at all, and the turn is a plain chat.
@@ -1194,7 +1194,7 @@ The thirteen tools of `coding` take the `tools` array of a request from 44 tools
 - **It only narrows.** A tool that the mode (Plan and Ask offer fixed sets), the configuration (`tools.background.enable: false`, `subagents.enable: false`) or a subagent definition already hides stays hidden whatever the preset names. Nothing is forced in either: the loop needs no tool, and compaction, `/compact` and the goal check are not tool calls.
 - **It follows the settings.** A request is offered the tools of the toolset the session's settings resolve to for the model it is built for. A switch of the model (`/model`, the model selector, `switch_model`) or of the toolset changes the set from the next request, in the middle of a turn too, and the system prompt is rendered again with it when the set moved; a switch between two models without a toolset changes nothing in the request. A `config_commit` or `config_rollback` that changes the presets or the model's toolset does the same from the next request. If the provider of the new model cannot be built, the turn goes on with the previous model and its set. For a given toolset the set and the prompt are the same on every request, so the provider's prompt cache keeps working.
 - **Calls are checked again.** A call is checked against the set of the request that produced it. A call to a tool that request did not offer - replayed from history written under another toolset, or made up - is answered with `error: tool "write" is not offered: this session runs with the toolset "coding" ...`, shown as cancelled, and never reaches a hook or a permission prompt. A switch in the middle of a batch, or a `config_commit` or `config_rollback` that changes the toolset of the turn, changes the set from the next request: the calls after it in the same batch still run under the set they were offered. A permission answer that resumes a call after its turn has ended (an approval given later in the web UI) is checked against the toolset the session runs with at that moment, refused the same way if it does not offer the tool, and stores no "allow always" grant.
-- **The prompt follows.** The tool list in the system prompt holds the same tools as the request. The subagent roster is left out when `spawn_agent` is not offered, and the hint to call `load_skill` when that tool is not. The instructions of the built-in prompt still mention some tools by name; a model that is not offered one ignores those lines.
+- **The prompt follows the template.** Bundled prompts omit the Markdown tool catalog. A custom template can still print `{{.Tools}}` with the permitted names and descriptions. The subagent roster is left out when `spawn_agent` is not offered, and the hint to call `load_skill` when that tool is not. Built-in instructions still mention some tools by name; a model that is not offered one ignores those lines.
 - **Subagents.** A child runs on one model - the parent's, the definition's `model`, or the one the call names - and is offered its effective set (the [intersection](../features/subagents.md#how-capabilities-narrow)) narrowed by the toolset that model names. The parent's own toolset bounds what the parent is shown, not what a child is offered, so a small local orchestrator can hand work to a child on a model without a toolset. A spawn whose model's toolset leaves the child no tool is refused with a message naming the model and the toolset. A toolset does not decide which MCP servers are started for the child or anywhere else: a server a model does not need is switched off in its declaration ([MCP switches](../features/mcp.md#enable--disable-switches)). A scheduler job follows the same rules, and the memory subagent, whose tools the runtime fixes, is not affected.
 - **A provider that refuses the tools.** The server on the other side has a bound of its own on how many tools one request may carry: OpenAI's is 128, and a Coddy server's is `httpserver.max_client_tools`, which its `GET /v1/models` advertises under `limits` ([HTTP API](../reference/http-api.md#endpoint-summary)). A session whose MCP servers push it past that bound used to lose the turn to the provider's bare `400`. It now ends with what each side counted and the ways to send fewer: a preset of this section picked with `/toolset`, an [MCP server switched off](../features/mcp.md#enable--disable-switches), or the bound raised where the far side is a Coddy server you own. A refusal of one tool whose `parameters` schema is larger than the far side takes names that tool instead. Nothing is sent again with tools dropped: which tools a model is offered is yours to decide.
 - **Not a security boundary.** A toolset decides what a model is shown, to spare its context. What a session may do is decided by the mode, `tools.permission_mode`, [hooks](../features/hooks.md) and the trust gates.
@@ -6870,7 +6870,7 @@ coddy desktop [--window auto|browser|native] [--browser PATH] [--frame] [--auth]
 | `--window` | `auto` (the default) tries native when built in, then falls back to the browser when the macOS version or GUI session is unavailable; `browser` uses application mode; `native` uses Cocoa/WKWebView on macOS 14+, which every macOS build carries, release or source; it reports an error if unavailable |
 | `--browser` | the browser to open the window with, by name on `PATH` or by path. Also `CODDY_DESKTOP_BROWSER` |
 | `--config`, `--home`, `--cwd` | as on `coddy serve`: the configuration file, the agent home, the workspace new chats open in |
-| `--frame` | keep the system title bar and borders. Without it, on X11 and native macOS, the strip is the title bar |
+| `--frame` | keep a separate system title bar and borders. Without it, on X11 and native macOS, the strip is the title bar; macOS keeps its system buttons |
 | `--log-level` | `debug`, `info`, `warn` or `error`, overriding the configuration |
 | `--auth` | ask for the credential the configuration carries. Without it the window asks for nothing (below) |
 | `-t`, `--test-config` | check the configuration file and exit, starting nothing |
@@ -6896,7 +6896,7 @@ log; the window and the rest keep running. The configuration on disk is not rewr
 | Next, previous | `Ctrl`+`Tab` and `Ctrl`+`Shift`+`Tab`, which wrap at both ends |
 | Reorder | drag a tab to its new place in the row |
 | Reload the chat in front | `Ctrl`+`R`, which reloads that tab and leaves the others alone |
-| Walk a long row | the two arrows beside the window's own buttons, which appear once the tabs are wider than the bar |
+| Walk a long row | the two arrows after the empty part of the strip, which appear once the tabs are wider than the bar |
 
 A middle click on **New chat**, a conversation in **History**, or a rail item such as **Settings**,
 **Scheduler**, **Docs** or **Swarm** opens that route in a new tab of this window instead of another
@@ -6955,20 +6955,27 @@ origin shares a single connection.
 
 ## The window itself
 
-On X11 and native macOS the window opens without the system frame, and the tab strip is its title
-bar. Browser windows on macOS, Windows and Wayland keep the system frame. The controls below apply
-to X11 and native macOS. The strip carries, from left to right: the menu of the desktop, the tabs, `+`, the empty space that drags the
-window, the two arrows that walk a row too long for the bar, and minimise, maximise and close at the
-right edge. On X11 the corners are rounded while the window floats and square while it fills the
-screen. macOS draws its native window corners.
+On X11 and native macOS the tab strip is the title bar by default. Browser windows on macOS,
+Windows and Wayland keep the system frame. From left to right the strip carries the desktop menu,
+the tabs, `+`, the empty space that drags the window, and the arrows that walk a row too long for
+the bar.
+
+On native macOS the round red, yellow and green system buttons stay at the top left, aligned with
+the menu icon, tab labels and `+`. The gap from green to the menu icon matches the left margin
+before red, measured from the system buttons at run time. With the strip as the title bar, green
+zooms or restores the window without entering full screen. A separate system frame restores
+macOS's original full-screen behavior. Dragging the empty strip or its padding moves the window.
+AppKit draws the corners and handles resizing at the edges, so the strip draws no extra window
+buttons or resize areas. On X11 the strip draws minimise, maximise and close at the right edge, with rounded corners while the window floats and square corners while it fills the
+screen.
 
 | Action | How |
 | --- | --- |
-| Move the window | drag the empty part of the strip |
+| Move the window | drag the empty part of the strip; on native macOS its padding also drags |
 | Resize the window | drag an edge or a corner; the pointer shows the direction |
-| Maximise or restore | double-click the empty part of the strip, or the middle button at the right |
-| Minimise, close | the buttons at the right edge |
-| The desktop menu | the button at the left edge of the strip |
+| Maximise or restore | double-click the empty part of the strip; on macOS use the green system button, on X11 the middle button at the right |
+| Minimise, close | macOS: yellow and red system buttons at the left; X11: the buttons at the right edge |
+| The desktop menu | the menu button before the tabs, after the system buttons on native macOS |
 
 A window the window manager has pinned - maximised, or tiled against an edge with `Meta`+`Left` -
 is let loose when you start dragging the strip, and put back under the pointer, the way dragging a
@@ -7037,7 +7044,7 @@ take another port.
 | **Open at login** | Linux and FreeBSD: write `coddy-desktop.desktop` into this user's autostart folder (`$XDG_CONFIG_HOME/autostart`, else `~/.config/autostart`). macOS: a launch agent, `~/Library/LaunchAgents/dev.coddy.desktop.plist`. Windows: a value under this user's `Run` key. Nothing is installed system-wide and nothing needs administrator rights |
 | **Show the tray icon** | publishes Coddy's mark in the system tray as a StatusNotifierItem on the session bus. A click on it brings the window back from behind another window or from the taskbar |
 | **Start minimised** | the next launch opens the window minimised, which is usually what a window opened at login wants |
-| **Show the system frame** | gives the window back the title bar and borders your desktop draws. The strip then stops drawing minimise, maximise and close, since the frame carries them. On X11 and native macOS; other browser windows always keep their frame |
+| **Show the system frame** | gives the window back the title bar and borders your desktop draws. On X11 the strip then stops drawing minimise, maximise and close. Native macOS keeps its system buttons in either mode and restores macOS's original full-screen behavior with a separate frame. On X11 and native macOS; other browser windows always keep their frame |
 
 A switch moves only once the launcher has done the thing: a tray this session has no tray for, or
 an autostart folder that cannot be written, leaves the switch where it was and says why on the row.
@@ -7150,8 +7157,8 @@ column:
 | | Linux, FreeBSD (X11) | Linux, FreeBSD (Wayland) | macOS | Windows |
 | --- | --- | --- | --- | --- |
 | The window, tabs, settings | yes | yes | native on macOS 14+; browser fallback on older macOS | yes |
-| No system frame, the strip as the title bar | yes | no | native only | no |
-| Rounded corners, drag by the strip, its own buttons | yes | no | native only | no |
+| The strip as the title bar | yes | no | native only, with system buttons at the left | no |
+| Rounded corners and drag by the strip | yes | no | native only; AppKit draws corners and resize edges | no |
 | `Ctrl`+`T`, `Ctrl`+`W`, `Ctrl`+`R`, `Ctrl`+`Tab` taken from the browser | yes | no | no | no |
 | `Alt` for the letter and digit chords | yes | yes | yes | yes |
 | Tray icon | yes | yes | no | no |
@@ -16356,7 +16363,7 @@ In agent and plan mode the child has the full tool set. In **ask mode** the run 
 
 The child runs on `memory.model` when that names a configured model, otherwise on the session's model. Its completions are capped at `copilot_max_tokens` and its ReAct rounds at the larger of `recall_max_turns` and `persist_max_turns`. A model that is down or overloaded need not cost the run: `memory.fallback_models` is the chain tried after `memory.model`, and the session's own model is the last resort whether or not it is listed. The chain moves to the next model when a call failed before producing any output (the model is down, unauthorised, out of quota); a stream that broke after text was already delivered follows the ordinary retry policy instead, so no answer is streamed twice ([issue #247](https://github.com/coddy-project/coddy-agent/issues/247)).
 
-The child's system prompt is the template `external/memory/prompts/memory_agent.md`, built into the binary. `memory.additional_prompt` adds a section of your own to it, **Operator instructions**, after the memory role and before the tool list: a place to pin behaviour in your words, such as "only deal with the notes; never answer the task itself", or to name the language the notes are written in. The main agent never sees that text, and ask mode renders it the same way. `memory.additional_prompt_max_chars` cuts a longer text at that many characters, with a warning in the agent log at every launch that reads the cut text and a finding in `coddy -t`; `0` keeps it whole ([issue #266](https://github.com/coddy-project/coddy-agent/issues/266)).
+The child's system prompt is the template `external/memory/prompts/memory_agent.md`, built into the binary. `memory.additional_prompt` adds a section of your own to it, **Operator instructions**, after the memory role: a place to pin behaviour in your words, such as "only deal with the notes; never answer the task itself", or to name the language the notes are written in. The main agent never sees that text, and ask mode renders it the same way. `memory.additional_prompt_max_chars` cuts a longer text at that many characters, with a warning in the agent log at every launch that reads the cut text and a finding in `coddy -t`; `0` keeps it whole ([issue #266](https://github.com/coddy-project/coddy-agent/issues/266)).
 
 ## The prompt cache
 
@@ -16509,7 +16516,7 @@ The field table is in the [config.yaml reference](../reference/config.md#memory)
 
 ## Cost and latency
 
-Memory costs tokens only when the model asks. A turn that never spawns the memory subagent runs no memory model at all; a turn that does pays for one child conversation: the child's own system prompt (the template, the environment block, six tool definitions) and its rounds, one model call at least, more when it uses tools. Pinning a small, fast model with `memory.model` keeps the cost of recall low while the main agent stays on the model you chose for it. A guide adds at most 8 KiB per root to the child's task on every run.
+Memory costs tokens only when the model asks. A turn that never spawns the memory subagent runs no memory model at all; a turn that does pays for one child conversation: the child's own system prompt (the template and environment block), its permitted native tool definitions and its rounds, one model call at least, more when it uses tools. Pinning a small, fast model with `memory.model` keeps the cost of recall low while the main agent stays on the model you chose for it. A guide adds at most 8 KiB per root to the child's task on every run.
 
 ## Testing
 
@@ -16774,7 +16781,7 @@ Usage:
   coddy serve status | stop | restart [--home DIR]
   coddy desktop [flags] (open Coddy as a window on this machine: a tab strip with
         one chat per tab, over an HTTP surface on a loopback port this home
-        remembers. --frame keeps the system title bar, --browser names the
+        remembers. --frame keeps a separate system title bar, --browser names the
         browser to open it with, --auth asks for the credential the
         configuration carries; build tags http ui desktop)
   coddy serve set-password [--user NAME] [--config PATH] [--home DIR] (write the web
@@ -22134,7 +22141,7 @@ Maintains the state for each conversation session:
 The core reasoning engine (**`react.go`**):
 
 1. Loads tool definitions from **`internal/tooling.Registry.AllToolDefinitions`**, applies the session **`ToolSet`** from **`internal/agent/toolsets.go`** (empty set means no filter), then appends MCP tool definitions from connected servers when the mode is **`agent`** or **`plan`** (never in **`ask`** mode). In **`ask`** and **`plan`** mode a call that names a filtered-out tool (for example one replayed from history) is also refused at execution time; **`plan`** lets every MCP tool name (**`server__tool`**) through to **`callMCPTool`**, which applies the connected-server check and the per-tool disable switches.
-2. Builds the system prompt from **`internal/prompts.Render`**: embedded defaults or files under **`prompts.dir`** named by **`prompts.agent_prompt`**, **`prompts.plan_prompt`**, and **`prompts.ask_prompt`** (defaults **`agent.md`**, **`plan.md`**, and **`ask.md`**). Template data includes **`CWD`**, tools markdown, skills markdown, rules markdown (**`{{.Rules}}`** via **`internal/rules`**), optional **`TodoList`** and **`Memory`**, **`ModelSwitch`** (whether the turn is offered **`switch_model`**; the built-in templates describe the tool only then, so a subagent or a configuration with nothing to switch is not told about it), **`BackgroundWake`** (whether a finished background task can wake the session; where it cannot - a subagent, a scheduled run, `coddy -p` - the templates tell the model to collect results before the turn ends instead of promising a wake), plus **`UTCNow`** (RFC3339 UTC refreshed on every render). Coddy then appends an **`<environment_context>`** block containing **`<os>`**, **`<arch>`**, and the detected **`<shell>`**, even when a custom prompt template is used. The message is rendered **once per turn** and then frozen, so the provider's prompt cache keeps the conversation behind it; the built-in templates render neither **`UTCNow`** nor **`TodoList`**, and what moves during a turn is sent after the history in a **`<turn_context>`** block (**`internal/agent/turn_context.go`**, and *The turn context block* in **`docs/contributing/react-agent.md`**).
+2. Builds the system prompt from **`internal/prompts.Render`**: embedded defaults or files under **`prompts.dir`** named by **`prompts.agent_prompt`**, **`prompts.plan_prompt`**, and **`prompts.ask_prompt`** (defaults **`agent.md`**, **`plan.md`**, and **`ask.md`**). Template data includes **`CWD`**, optional tools markdown for custom templates (**`{{.Tools}}`**; bundled templates omit this catalog), skills markdown, rules markdown (**`{{.Rules}}`** via **`internal/rules`**), optional **`TodoList`** and **`Memory`**, **`ModelSwitch`** (whether the turn is offered **`switch_model`**; the built-in templates describe the tool only then, so a subagent or a configuration with nothing to switch is not told about it), **`BackgroundWake`** (whether a finished background task can wake the session; where it cannot - a subagent, a scheduled run, `coddy -p` - the templates tell the model to collect results before the turn ends instead of promising a wake), plus **`UTCNow`** (RFC3339 UTC refreshed on every render). Coddy then appends an **`<environment_context>`** block containing **`<os>`**, **`<arch>`**, and the detected **`<shell>`**, even when a custom prompt template is used. The message is rendered **once per turn** and then frozen, so the provider's prompt cache keeps the conversation behind it; the built-in templates render neither **`UTCNow`** nor **`TodoList`**, and what moves during a turn is sent after the history in a **`<turn_context>`** block (**`internal/agent/turn_context.go`**, and *The turn context block* in **`docs/contributing/react-agent.md`**).
 3. Prepends that system message to the session message list and appends the newest user turn.
 4. **Before every LLM invocation** inside one **`session/prompt`**, appends the **`<turn_context>`** block after the history (**`internal/agent/turn_context.go`**): the wall clock, the todo checklist after a **`coddy_todo_*`** call, the background tasks of the session that are still running, and the one-time enrichment of a `FirstPrompt` hook on the requests of the session's first turn. Rules activated by a filesystem tool ride in that tool's result, not this block. The **`system` message itself is not touched** - rewriting it would throw away the provider's cached copy of the conversation behind it. A template under **`prompts.dir`** that prints **`{{.UTCNow}}`** or **`{{.TodoList}}`** itself is re-rendered per call as before: it gets no clock or checklist in the trailing block, but still receives the other applicable sections (git workspace, background tasks, surface context and `FirstPrompt`), and the block is omitted only when none applies.
 5. Streams the LLM response, executes tool calls (each one passing through the operator hooks of **`internal/hooks`**: `PreToolUse` before the permission gate, one optional `ToolExecute` after it for external execution, `PostToolUse` or `PostToolUseFailure` after the local or external call), appends assistant and tool messages.
@@ -23723,8 +23730,6 @@ Working directory: {{.CWD}}
 ## Mode: Agent | Plan | Ask             capabilities, how to work, how to plan
                                         (plan mode lists {{.DiscardedPlans}} here)
 {{.Subagents}}                          the subagent catalog, when the session may spawn
-## Available tools
-{{.Tools}}                              MCP tools among them, as server__tool
 {{.Skills}}                             ## Slash commands: the skill catalog and the load_skill hint;
                                         a /name body rides in the user message, load_skill returns one
 {{.PlanContext}}                        agent mode: the plan an approved turn implements
@@ -23745,6 +23750,10 @@ Working directory: {{.CWD}}
 ```
 
 The environment block is appended outside the configurable template so OS and shell facts cannot be accidentally omitted by a custom prompt.
+
+Coddy sends complete permitted tool names, descriptions and schemas through the request's native tool definitions. Bundled mode, memory and goal-verifier templates omit the duplicate Markdown catalog from the system prompt. Custom templates can still render `{{.Tools}}`; this explicitly adds the catalog to the system prompt alongside the native definitions. Tool permissions and execution stay the same.
+
+Context estimates count the complete serialized native definitions, including names and descriptions, plus any catalog a custom template renders. Earlier estimates counted only the native input schemas in addition to the catalog. The corrected estimate can show a larger tool category even though the bundled system prompt is smaller.
 
 ### The system prompt is frozen for the turn
 
@@ -24165,7 +24174,7 @@ messages: [
 
 ### Agent Mode
 
-Embedded **`agent.md`** describes agent behavior (quality, shells, todos, git worktrees). Todo-related instructions reference **`coddy_todo_plan_*`** and **`coddy_todo_item_*`** tools surfaced in **`Tools`**. The **Git worktrees** block names **`.coddy/worktrees/<branch>`** as the place a worktree goes, the same directory the workspace switch of the HTTP surface uses ([Sessions](../features/sessions.md#git-worktrees)); without it the model picks a spot of its own and leaves an untracked folder at the repository root.
+Embedded **`agent.md`** describes agent behavior (quality, shells, todos, git worktrees). Todo-related instructions reference **`coddy_todo_plan_*`** and **`coddy_todo_item_*`** tools offered through the native tool definitions. The **Git worktrees** block names **`.coddy/worktrees/<branch>`** as the place a worktree goes, the same directory the workspace switch of the HTTP surface uses ([Sessions](../features/sessions.md#git-worktrees)); without it the model picks a spot of its own and leaves an untracked folder at the repository root.
 
 Representative builtins (excluding MCP-namespaced tools):
 
@@ -25896,19 +25905,26 @@ file, one stylesheet, one script, no React and no vite entry, because it is a fr
 SPA and a window backend has to reach it whether or not the SPA build has run. It draws a tab strip
 over one **`<iframe>`** per chat, each frame the web UI of this same server.
 
-- **The strip** is a 36px header with no padding above or below, and with no system frame it is the
+- **The strip** is a 38px header with 5px padding above and 8px at the sides, and with no system frame it is the
   window's title bar as well. Left to right: the menu (**`#menu-btn`**), the tabs (**`#strip`**,
   **`role="tablist"`**, scrolling sideways with no scrollbar when they do not fit), the **`+`** of a
   new chat (**`#new-tab`**), the empty space that drags the window (**`#drag`**), the two arrows
   that walk a row too long for the bar (**`#scroll-btns`**, drawn only while
   **`scrollWidth > clientWidth`**, each going dim at its end of the row rather than disappearing,
   so the buttons beside it do not move under the pointer), and minimise,
-  maximise and close at the right edge (**`#window-btns`**, drawn only while the window has no
-  system frame, so the two sets of buttons are never both there). A tab is a button carrying the
+  maximise and close at the right edge (**`#window-btns`**, only for a driven window without
+  system chrome). Native macOS keeps its standard red/yellow/green buttons at the left; the shell
+  aligns their centres with the menu icon, tab labels and **`+`**. The 16px menu SVG sits 7px
+  inside its 30px button; the inset puts the icon one measured left margin after green. AppKit
+  owns the window buttons, resize edges and corner radius. In the unified strip, green zooms
+  without entering full screen; a separate system frame restores the window's original collection
+  behavior. The empty bar and its padding drag the window.
+  **`GET /desktop/window`** adds **`frame: "system"`** and **`left_inset`** for this optional
+  capability; controls without it keep the ordinary **`supported`** answer. A tab is a button carrying the
   state dot of its chat, its label and a **`×`**; the one in front is marked by
   **`aria-selected`**, a lighter ground and a 2px rule along its bottom edge in
   **`--tab-active-line`**, and nothing else in the strip takes that colour. Dragging the empty
-  space moves the window and a double click maximises or restores it, which is what a title bar
+  space moves the window (on native macOS its padding does too) and a double click maximises or restores it, which is what a title bar
   does; a new chat is only the **`+`** or the chord.
 - **A tab's name** is the title of the chat behind it, read from **`GET /coddy/sessions`** and
   written with **`textContent`**, never **`innerHTML`**: it is operator and model text drawn into a
