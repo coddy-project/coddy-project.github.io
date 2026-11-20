@@ -24,7 +24,8 @@ Installs the release binary (http + ui + scheduler + memory), its man page and
 its shell completions, and bootstraps \$CODDY_HOME (default ~/.coddy) with
 config.yaml from config.example.yaml when the file is missing. In Termux on
 Android it installs the Android build, which is published for arm64 and
-x86_64.
+x86_64. On Linux it also registers the application menu shortcut when the
+release knows \`coddy desktop --install-shortcut\`.
 
 Unless --no-shell-setup is given, a user-level install also writes a small
 guarded block to the rc file of your login shell so that a new terminal finds
@@ -215,6 +216,33 @@ if [ ! -f "$CONFIG" ]; then
   fi
 else
   log "kept existing ${CONFIG}"
+fi
+
+# ---------------------------------------------------------------------------
+# Application menu shortcut
+#
+# A Linux desktop release registers itself in the application menu:
+# `coddy desktop --install-shortcut` writes the .desktop entry and the icon it
+# names under the XDG data home (honouring XDG_DATA_HOME) and exits without
+# opening a window. The flag is passed only when `desktop --help` lists it -
+# `coddy desktop` given an argument it does not honour is what could open a
+# window instead, so a release that predates the flag, a build without the
+# desktop verb, macOS and Termux are all left untouched. A custom
+# --install-dir needs nothing extra: the shortcut's Exec line is the binary's
+# own resolved path, whatever directory it was put in. A root install has no
+# user menu to register into, and a failure to register is a note, not a
+# failed install.
+# ---------------------------------------------------------------------------
+if [ "$GOOS" = linux ] && [ "$(id -u 2>/dev/null || echo 0)" != "0" ]; then
+  case "$("$DEST" desktop --help 2>&1 || true)" in
+    *install-shortcut*)
+      if "$DEST" desktop --install-shortcut </dev/null >/dev/null 2>&1; then
+        log "registered Coddy in the application menu"
+      else
+        log "note: could not register the menu shortcut; run: coddy desktop --install-shortcut"
+      fi
+      ;;
+  esac
 fi
 
 # ---------------------------------------------------------------------------
