@@ -116,5 +116,28 @@ if ($userPath -notlike "*$InstallDir*") {
     Write-Info "added $InstallDir to user PATH (open a new terminal if needed)"
 }
 
+# Register the Start menu shortcut when the binary knows how. The flag is
+# passed only when `desktop --help` lists it: `coddy desktop` run with an
+# argument it does not honour is what could open a window, so a release that
+# predates --install-shortcut - or a build without the desktop verb - is left
+# untouched. A custom -InstallDir needs nothing extra: the shortcut's target
+# is the binary's own resolved path. Registration failure is a note, not a
+# failed install.
+$desktopHelp = try { & $dest desktop --help 2>&1 | Out-String } catch { "" }
+if ($desktopHelp -match "install-shortcut") {
+    $registered = $false
+    try {
+        & $dest desktop --install-shortcut *> $null
+        $registered = ($LASTEXITCODE -eq 0)
+    } catch {
+        $registered = $false
+    }
+    if ($registered) {
+        Write-Info "registered Coddy in the Start menu"
+    } else {
+        Write-Info "note: could not register the Start menu shortcut; run: coddy desktop --install-shortcut"
+    }
+}
+
 & $dest -v
 Write-Info "next: set API keys in $config, then: coddy serve"
